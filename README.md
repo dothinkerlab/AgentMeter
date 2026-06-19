@@ -14,15 +14,15 @@
 
 ---
 
-Coding agents keep burning quota while you're away from the keyboard. **AgentMeter** puts your Claude Code quota where you can check it in two seconds — your Apple Watch face. See how much is left in the current **5‑hour window** and the **weekly window**, plus when each one resets — without digging through a terminal.
+Coding agents keep burning quota while you're away from the keyboard. **AgentMeter** puts your Claude Code and Codex quota where you can check it in two seconds — your Apple Watch face. See how much is left in the current **5‑hour window** and the **weekly window**, plus when each one resets — without digging through a terminal.
 
 ## Download
 
 **[⬇️ Download AgentMeter for Mac (.dmg)](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)**
 
-The Mac app is Developer ID–signed and notarized by Apple — just open it. Drag **AgentMeter.app** into your Applications folder; on first launch it asks permission to read your local Claude Code credential. See all versions on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
+The Mac app is Developer ID–signed and notarized by Apple — just open it. Drag **AgentMeter.app** into your Applications folder; on first launch it asks permission to read your local Claude Code and Codex credentials. See all versions on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
 
-> The iPhone + Apple Watch app ships through the App Store *(coming soon)*. The Mac app is distributed only as this notarized DMG, because it needs to read the Claude Code Keychain item and therefore can't run in the App Store sandbox.
+> The iPhone + Apple Watch app ships through the App Store *(coming soon)*. The Mac app is distributed only as this notarized DMG, because it needs to read those tools' Keychain items and therefore can't run in the App Store sandbox.
 
 ## Screenshots
 
@@ -36,7 +36,7 @@ The Mac menu‑bar companion that does the syncing:
 
 ## How it works
 
-1. A small **Mac menu‑bar companion** reads the Claude Code credential already on your machine and fetches your quota.
+1. A small **Mac menu‑bar companion** reads the Claude Code and Codex credentials already on your machine and fetches your quota.
 2. It syncs **cleaned quota snapshots** through *your own* private iCloud database — no account or server of ours involved.
 3. Your **Apple Watch** (and iPhone) show the remaining percentage and reset time at a glance.
 
@@ -52,13 +52,13 @@ The watch never connects to Anthropic directly, and your token never leaves your
 
 - **Mac companion app:** macOS 13 or later (notarized DMG above).
 - **iPhone + Apple Watch app:** App Store *(coming soon)*.
-- A Claude Code subscription signed in on your Mac.
+- A Claude Code or Codex subscription signed in on your Mac.
 
 ---
 
 <div align="center">
 
-Today AgentMeter tracks **Claude Code**; more tools are planned.
+AgentMeter tracks **Claude Code** and **Codex** today; more tools are planned.
 
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 

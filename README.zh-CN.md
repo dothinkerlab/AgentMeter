@@ -14,15 +14,15 @@
 
 ---
 
-你离开键盘时,后台的 coding agent 还在烧额度。**AgentMeter** 把 Claude Code 的额度状态放到你 2 秒就能看到的地方——Apple Watch 表盘。当前 **5 小时窗口**和**每周窗口**还剩多少、各自什么时候重置,一眼看清,不用回去翻终端。
+你离开键盘时,后台的 coding agent 还在烧额度。**AgentMeter** 把 Claude Code 和 Codex 的额度状态放到你 2 秒就能看到的地方——Apple Watch 表盘。当前 **5 小时窗口**和**每周窗口**还剩多少、各自什么时候重置,一眼看清,不用回去翻终端。
 
 ## 下载
 
 **[⬇️ 下载 Mac 版 AgentMeter(.dmg)](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)**
 
-Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。把 **AgentMeter.app** 拖进「应用程序」,首次启动会请求读取本机 Claude Code 凭据的权限。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
+Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。把 **AgentMeter.app** 拖进「应用程序」,首次启动会请求读取本机 Claude Code 和 Codex 凭据的权限。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
 
-> iPhone + Apple Watch app 通过 App Store 发布(*即将上线*)。Mac app 只以这个公证 DMG 分发——因为它需要读取 Claude Code 的 Keychain 凭据,无法在 App Store 沙盒里运行。
+> iPhone + Apple Watch app 通过 App Store 发布(*即将上线*)。Mac app 只以这个公证 DMG 分发——因为它需要读取这些工具的 Keychain 凭据,无法在 App Store 沙盒里运行。
 
 ## 截图
 
@@ -36,7 +36,7 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 
 ## 工作原理
 
-1. 一个轻量的 **Mac 菜单栏伴侣 app** 读取你本机已有的 Claude Code 凭据,查询额度。
+1. 一个轻量的 **Mac 菜单栏伴侣 app** 读取你本机已有的 Claude Code 和 Codex 凭据,查询额度。
 2. 它把**清洗后的额度快照**经由**你自己的**私有 iCloud 同步——不经过我们的账号或服务器。
 3. 你的 **Apple Watch**(和 iPhone)抬腕即可看到剩余百分比和重置时间。
 
@@ -52,13 +52,13 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 
 - **Mac 伴侣 app:** macOS 13 及以上(上方公证 DMG)。
 - **iPhone + Apple Watch app:** App Store(*即将上线*)。
-- Mac 上已登录的 Claude Code 订阅。
+- Mac 上已登录的 Claude Code 或 Codex 订阅。
 
 ---
 
 <div align="center">
 
-当前 AgentMeter 支持 **Claude Code**,更多工具在规划中。
+AgentMeter 当前支持 **Claude Code** 和 **Codex**,更多工具在规划中。
 
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 
