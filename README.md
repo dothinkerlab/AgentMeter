@@ -41,15 +41,15 @@ The Mac app is Developer ID–signed and notarized by Apple — just open it. Dr
 
 ## How it works
 
-1. A small **Mac menu‑bar companion** reads the Claude Code and Codex credentials already on your machine and fetches your quota.
+1. A small **Mac menu‑bar companion** reads the Claude Code and Codex credentials already on your machine and uses them, on your Mac, to query each tool's quota.
 2. It syncs **cleaned quota snapshots** through *your own* private iCloud database — no account or server of ours involved.
 3. Your **Apple Watch** (and iPhone) show the remaining percentage and reset time at a glance.
 
-The watch never connects to Anthropic directly, and your token never leaves your Mac.
+The watch and iPhone only ever see cleaned snapshots — they never connect to Anthropic or OpenAI.
 
 ## Privacy
 
-- Your OAuth token stays in your **Mac Keychain**. It is never uploaded and never sent to us.
+- Your OAuth token stays in your **Mac Keychain**. AgentMeter uses it only on your Mac to call the official Claude Code / Codex endpoints — it is **never sent to us** and **never written to iCloud**.
 - Only **cleaned quota snapshots** (numbers + reset times) sync, and only through **your private iCloud**.
 - When data can't be refreshed, AgentMeter clearly marks it **stale** instead of showing a misleading value.
 
@@ -68,3 +68,11 @@ AgentMeter tracks **Claude Code** and **Codex** today; more tools are planned.
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 
 </div>
+
+---
+
+## Disclaimer
+
+AgentMeter reads quota data from **unofficial, undocumented** endpoints of Claude Code and Codex. They may change or stop working at any time, and using them may be subject to the respective providers' terms of service — **use at your own risk**.
+
+AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** Anthropic or OpenAI. "Claude" and "Claude Code" are trademarks of Anthropic; "Codex" and "ChatGPT" are trademarks of OpenAI; "Apple Watch" is a trademark of Apple Inc. All trademarks belong to their respective owners.
