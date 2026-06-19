@@ -1,0 +1,55 @@
+name: AgentMeter
+
+# 注意:这是开源仓库,只包含 macOS 采集器(AgentMeterMac)+ 共享核心(AgentMeterCore)。
+# Watch / iOS app 是产品差异点,不在本仓库开源。
+# clone 后用 `xcodegen generate` 重建 AgentMeter.xcodeproj,再用 Xcode 打开。
+
+options:
+  bundleIdPrefix: com.dothinker.app
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: KCBS4SALKB
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "3"
+    CLOUDKIT_CONTAINER_ENVIRONMENT: Development
+  configs:
+    Debug:
+      CLOUDKIT_CONTAINER_ENVIRONMENT: Development
+    Release:
+      CLOUDKIT_CONTAINER_ENVIRONMENT: Production
+
+packages:
+  AgentMeterCore:
+    path: Packages/AgentMeterCore
+
+targets:
+
+  # macOS 菜单栏 app:既采集(读 Keychain→调端点→写 CloudKit 给手表)又显示。
+  # 非沙盒 + Hardened Runtime;LSUIElement 只在菜单栏、不进 Dock。
+  AgentMeterMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: AgentMeterMac
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dothinker.app.agentmeter.mac
+        PRODUCT_NAME: AgentMeter
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: AgentMeterMac/AgentMeterMac.entitlements
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_CFBundleDisplayName: AgentMeter
+        ENABLE_HARDENED_RUNTIME: YES
+    dependencies:
+      - package: AgentMeterCore
+        product: AgentMeterCore

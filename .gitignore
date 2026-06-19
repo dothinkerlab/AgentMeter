@@ -1,1 +1,21 @@
+# macOS
 .DS_Store
+
+# Xcode / build artifacts
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.moved-aside
+
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# XcodeGen 生成物(源在 project.yml,clone 后 `xcodegen generate` 重建)
+AgentMeter.xcodeproj/
+
+# 杂项
+*.log
