@@ -6,7 +6,7 @@
 
 [English](README.md) · **中文**
 
-<img src="screenshots/watch.png" alt="Apple Watch 上的 AgentMeter" width="240">
+<img src="logo.png" alt="AgentMeter" width="120">
 
 [![Latest Release](https://img.shields.io/github/v/release/dothinkerlab/AgentMeter?label=download&sort=semver)](https://github.com/dothinkerlab/AgentMeter/releases/latest)
 
