@@ -71,6 +71,18 @@ AgentMeter tracks **Claude Code** and **Codex** today; more tools are planned.
 
 ---
 
+## Building from source
+
+This repo also contains the source for the Mac menu‑bar companion (`AgentMeterMac`) and the shared core (`AgentMeterCore`). Run the core tests with `cd Packages/AgentMeterCore && swift test`, or build the app with [XcodeGen](https://github.com/yonsm/XcodeGen): `xcodegen generate && open AgentMeter.xcodeproj`.
+
+The `DEVELOPMENT_TEAM` and iCloud container ID checked in are the maintainer's own. If you fork, replace them with your own Apple Developer Team and CloudKit container in [`project.yml`](project.yml) and [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements).
+
+## License
+
+[MIT](LICENSE.md) © 2026 dothinker lab.
+
+---
+
 ## Disclaimer
 
 AgentMeter reads quota data from **unofficial, undocumented** endpoints of Claude Code and Codex. They may change or stop working at any time, and using them may be subject to the respective providers' terms of service — **use at your own risk**.
