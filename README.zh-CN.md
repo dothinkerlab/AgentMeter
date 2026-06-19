@@ -26,13 +26,18 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 
 ## 截图
 
-| Apple Watch | iPhone |
-|:---:|:---:|
-| <img src="screenshots/watch.png" alt="Watch" width="300"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
-
-负责同步的 Mac 菜单栏伴侣:
-
-<p align="center"><img src="screenshots/mac.png" alt="Mac 上的 AgentMeter 菜单栏 app" width="340"></p>
+<table>
+  <tr>
+    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
+    <td align="center" valign="center"><img src="screenshots/iphone.png" alt="iPhone" height="300"></td>
+    <td align="center" valign="center"><img src="screenshots/mac.png" alt="Mac 菜单栏" height="300"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Apple Watch</b></sub></td>
+    <td align="center"><sub><b>iPhone</b></sub></td>
+    <td align="center"><sub><b>Mac 菜单栏</b></sub></td>
+  </tr>
+</table>
 
 ## 工作原理
 

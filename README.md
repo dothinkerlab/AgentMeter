@@ -26,13 +26,18 @@ The Mac app is Developer ID–signed and notarized by Apple — just open it. Dr
 
 ## Screenshots
 
-| Apple Watch | iPhone |
-|:---:|:---:|
-| <img src="screenshots/watch.png" alt="Watch" width="300"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
-
-The Mac menu‑bar companion that does the syncing:
-
-<p align="center"><img src="screenshots/mac.png" alt="AgentMeter menu-bar app on Mac" width="340"></p>
+<table>
+  <tr>
+    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
+    <td align="center" valign="center"><img src="screenshots/iphone.png" alt="iPhone" height="300"></td>
+    <td align="center" valign="center"><img src="screenshots/mac.png" alt="Mac menu bar" height="300"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Apple Watch</b></sub></td>
+    <td align="center"><sub><b>iPhone</b></sub></td>
+    <td align="center"><sub><b>Mac menu bar</b></sub></td>
+  </tr>
+</table>
 
 ## How it works
 
