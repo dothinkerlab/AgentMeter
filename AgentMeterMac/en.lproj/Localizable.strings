@@ -1,0 +1,17 @@
+"立即刷新" = "Refresh now";
+"更新中…" = "Updating…";
+"刚刚更新" = "Just updated";
+"开机自启" = "Launch at login";
+"退出" = "Quit";
+"未连接任何账户" = "No accounts connected";
+"在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。" = "Sign in to Claude Code or Codex to track usage. This Mac must use the same iCloud account.";
+"两个窗口均已重置" = "Both windows have reset";
+"%@ 后重置" = "%@ until reset";
+"5 小时" = "5h";
+"每周" = "Weekly";
+"周Opus" = "Weekly Opus";
+"周Sonnet" = "Weekly Sonnet";
+"每月" = "Monthly";
+"登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "The login credential may have expired, so usage could not refresh. Sign in to %@ again.";
+"从未成功取到数据。检查是否已登录 %@。" = "No data has been fetched yet. Check whether %@ is signed in.";
+"需重新登录" = "Re-login needed";
