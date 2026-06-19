@@ -30,8 +30,9 @@ The Mac app is Developer ID–signed and notarized by Apple — just open it. Dr
 |:---:|:---:|
 | <img src="screenshots/watch.png" alt="Watch" width="220"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
 
-<!-- Mac menu-bar screenshot coming soon: drop it at screenshots/mac.png and add an <img> here. -->
-*A Mac menu‑bar screenshot is coming soon.*
+The Mac menu‑bar companion that does the syncing:
+
+<p align="center"><img src="screenshots/mac.png" alt="AgentMeter menu-bar app on Mac" width="340"></p>
 
 ## How it works
 

@@ -30,8 +30,9 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 |:---:|:---:|
 | <img src="screenshots/watch.png" alt="Watch" width="220"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
 
-<!-- Mac 菜单栏截图待补:放到 screenshots/mac.png 并在此加 <img>。 -->
-*Mac 菜单栏截图即将补上。*
+负责同步的 Mac 菜单栏伴侣:
+
+<p align="center"><img src="screenshots/mac.png" alt="Mac 上的 AgentMeter 菜单栏 app" width="340"></p>
 
 ## 工作原理
 
