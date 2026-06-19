@@ -2,7 +2,7 @@
 
 # AgentMeter
 
-### AI quota status on your watch.
+### AI quota status under your watch.
 
 **English** · [中文](README.zh-CN.md)
 
