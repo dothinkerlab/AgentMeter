@@ -28,7 +28,7 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 
 | Apple Watch | iPhone |
 |:---:|:---:|
-| <img src="screenshots/watch.png" alt="Watch" width="220"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
+| <img src="screenshots/watch.png" alt="Watch" width="300"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
 
 负责同步的 Mac 菜单栏伴侣:
 

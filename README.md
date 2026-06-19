@@ -28,7 +28,7 @@ The Mac app is Developer ID–signed and notarized by Apple — just open it. Dr
 
 | Apple Watch | iPhone |
 |:---:|:---:|
-| <img src="screenshots/watch.png" alt="Watch" width="220"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
+| <img src="screenshots/watch.png" alt="Watch" width="300"> | <img src="screenshots/iphone.png" alt="iPhone" width="220"> |
 
 The Mac menu‑bar companion that does the syncing:
 
