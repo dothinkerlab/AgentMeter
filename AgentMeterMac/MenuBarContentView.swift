@@ -211,8 +211,20 @@ struct MenuBarContentView: View {
     private func confidenceHint(_ c: DataConfidence, tool: ToolKind) -> String {
         switch c {
         case .fresh: return ""
-        case .stale: return L10n.format("登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。", displayName(for: tool))
-        case .unknown: return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: tool))
+        case .stale:
+            switch tool {
+            case .claudeCode:
+                return L10n.string("Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。")
+            case .codex, .openCode:
+                return L10n.format("登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。", displayName(for: tool))
+            }
+        case .unknown:
+            switch tool {
+            case .claudeCode:
+                return L10n.string("从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。")
+            case .codex, .openCode:
+                return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: tool))
+            }
         }
     }
 

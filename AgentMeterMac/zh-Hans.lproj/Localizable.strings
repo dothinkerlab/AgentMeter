@@ -14,4 +14,6 @@
 "每月" = "每月";
 "登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。";
 "从未成功取到数据。检查是否已登录 %@。" = "从未成功取到数据。检查是否已登录 %@。";
+"Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。" = "Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。";
+"从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。" = "从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。";
 "需重新登录" = "需重新登录";

@@ -14,4 +14,6 @@
 "每月" = "Monthly";
 "登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "The login credential may have expired, so usage could not refresh. Sign in to %@ again.";
 "从未成功取到数据。检查是否已登录 %@。" = "No data has been fetched yet. Check whether %@ is signed in.";
+"Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。" = "Claude Code sign-in may have expired, so usage could not refresh. Run claude login, or open the Claude Code CLI to refresh the session.";
+"从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。" = "No Claude Code data has been fetched yet. Run claude login, or open the Claude Code CLI to confirm you are signed in.";
 "需重新登录" = "Re-login needed";
