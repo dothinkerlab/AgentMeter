@@ -22,7 +22,11 @@
 
 Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。把 **AgentMeter.app** 拖进「应用程序」,首次启动会请求读取本机 Claude Code 和 Codex 凭据的权限。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
 
-> iPhone + Apple Watch app 通过 App Store 发布(*即将上线*)。Mac app 只以这个公证 DMG 分发——因为它需要读取这些工具的 Keychain 凭据,无法在 App Store 沙盒里运行。
+**[在 App Store 下载 AgentMeter](https://apps.apple.com/app/id6781480047)**
+
+<img src="app-store-qr.png" alt="App Store 二维码" width="160">
+
+> iPhone + Apple Watch app 通过 App Store 发布。Mac app 只以这个公证 DMG 分发——因为它需要读取这些工具的 Keychain 凭据,无法在 App Store 沙盒里运行。
 
 ## 截图
 
@@ -56,7 +60,7 @@ Mac app 已 Developer ID 签名并通过 Apple 公证——双击即可打开。
 ## 系统要求
 
 - **Mac 伴侣 app:** macOS 13 及以上(上方公证 DMG)。
-- **iPhone + Apple Watch app:** App Store(*即将上线*)。
+- **iPhone + Apple Watch app:** [App Store](https://apps.apple.com/app/id6781480047)。
 - Mac 上已登录的 Claude Code 或 Codex 订阅。
 
 ---

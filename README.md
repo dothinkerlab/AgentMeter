@@ -22,7 +22,11 @@ Coding agents keep burning quota while you're away from the keyboard. **AgentMet
 
 The Mac app is Developer ID–signed and notarized by Apple — just open it. Drag **AgentMeter.app** into your Applications folder; on first launch it asks permission to read your local Claude Code and Codex credentials. See all versions on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
 
-> The iPhone + Apple Watch app ships through the App Store *(coming soon)*. The Mac app is distributed only as this notarized DMG, because it needs to read those tools' Keychain items and therefore can't run in the App Store sandbox.
+**[Download AgentMeter on the App Store](https://apps.apple.com/app/id6781480047)**
+
+<img src="app-store-qr.png" alt="App Store QR code" width="160">
+
+> The iPhone + Apple Watch app ships through the App Store. The Mac app is distributed only as this notarized DMG, because it needs to read those tools' Keychain items and therefore can't run in the App Store sandbox.
 
 ## Screenshots
 
@@ -56,7 +60,7 @@ The watch and iPhone only ever see cleaned snapshots — they never connect to A
 ## Requirements
 
 - **Mac companion app:** macOS 13 or later (notarized DMG above).
-- **iPhone + Apple Watch app:** App Store *(coming soon)*.
+- **iPhone + Apple Watch app:** [App Store](https://apps.apple.com/app/id6781480047).
 - A Claude Code or Codex subscription signed in on your Mac.
 
 ---
