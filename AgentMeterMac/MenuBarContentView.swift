@@ -8,14 +8,19 @@ import AgentMeterCore
 /// 登录失效(数据陈旧)、接近上限 / 额度耗尽的语义配色。
 struct MenuBarContentView: View {
     @ObservedObject var model: AppModel
+    @State private var showsSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider().overlay(Color.black.opacity(0.07))
-            content
-            Divider().overlay(Color.black.opacity(0.07))
-            footer
+            if showsSettings {
+                settingsContent
+            } else {
+                content
+                Divider().overlay(Color.black.opacity(0.07))
+                footer
+            }
         }
         .frame(width: 320)
     }
@@ -24,30 +29,50 @@ struct MenuBarContentView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("AgentMeter")
-                .font(.system(size: 16, weight: .heavy))
-                .tracking(-0.4)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+            if showsSettings {
+                Button { showsSettings = false } label: {
+                    ZStack {
+                        Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: 0x6C6C70))
+                    }
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.string("返回"))
 
-            // 同步状态胶囊:脉冲点 + 文案,反映真实的 lastCollectedAt(非伪造)。
-            // 近期采集为绿色「刚刚更新」,超过陈旧阈值转琥珀,从未采集则不显示(由加载骨架接管)。
-            if let last = model.lastCollectedAt {
-                syncPill(last: last)
+                Text("设置")
+                    .font(.system(size: 16, weight: .heavy))
+                    .tracking(-0.4)
+                    .foregroundColor(Color(hex: 0x1C1C1E))
+            } else {
+                Text("AgentMeter")
+                    .font(.system(size: 16, weight: .heavy))
+                    .tracking(-0.4)
+                    .foregroundColor(Color(hex: 0x1C1C1E))
+
+                // 同步状态胶囊:脉冲点 + 文案,反映真实的 lastCollectedAt(非伪造)。
+                // 近期采集为绿色「刚刚更新」,超过陈旧阈值转琥珀,从未采集则不显示(由加载骨架接管)。
+                if let last = model.lastCollectedAt {
+                    syncPill(last: last)
+                }
             }
 
             Spacer(minLength: 6)
 
-            Button { Task { await model.collectNow() } } label: {
-                ZStack {
-                    Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: 0x6C6C70))
+            if !showsSettings {
+                Button { Task { await model.collectNow() } } label: {
+                    ZStack {
+                        Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color(hex: 0x6C6C70))
+                    }
                 }
+                .buttonStyle(.borderless)
+                .disabled(model.isCollecting)
+                .help(L10n.string("立即刷新"))
             }
-            .buttonStyle(.borderless)
-            .disabled(model.isCollecting)
-            .help(L10n.string("立即刷新"))
         }
         .padding(.horizontal, 16)
         .padding(.top, 13)
@@ -77,11 +102,16 @@ struct MenuBarContentView: View {
 
     private var footer: some View {
         HStack {
-            Toggle(isOn: Binding(get: { model.loginItemEnabled }, set: { model.setLoginItem($0) })) {
-                Text("开机自启").font(.system(size: 12.5)).foregroundColor(Color(hex: 0x3A3A3C))
+            Button { showsSettings = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(L10n.string("设置"))
+                        .font(.system(size: 12.5, weight: .semibold))
+                }
+                .foregroundColor(Color(hex: 0x3A3A3C))
             }
-            .toggleStyle(.switch)
-            .controlSize(.small)
+            .buttonStyle(.borderless)
 
             Spacer()
 
@@ -104,7 +134,7 @@ struct MenuBarContentView: View {
 
     @ViewBuilder
     private var content: some View {
-        let snaps = model.snapshots
+        let snaps = model.orderedSnapshots()
         if snaps.isEmpty {
             if model.lastCollectedAt == nil {
                 LoadingView()
@@ -135,6 +165,76 @@ struct MenuBarContentView: View {
                 }
             }
         }
+    }
+
+    private var settingsContent: some View {
+        VStack(spacing: 0) {
+            SettingsToggleRow(
+                title: L10n.string("菜单栏显示百分比"),
+                detail: L10n.string("关闭后菜单栏只保留状态图标。"),
+                isOn: Binding(
+                    get: { model.showsStatusPercentage },
+                    set: { model.showsStatusPercentage = $0 }
+                )
+            )
+
+            settingsDivider
+
+            SettingsToggleRow(
+                title: L10n.string("开机自启"),
+                detail: L10n.string("登录 macOS 后自动启动 AgentMeter。"),
+                isOn: Binding(
+                    get: { model.loginItemEnabled },
+                    set: { model.setLoginItem($0) }
+                )
+            )
+
+            settingsDivider
+
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L10n.string("显示顺序"))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: 0x6C6C70))
+                    Text(L10n.string("排序第一项会作为菜单栏 5 小时剩余额度来源。"))
+                        .font(.system(size: 11.5))
+                        .foregroundColor(Color(hex: 0x8E8E93))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(spacing: 8) {
+                    ForEach(Array(model.orderedTools.enumerated()), id: \.element) { index, tool in
+                        ToolOrderRow(
+                            name: displayName(for: tool),
+                            brand: brand(for: tool),
+                            tool: tool,
+                            canMoveUp: index > 0,
+                            canMoveDown: index < model.orderedTools.count - 1,
+                            moveUp: { moveTool(at: index, by: -1) },
+                            moveDown: { moveTool(at: index, by: 1) }
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+    }
+
+    private var settingsDivider: some View {
+        Rectangle()
+            .fill(Color.black.opacity(0.07))
+            .frame(height: 0.5)
+            .padding(.leading, 16)
+    }
+
+    private func moveTool(at index: Int, by offset: Int) {
+        var tools = model.orderedTools
+        let target = index + offset
+        guard tools.indices.contains(index), tools.indices.contains(target) else { return }
+        let tool = tools.remove(at: index)
+        tools.insert(tool, at: target)
+        model.setToolOrder(tools)
     }
 
     /// 未登录 / 空状态(规范第 5 种)。无 in-app 登录入口——登录在 Claude Code / Codex CLI 里做,
@@ -211,20 +311,8 @@ struct MenuBarContentView: View {
     private func confidenceHint(_ c: DataConfidence, tool: ToolKind) -> String {
         switch c {
         case .fresh: return ""
-        case .stale:
-            switch tool {
-            case .claudeCode:
-                return L10n.string("Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。")
-            case .codex, .openCode:
-                return L10n.format("登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。", displayName(for: tool))
-            }
-        case .unknown:
-            switch tool {
-            case .claudeCode:
-                return L10n.string("从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。")
-            case .codex, .openCode:
-                return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: tool))
-            }
+        case .stale: return L10n.format("登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。", displayName(for: tool))
+        case .unknown: return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: tool))
         }
     }
 
@@ -236,6 +324,82 @@ struct MenuBarContentView: View {
 
     private func shortDuration(_ date: Date) -> String {
         QuotaDurationFormat.short(until: date)
+    }
+}
+
+// MARK: - 设置行
+
+private struct SettingsToggleRow: View {
+    let title: String
+    let detail: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: 0x1C1C1E))
+                Text(detail)
+                    .font(.system(size: 11.5))
+                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Toggle("", isOn: $isOn)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+    }
+}
+
+private struct ToolOrderRow: View {
+    let name: String
+    let brand: Brand
+    let tool: ToolKind
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let moveUp: () -> Void
+    let moveDown: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            BrandMark(tool: tool, brand: brand)
+
+            Text(name)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: 0x1C1C1E))
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 4) {
+                reorderButton(systemName: "chevron.up", enabled: canMoveUp, action: moveUp)
+                reorderButton(systemName: "chevron.down", enabled: canMoveDown, action: moveDown)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(hex: 0xF6F7F8))
+        )
+    }
+
+    private func reorderButton(systemName: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(enabled ? Color(hex: 0x3A3A3C) : Color(hex: 0xC7C7CC))
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(Color.white.opacity(enabled ? 1 : 0.55)))
+        }
+        .buttonStyle(.borderless)
+        .disabled(!enabled)
     }
 }
 

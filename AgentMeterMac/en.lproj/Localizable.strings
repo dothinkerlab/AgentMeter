@@ -14,6 +14,12 @@
 "每月" = "Monthly";
 "登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "The login credential may have expired, so usage could not refresh. Sign in to %@ again.";
 "从未成功取到数据。检查是否已登录 %@。" = "No data has been fetched yet. Check whether %@ is signed in.";
-"Claude Code 登录状态可能已失效,无法刷新用量。请运行 claude login,或打开 Claude Code CLI 刷新登录状态。" = "Claude Code sign-in may have expired, so usage could not refresh. Run claude login, or open the Claude Code CLI to refresh the session.";
-"从未成功取到 Claude Code 数据。请运行 claude login,或打开 Claude Code CLI 确认已登录。" = "No Claude Code data has been fetched yet. Run claude login, or open the Claude Code CLI to confirm you are signed in.";
 "需重新登录" = "Re-login needed";
+"返回" = "Back";
+"设置" = "Settings";
+"菜单栏显示百分比" = "Show percentage in menu bar";
+"关闭后菜单栏只保留状态图标。" = "When off, the menu bar keeps only the status icon.";
+"显示顺序" = "Display order";
+"菜单栏默认显示排序第一项的 5 小时剩余额度。" = "The menu bar shows the first service's 5h remaining quota by default.";
+"登录 macOS 后自动启动 AgentMeter。" = "Start AgentMeter automatically after signing in to macOS.";
+"排序第一项会作为菜单栏 5 小时剩余额度来源。" = "The first service is used as the menu bar's 5h remaining quota source.";

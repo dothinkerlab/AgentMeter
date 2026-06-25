@@ -11,16 +11,28 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastCollectedAt: Date?
     @Published private(set) var isCollecting = false
     @Published private(set) var loginItemEnabled = false
+    @Published var toolDisplayOrder: String {
+        didSet { defaults.set(toolDisplayOrder, forKey: Self.toolDisplayOrderKey) }
+    }
+    @Published var showsStatusPercentage: Bool {
+        didSet { defaults.set(showsStatusPercentage, forKey: Self.showsStatusPercentageKey) }
+    }
 
     static let interval: TimeInterval = 5 * 60
     static let staleThreshold: TimeInterval = 15 * 60
     static let tools: [ToolKind] = AgentToolSelection.defaultTools   // [.claudeCode, .codex]
+    private static let toolDisplayOrderKey = "toolDisplayOrder"
+    private static let showsStatusPercentageKey = "macShowsStatusPercentage"
 
     private let collector: QuotaCollector
+    private let defaults: UserDefaults
     private var loopTask: Task<Void, Never>?
     private var started = false
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        toolDisplayOrder = defaults.string(forKey: Self.toolDisplayOrderKey) ?? ""
+        showsStatusPercentage = defaults.object(forKey: Self.showsStatusPercentageKey) as? Bool ?? true
         let fileLog = RotatingFileLog(
             fileURL: FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Logs/AgentMeter/agent.log"))
@@ -72,18 +84,44 @@ final class AppModel: ObservableObject {
 
     var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) }
 
+    var orderedTools: [ToolKind] {
+        let savedTools = toolDisplayOrder
+            .split(separator: ",")
+            .compactMap { ToolKind(rawValue: String($0)) }
+            .filter { Self.tools.contains($0) }
+        let missingTools = Self.tools.filter { !savedTools.contains($0) }
+        return savedTools + missingTools
+    }
+
+    func orderedSnapshots(_ input: [QuotaSnapshot]? = nil) -> [QuotaSnapshot] {
+        let order = orderedTools
+        return (input ?? snapshots).sorted { lhs, rhs in
+            let lhsIndex = order.firstIndex(of: lhs.tool) ?? order.count
+            let rhsIndex = order.firstIndex(of: rhs.tool) ?? order.count
+            if lhsIndex == rhsIndex {
+                return displayName(for: lhs.tool) < displayName(for: rhs.tool)
+            }
+            return lhsIndex < rhsIndex
+        }
+    }
+
+    func setToolOrder(_ tools: [ToolKind]) {
+        toolDisplayOrder = tools.map(\.rawValue).joined(separator: ",")
+    }
+
     func isStale(_ s: QuotaSnapshot) -> Bool {
         s.confidence != .fresh || Date().timeIntervalSince(s.updatedAt) > Self.staleThreshold
     }
 
     var preferredSnapshot: QuotaSnapshot? {
-        let snaps = snapshots
+        let snaps = orderedSnapshots()
         guard !snaps.isEmpty else { return nil }
-        return snaps.first { $0.tool == preferredTool(snaps) } ?? snaps.first
+        return snaps.first { preferredStatusWindow(in: $0) != nil } ?? snaps.first
     }
 
     var statusText: String {
-        guard let s = preferredSnapshot, let w = s.tightestWindow else { return "—" }
+        guard showsStatusPercentage else { return "" }
+        guard let s = preferredSnapshot, let w = preferredStatusWindow(in: s) else { return "—" }
         return "\(Int(w.remainingPercent))%"
     }
 
@@ -92,11 +130,16 @@ final class AppModel: ObservableObject {
         return isStale(s) ? "exclamationmark.triangle" : "gauge"
     }
 
-    /// 与 iOS 一致:优先 fresh 的 Codex,再 fresh 的任意,再 Codex,最后第一个。
-    private func preferredTool(_ snaps: [QuotaSnapshot]) -> ToolKind {
-        if let c = snaps.first(where: { $0.tool == .codex && $0.confidence == .fresh }) { return c.tool }
-        if let f = snaps.first(where: { $0.confidence == .fresh }) { return f.tool }
-        if let c = snaps.first(where: { $0.tool == .codex }) { return c.tool }
-        return snaps[0].tool
+    /// 菜单栏默认展示 5 小时窗口的剩余额度;缺 5h 时才回落到最紧窗口。
+    private func preferredStatusWindow(in snapshot: QuotaSnapshot) -> QuotaWindow? {
+        snapshot.window(.fiveHour) ?? snapshot.tightestWindow
+    }
+
+    private func displayName(for tool: ToolKind) -> String {
+        switch tool {
+        case .claudeCode: return "Claude Code"
+        case .codex: return "Codex"
+        case .openCode: return "OpenCode"
+        }
     }
 }

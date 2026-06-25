@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 正常态用定制的「仪表」模板图;陈旧/无数据回落到 SF Symbol(感叹三角等)。
     private func refreshButton() {
         guard let button = statusItem?.button else { return }
-        button.title = " \(model.statusText)"
+        button.title = model.statusText.isEmpty ? "" : " \(model.statusText)"
         button.image = healthy ? meterTemplateImage() : symbolImage(model.statusSymbol)
     }
 
