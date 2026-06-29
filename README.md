@@ -2,7 +2,7 @@
 
 # AgentMeter
 
-### AI quota status under your watch.
+### Keep your Claude Code and Codex quota on your wrist.
 
 **English** · [中文](README.zh-CN.md)
 
@@ -14,19 +14,32 @@
 
 ---
 
-Coding agents keep burning quota while you're away from the keyboard. **AgentMeter** puts your Claude Code and Codex quota where you can check it in two seconds — your Apple Watch face. See how much is left in the current **5‑hour window** and the **weekly window**, plus when each one resets — without digging through a terminal.
+Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** puts your Claude Code and Codex usage where you can check it in seconds: your Apple Watch, iPhone, and Mac menu bar.
 
-## Download
+It shows the remaining percentage in the current **5-hour window** and **weekly window**, plus each reset time, without opening a terminal.
 
-**[⬇️ Download AgentMeter for Mac (.dmg)](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)**
+## Download AgentMeter
 
-The Mac app is Developer ID–signed and notarized by Apple — just open it. Drag **AgentMeter.app** into your Applications folder; on first launch it asks permission to read your local Claude Code and Codex credentials. See all versions on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
+| Platform | Get it |
+| --- | --- |
+| macOS companion | [Download the notarized DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg) |
+| iPhone + Apple Watch | [Download on the App Store](https://apps.apple.com/app/id6781480047) |
 
-**[Download AgentMeter on the App Store](https://apps.apple.com/app/id6781480047)**
+The Mac app is Developer ID-signed and notarized by Apple. Drag **AgentMeter.app** into your Applications folder; on first launch, it asks for permission to read the local Claude Code and Codex credentials already stored on your Mac. Previous builds are available on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
+
+The iPhone and Apple Watch app ships through the App Store:
 
 <img src="app-store-qr.png" alt="App Store QR code" width="160">
 
-> The iPhone + Apple Watch app ships through the App Store. The Mac app is distributed only as this notarized DMG, because it needs to read those tools' Keychain items and therefore can't run in the App Store sandbox.
+> The Mac companion is distributed outside the App Store because it needs Keychain access to your local Claude Code and Codex credentials, which is not compatible with the App Store sandbox.
+
+## What You Get
+
+- **Watch complications and app views** for at-a-glance quota status.
+- **iPhone status view** when you want a larger quota snapshot.
+- **Mac menu-bar companion** that collects quota data and can show status locally.
+- **Multi-window tracking** for both short rolling windows and weekly limits.
+- **Stale-data warnings** when a quota refresh fails, instead of silently showing old values.
 
 ## Screenshots
 
@@ -45,23 +58,29 @@ The Mac app is Developer ID–signed and notarized by Apple — just open it. Dr
 
 ## How it works
 
-1. A small **Mac menu‑bar companion** reads the Claude Code and Codex credentials already on your machine and uses them, on your Mac, to query each tool's quota.
-2. It syncs **cleaned quota snapshots** through *your own* private iCloud database — no account or server of ours involved.
-3. Your **Apple Watch** (and iPhone) show the remaining percentage and reset time at a glance.
+1. The **Mac menu-bar companion** reads your existing Claude Code and Codex credentials from the local Keychain.
+2. It uses those credentials on your Mac to query each tool's quota endpoint.
+3. It writes only **cleaned quota snapshots** - percentages, windows, reset times, and update timestamps - to your private iCloud database.
+4. Your **Apple Watch** and **iPhone** read those snapshots from iCloud and display them at a glance.
 
-The watch and iPhone only ever see cleaned snapshots — they never connect to Anthropic or OpenAI.
+Your watch and iPhone never receive provider tokens and never connect directly to Anthropic or OpenAI.
 
 ## Privacy
 
-- Your OAuth token stays in your **Mac Keychain**. AgentMeter uses it only on your Mac to call the official Claude Code / Codex endpoints — it is **never sent to us** and **never written to iCloud**.
-- Only **cleaned quota snapshots** (numbers + reset times) sync, and only through **your private iCloud**.
-- When data can't be refreshed, AgentMeter clearly marks it **stale** instead of showing a misleading value.
+AgentMeter is designed around a local-token, private-iCloud sync model:
+
+- OAuth tokens stay in your **Mac Keychain**.
+- Tokens are used only by the Mac companion, on your Mac, to refresh quota data.
+- Tokens are **never sent to us** and **never written to iCloud**.
+- Synced records contain only cleaned quota snapshots such as percentages and reset times.
+- If data cannot be refreshed, AgentMeter marks it as **stale**.
 
 ## Requirements
 
-- **Mac companion app:** macOS 13 or later (notarized DMG above).
-- **iPhone + Apple Watch app:** [App Store](https://apps.apple.com/app/id6781480047).
-- A Claude Code or Codex subscription signed in on your Mac.
+- macOS 13 or later for the Mac companion.
+- iOS/watchOS app installed from the [App Store](https://apps.apple.com/app/id6781480047).
+- iCloud enabled with the same Apple ID across your Mac, iPhone, and Apple Watch.
+- Claude Code or Codex signed in on your Mac.
 
 ---
 
@@ -77,9 +96,23 @@ AgentMeter tracks **Claude Code** and **Codex** today; more tools are planned.
 
 ## Building from source
 
-This repo also contains the source for the Mac menu‑bar companion (`AgentMeterMac`) and the shared core (`AgentMeterCore`). Run the core tests with `cd Packages/AgentMeterCore && swift test`, or build the app with [XcodeGen](https://github.com/yonsm/XcodeGen): `xcodegen generate && open AgentMeter.xcodeproj`.
+This repository contains the source for the macOS companion (`AgentMeterMac`) and shared core package (`AgentMeterCore`). The iPhone and Apple Watch app is distributed through the App Store and is not included in this repository.
 
-The `DEVELOPMENT_TEAM` and iCloud container ID checked in are the maintainer's own. If you fork, replace them with your own Apple Developer Team and CloudKit container in [`project.yml`](project.yml) and [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements).
+Run the core test suite:
+
+```sh
+cd Packages/AgentMeterCore
+swift test
+```
+
+Generate and open the Xcode project:
+
+```sh
+xcodegen generate
+open AgentMeter.xcodeproj
+```
+
+The checked-in `DEVELOPMENT_TEAM` and iCloud container ID belong to the maintainer. If you fork the project, replace them with your own Apple Developer Team and CloudKit container in [`project.yml`](project.yml) and [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements).
 
 ## License
 
@@ -89,6 +122,6 @@ The `DEVELOPMENT_TEAM` and iCloud container ID checked in are the maintainer's o
 
 ## Disclaimer
 
-AgentMeter reads quota data from **unofficial, undocumented** endpoints of Claude Code and Codex. They may change or stop working at any time, and using them may be subject to the respective providers' terms of service — **use at your own risk**.
+AgentMeter reads quota data from **unofficial, undocumented** Claude Code and Codex endpoints. These endpoints may change or stop working at any time, and using them may be subject to each provider's terms of service. Use AgentMeter at your own risk.
 
 AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** Anthropic or OpenAI. "Claude" and "Claude Code" are trademarks of Anthropic; "Codex" and "ChatGPT" are trademarks of OpenAI; "Apple Watch" is a trademark of Apple Inc. All trademarks belong to their respective owners.
