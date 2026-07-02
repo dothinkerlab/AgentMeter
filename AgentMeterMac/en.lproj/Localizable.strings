@@ -23,3 +23,15 @@
 "菜单栏默认显示排序第一项的 5 小时剩余额度。" = "The menu bar shows the first service's 5h remaining quota by default.";
 "登录 macOS 后自动启动 AgentMeter。" = "Start AgentMeter automatically after signing in to macOS.";
 "排序第一项会作为菜单栏 5 小时剩余额度来源。" = "The first service is used as the menu bar's 5h remaining quota source.";
+"关于 AgentMeter" = "About AgentMeter";
+"版本" = "Version";
+"手动升级" = "Manual Upgrade";
+"打开 GitHub Releases 下载最新 DMG" = "Open GitHub Releases to download the latest DMG";
+"隐藏 48 小时未更新服务" = "Hide services inactive for 48 hours";
+"关闭后仍显示长期未刷新的历史数据。" = "When off, long-stale historical data remains visible.";
+"暂无近期数据" = "No recent data";
+"超过 48 小时未更新的服务已隐藏。可在设置里关闭。" = "Services not updated for 48 hours are hidden. You can turn this off in Settings.";
+"5 小时重置提醒" = "5h reset reminder";
+"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "When fresh data shows the 5h quota is depleted, send a local notification at the estimated reset time.";
+"%@ 5 小时额度已重置" = "%@ 5h quota has reset";
+"现在可以继续使用 5 小时窗口。" = "You can use the 5h window again.";

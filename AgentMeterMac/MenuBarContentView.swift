@@ -10,6 +10,9 @@ struct MenuBarContentView: View {
     @ObservedObject var model: AppModel
     @State private var showsSettings = false
 
+    private static let githubURL = URL(string: "https://github.com/dothinkerlab/AgentMeter")!
+    private static let releasesURL = URL(string: "https://github.com/dothinkerlab/AgentMeter/releases")!
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -41,7 +44,7 @@ struct MenuBarContentView: View {
                 .buttonStyle(.borderless)
                 .help(L10n.string("返回"))
 
-                Text("设置")
+                Text(L10n.string("设置"))
                     .font(.system(size: 16, weight: .heavy))
                     .tracking(-0.4)
                     .foregroundColor(Color(hex: 0x1C1C1E))
@@ -119,7 +122,7 @@ struct MenuBarContentView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                         .font(.system(size: 12, weight: .semibold))
-                    Text("退出")
+                    Text(L10n.string("退出"))
                         .font(.system(size: 12.5, weight: .semibold))
                 }
                 .foregroundColor(Color(hex: 0xC0392B))
@@ -138,6 +141,8 @@ struct MenuBarContentView: View {
         if snaps.isEmpty {
             if model.lastCollectedAt == nil {
                 LoadingView()
+            } else if model.hidesInactiveTools && !model.snapshots.isEmpty {
+                inactiveHiddenState
             } else {
                 emptyState
             }
@@ -181,6 +186,28 @@ struct MenuBarContentView: View {
             settingsDivider
 
             SettingsToggleRow(
+                title: L10n.string("隐藏 48 小时未更新服务"),
+                detail: L10n.string("关闭后仍显示长期未刷新的历史数据。"),
+                isOn: Binding(
+                    get: { model.hidesInactiveTools },
+                    set: { model.hidesInactiveTools = $0 }
+                )
+            )
+
+            settingsDivider
+
+            SettingsToggleRow(
+                title: L10n.string("5 小时重置提醒"),
+                detail: L10n.string("当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。"),
+                isOn: Binding(
+                    get: { model.fiveHourResetNotificationsEnabled },
+                    set: { model.fiveHourResetNotificationsEnabled = $0 }
+                )
+            )
+
+            settingsDivider
+
+            SettingsToggleRow(
                 title: L10n.string("开机自启"),
                 detail: L10n.string("登录 macOS 后自动启动 AgentMeter。"),
                 isOn: Binding(
@@ -218,6 +245,34 @@ struct MenuBarContentView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
+
+            settingsDivider
+
+            VStack(spacing: 0) {
+                SettingsInfoRow(
+                    icon: "info.circle",
+                    title: L10n.string("关于 AgentMeter"),
+                    detail: "\(L10n.string("版本")) \(appVersionDisplay)"
+                )
+
+                settingsDivider
+
+                SettingsActionRow(
+                    icon: "link",
+                    title: "GitHub",
+                    detail: "github.com/dothinkerlab/AgentMeter",
+                    action: { open(Self.githubURL) }
+                )
+
+                settingsDivider
+
+                SettingsActionRow(
+                    icon: "arrow.down.circle",
+                    title: L10n.string("手动升级"),
+                    detail: L10n.string("打开 GitHub Releases 下载最新 DMG"),
+                    action: { open(Self.releasesURL) }
+                )
+            }
         }
     }
 
@@ -237,6 +292,48 @@ struct MenuBarContentView: View {
         model.setToolOrder(tools)
     }
 
+    private var appVersionDisplay: String {
+        "\(appVersion) (\(appBuild))"
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+    }
+
+    private var appBuild: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+    }
+
+    private func open(_ url: URL) {
+        NSWorkspace.shared.open(url)
+    }
+
+    private var inactiveHiddenState: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Circle().fill(Color(hex: 0xECEEF2)).frame(width: 46, height: 46)
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 21, weight: .regular))
+                    .foregroundColor(Color(hex: 0x8E8E93))
+            }
+            .padding(.bottom, 14)
+
+            Text(L10n.string("暂无近期数据"))
+                .font(.system(size: 13.5, weight: .semibold))
+                .foregroundColor(Color(hex: 0x1C1C1E))
+            Text(L10n.string("超过 48 小时未更新的服务已隐藏。可在设置里关闭。"))
+                .font(.system(size: 12))
+                .foregroundColor(Color(hex: 0x8E8E93))
+                .multilineTextAlignment(.center)
+                .lineSpacing(1.5)
+                .padding(.top, 5)
+                .padding(.horizontal, 6)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 28)
+    }
+
     /// 未登录 / 空状态(规范第 5 种)。无 in-app 登录入口——登录在 Claude Code / Codex CLI 里做,
     /// 这里只给引导文字,不放无动作的假按钮。
     private var emptyState: some View {
@@ -249,10 +346,10 @@ struct MenuBarContentView: View {
             }
             .padding(.bottom, 14)
 
-            Text("未连接任何账户")
+            Text(L10n.string("未连接任何账户"))
                 .font(.system(size: 13.5, weight: .semibold))
                 .foregroundColor(Color(hex: 0x1C1C1E))
-            Text("在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。")
+            Text(L10n.string("在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。"))
                 .font(.system(size: 12))
                 .foregroundColor(Color(hex: 0x8E8E93))
                 .multilineTextAlignment(.center)
@@ -299,13 +396,7 @@ struct MenuBarContentView: View {
     }
 
     private func shortLabel(_ kind: WindowKind) -> String {
-        switch kind {
-        case .fiveHour: return L10n.string("5 小时")
-        case .sevenDay: return L10n.string("每周")
-        case .sevenDayOpus: return L10n.string("周Opus")
-        case .sevenDaySonnet: return L10n.string("周Sonnet")
-        case .monthly: return L10n.string("每月")
-        }
+        QuotaWindowLabel.string(for: kind, style: .compactAbbrev)
     }
 
     private func confidenceHint(_ c: DataConfidence, tool: ToolKind) -> String {
@@ -355,6 +446,78 @@ private struct SettingsToggleRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
+    }
+}
+
+private struct SettingsInfoRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            settingsIcon(icon)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: 0x1C1C1E))
+                Text(detail)
+                    .font(.system(size: 11.5))
+                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+    }
+}
+
+private struct SettingsActionRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                settingsIcon(icon)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: 0x1C1C1E))
+                    Text(detail)
+                        .font(.system(size: 11.5))
+                        .foregroundColor(Color(hex: 0x8E8E93))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: 0x6C6C70))
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private func settingsIcon(_ systemName: String) -> some View {
+    ZStack {
+        Circle()
+            .fill(Color(hex: 0x787880, alpha: 0.1))
+            .frame(width: 26, height: 26)
+        Image(systemName: systemName)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(Color(hex: 0x6C6C70))
     }
 }
 
@@ -474,7 +637,7 @@ private struct ToolRow: View {
             Spacer(minLength: 6)
 
             if isStale {
-                Text("需重新登录")
+                Text(L10n.string("需重新登录"))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: 0xB5731C))
                     .padding(.horizontal, 8)

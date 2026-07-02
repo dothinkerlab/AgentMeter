@@ -39,6 +39,7 @@ The iPhone and Apple Watch app ships through the App Store:
 - **iPhone status view** when you want a larger quota snapshot.
 - **Mac menu-bar companion** that collects quota data and can show status locally.
 - **Multi-window tracking** for both short rolling windows and weekly limits.
+- **5-hour reset reminders** from the Mac companion when fresh data shows a depleted window.
 - **Stale-data warnings** when a quota refresh fails, instead of silently showing old values.
 
 ## Screenshots

@@ -17,22 +17,40 @@ final class AppModel: ObservableObject {
     @Published var showsStatusPercentage: Bool {
         didSet { defaults.set(showsStatusPercentage, forKey: Self.showsStatusPercentageKey) }
     }
+    @Published var hidesInactiveTools: Bool {
+        didSet { defaults.set(hidesInactiveTools, forKey: Self.hidesInactiveToolsKey) }
+    }
+    @Published var fiveHourResetNotificationsEnabled: Bool {
+        didSet {
+            defaults.set(fiveHourResetNotificationsEnabled, forKey: Self.fiveHourResetNotificationsKey)
+            Task { await handleFiveHourResetNotificationSettingChange(fiveHourResetNotificationsEnabled) }
+        }
+    }
 
     static let interval: TimeInterval = 5 * 60
     static let staleThreshold: TimeInterval = 15 * 60
     static let tools: [ToolKind] = AgentToolSelection.defaultTools   // [.claudeCode, .codex]
     private static let toolDisplayOrderKey = "toolDisplayOrder"
     private static let showsStatusPercentageKey = "macShowsStatusPercentage"
+    private static let hidesInactiveToolsKey = "hideInactiveTools"
+    private static let fiveHourResetNotificationsKey = "fiveHourResetNotificationsEnabled"
 
     private let collector: QuotaCollector
     private let defaults: UserDefaults
+    private let resetNotificationScheduler: FiveHourResetNotificationScheduling
     private var loopTask: Task<Void, Never>?
     private var started = false
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        resetNotificationScheduler: FiveHourResetNotificationScheduling = FiveHourResetNotificationScheduler()
+    ) {
         self.defaults = defaults
+        self.resetNotificationScheduler = resetNotificationScheduler
         toolDisplayOrder = defaults.string(forKey: Self.toolDisplayOrderKey) ?? ""
         showsStatusPercentage = defaults.object(forKey: Self.showsStatusPercentageKey) as? Bool ?? true
+        hidesInactiveTools = defaults.object(forKey: Self.hidesInactiveToolsKey) as? Bool ?? true
+        fiveHourResetNotificationsEnabled = defaults.object(forKey: Self.fiveHourResetNotificationsKey) as? Bool ?? false
         let fileLog = RotatingFileLog(
             fileURL: FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Logs/AgentMeter/agent.log"))
@@ -68,6 +86,9 @@ final class AppModel: ObservableObject {
         results = await collector.collectAll(tools: Self.tools)
         lastCollectedAt = Date()
         isCollecting = false
+        if fiveHourResetNotificationsEnabled {
+            await resetNotificationScheduler.scheduleResetAlerts(for: snapshots)
+        }
     }
 
     func setLoginItem(_ enabled: Bool) {
@@ -95,7 +116,9 @@ final class AppModel: ObservableObject {
 
     func orderedSnapshots(_ input: [QuotaSnapshot]? = nil) -> [QuotaSnapshot] {
         let order = orderedTools
-        return (input ?? snapshots).sorted { lhs, rhs in
+        let source = input ?? snapshots
+        let visible = hidesInactiveTools ? source.filter { !$0.isInactive() } : source
+        return visible.sorted { lhs, rhs in
             let lhsIndex = order.firstIndex(of: lhs.tool) ?? order.count
             let rhsIndex = order.firstIndex(of: rhs.tool) ?? order.count
             if lhsIndex == rhsIndex {
@@ -133,6 +156,14 @@ final class AppModel: ObservableObject {
     /// 菜单栏默认展示 5 小时窗口的剩余额度;缺 5h 时才回落到最紧窗口。
     private func preferredStatusWindow(in snapshot: QuotaSnapshot) -> QuotaWindow? {
         snapshot.window(.fiveHour) ?? snapshot.tightestWindow
+    }
+
+    private func handleFiveHourResetNotificationSettingChange(_ enabled: Bool) async {
+        if enabled {
+            await resetNotificationScheduler.scheduleResetAlerts(for: snapshots)
+        } else {
+            await resetNotificationScheduler.cancelResetAlerts()
+        }
     }
 
     private func displayName(for tool: ToolKind) -> String {

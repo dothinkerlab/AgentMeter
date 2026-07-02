@@ -3,6 +3,9 @@ import Foundation
 /// 一次额度采集的完整结果。这是手表唯一消费的对象 —— 手表不直连 Anthropic,
 /// 只读 CloudKit 里清洗好的 `QuotaSnapshot`(CLAUDE.md 铁律 1)。
 public struct QuotaSnapshot: Codable, Sendable, Equatable {
+    /// UI 默认隐藏超过 48 小时未更新的服务,避免长期失效的历史数据占住三端主界面。
+    public static let inactiveHideThreshold: TimeInterval = 48 * 60 * 60
+
     public let tool: ToolKind
     /// 订阅档位,如 "Max 5x"。能拿到就填,拿不到为 nil。
     public let plan: String?
@@ -31,6 +34,13 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
 
     public func window(_ kind: WindowKind) -> QuotaWindow? {
         windows.first { $0.kind == kind }
+    }
+
+    public func isInactive(
+        now: Date = Date(),
+        threshold: TimeInterval = Self.inactiveHideThreshold
+    ) -> Bool {
+        now.timeIntervalSince(updatedAt) > threshold
     }
 
     /// Complication 主显示用:在 5 小时窗口和每周窗口里取"剩余 % 更低"(即已用 % 更高)

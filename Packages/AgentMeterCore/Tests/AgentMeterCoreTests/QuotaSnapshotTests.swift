@@ -30,4 +30,21 @@ struct QuotaSnapshotTests {
         #expect(snap.windows.isEmpty)
         #expect(snap.updatedAt == now)
     }
+
+    @Test func inactiveThresholdStartsAfterFortyEightHours() {
+        let now = Date(timeIntervalSince1970: 1_750_000_000)
+        let recent = QuotaSnapshot(
+            tool: .claudeCode, plan: nil, windows: [],
+            confidence: .fresh, source: "test",
+            updatedAt: now.addingTimeInterval(-QuotaSnapshot.inactiveHideThreshold)
+        )
+        let old = QuotaSnapshot(
+            tool: .codex, plan: nil, windows: [],
+            confidence: .stale, source: "test",
+            updatedAt: now.addingTimeInterval(-QuotaSnapshot.inactiveHideThreshold - 1)
+        )
+
+        #expect(!recent.isInactive(now: now))
+        #expect(old.isInactive(now: now))
+    }
 }
