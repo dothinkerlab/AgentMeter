@@ -17,6 +17,7 @@ public enum RecordMapping {
         static let plan = "plan"
         static let windowsJSON = "windowsJSON"
         static let confidence = "confidence"
+        static let staleReason = "staleReason"
         static let source = "source"
         static let updatedAt = "updatedAt"
     }
@@ -58,6 +59,11 @@ public enum RecordMapping {
         }
         record[Field.windowsJSON] = json as CKRecordValue
         record[Field.confidence] = snapshot.confidence.rawValue as CKRecordValue
+        if snapshot.confidence == .fresh {
+            record[Field.staleReason] = nil
+        } else {
+            record[Field.staleReason] = snapshot.staleReason?.rawValue as CKRecordValue?
+        }
         record[Field.source] = snapshot.source as CKRecordValue
         record[Field.updatedAt] = snapshot.updatedAt as CKRecordValue
     }
@@ -91,6 +97,7 @@ public enum RecordMapping {
               let confidence = DataConfidence(rawValue: confidenceRaw) else {
             throw MappingError.missingField(Field.confidence)
         }
+        let staleReason = (record[Field.staleReason] as? String).flatMap(QuotaStaleReason.init(rawValue:))
         guard let source = record[Field.source] as? String else {
             throw MappingError.missingField(Field.source)
         }
@@ -104,6 +111,7 @@ public enum RecordMapping {
             plan: plan,
             windows: windows,
             confidence: confidence,
+            staleReason: staleReason,
             source: source,
             updatedAt: updatedAt
         )

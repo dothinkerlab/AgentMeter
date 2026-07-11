@@ -5,6 +5,7 @@ public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case claudeCode
     case codex
     case openCode
+    case deepSeek
 }
 
 /// 额度窗口类型。Claude 端点返回 `five_hour` / `seven_day` / `seven_day_opus` /
@@ -26,4 +27,20 @@ public enum DataConfidence: String, Codable, Sendable {
     case stale
     /// 从没成功拉到过。
     case unknown
+}
+
+/// stale/unknown 数据的失败原因。只用于解释数据为什么陈旧,不参与额度决策。
+public enum QuotaStaleReason: String, Codable, Sendable, Equatable {
+    /// token 过期或服务端返回 401/403。
+    case authExpired
+    /// Keychain 或本地凭据文件读取失败。
+    case credentialReadFailed
+    /// 网络中断、超时或非 HTTP 响应。
+    case networkFailure
+    /// 服务端返回非 2xx、且不是认证错误。
+    case endpointFailure
+    /// 响应结构变化或无法解析。
+    case responseChanged
+    /// 未能归类的失败。
+    case unknownFailure
 }

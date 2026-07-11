@@ -138,7 +138,8 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private var content: some View {
         let snaps = model.orderedSnapshots()
-        if snaps.isEmpty {
+        let deepSeekBalance = model.deepSeekBalance
+        if snaps.isEmpty && deepSeekBalance == nil {
             if model.lastCollectedAt == nil {
                 LoadingView()
             } else if model.hidesInactiveTools && !model.snapshots.isEmpty {
@@ -161,11 +162,29 @@ struct MenuBarContentView: View {
                         brand: brand(for: snapshot.tool),
                         tool: snapshot.tool,
                         isStale: model.isStale(snapshot),
+                        staleLabel: staleLabel(snapshot),
                         ageText: relativeAge(snapshot.updatedAt),
-                        warning: model.isStale(snapshot) ? confidenceHint(snapshot.confidence, tool: snapshot.tool) : nil,
+                        warning: staleWarning(snapshot),
                         windows: orderedWindows(snapshot.windows),
                         resetSummary: resetSummary(snapshot.windows),
                         labelFor: shortLabel
+                    )
+                }
+
+                // DeepSeek 余额行(旁路):不入 QuotaSnapshot 体系,与上面 snapshots 平级展示。
+                if let balance = deepSeekBalance {
+                    if !snaps.isEmpty {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.07))
+                            .frame(height: 0.5)
+                            .padding(.leading, 19)
+                    }
+                    DeepSeekBalanceRow(
+                        balance: balance,
+                        isStale: deepSeekIsStale(balance),
+                        staleLabel: deepSeekStaleLabel(balance),
+                        ageText: relativeAge(balance.updatedAt),
+                        warning: deepSeekWarning(balance)
                     )
                 }
             }
@@ -248,6 +267,10 @@ struct MenuBarContentView: View {
 
             settingsDivider
 
+            DeepSeekKeySettingsSection(onSaved: { Task { await model.collectNow() } })
+
+            settingsDivider
+
             VStack(spacing: 0) {
                 SettingsInfoRow(
                     icon: "info.circle",
@@ -281,6 +304,57 @@ struct MenuBarContentView: View {
             .fill(Color.black.opacity(0.07))
             .frame(height: 0.5)
             .padding(.leading, 16)
+    }
+
+    // MARK: - DeepSeek 余额行(旁路)
+
+    private func deepSeekIsStale(_ balance: DeepSeekBalance) -> Bool {
+        balance.confidence != .fresh
+            || Date().timeIntervalSince(balance.updatedAt) > AppModel.staleThreshold
+    }
+
+    private func deepSeekStaleLabel(_ balance: DeepSeekBalance) -> String {
+        switch balance.confidence {
+        case .fresh: return ""
+        case .stale:
+            switch balance.staleReason {
+            case .authExpired: return L10n.string("需重新输入 key")
+            case .networkFailure: return L10n.string("网络失败")
+            case .endpointFailure: return L10n.string("服务暂不可用")
+            case .responseChanged: return L10n.string("接口变化")
+            default: return L10n.string("数据陈旧")
+            }
+        case .unknown:
+            return balance.staleReason == .credentialReadFailed
+                ? L10n.string("无法读取 key")
+                : L10n.string("未取到数据")
+        }
+    }
+
+    private func deepSeekWarning(_ balance: DeepSeekBalance) -> String? {
+        guard deepSeekIsStale(balance) else { return nil }
+        switch balance.confidence {
+        case .fresh:
+            return L10n.string("数据已超过刷新阈值,可能不是最新。")
+        case .stale:
+            switch balance.staleReason {
+            case .authExpired:
+                return L10n.string("DeepSeek API key 可能已失效,请在设置里重新输入。")
+            case .networkFailure:
+                return L10n.string("刷新遇到网络问题,已保留旧数据。")
+            case .endpointFailure:
+                return L10n.string("DeepSeek 余额接口暂时不可用,已保留旧数据。")
+            case .responseChanged:
+                return L10n.string("余额接口返回发生变化,暂时无法解析最新数据。")
+            default:
+                return L10n.string("数据陈旧,已保留旧数据。")
+            }
+        case .unknown:
+            if balance.staleReason == .credentialReadFailed {
+                return L10n.string("无法读取本机存的 DeepSeek API key,请在设置里重新输入。")
+            }
+            return L10n.string("从未成功取到数据,请确认 API key 有效。")
+        }
     }
 
     private func moveTool(at index: Int, by offset: Int) {
@@ -391,6 +465,7 @@ struct MenuBarContentView: View {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .deepSeek: return "DeepSeek"
         case .openCode: return "OpenCode"
         }
     }
@@ -399,11 +474,42 @@ struct MenuBarContentView: View {
         QuotaWindowLabel.string(for: kind, style: .compactAbbrev)
     }
 
-    private func confidenceHint(_ c: DataConfidence, tool: ToolKind) -> String {
-        switch c {
-        case .fresh: return ""
-        case .stale: return L10n.format("登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。", displayName(for: tool))
-        case .unknown: return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: tool))
+    private func staleLabel(_ snapshot: QuotaSnapshot) -> String {
+        guard model.isStale(snapshot) else { return "" }
+        switch snapshot.staleReason {
+        case .authExpired, .credentialReadFailed:
+            return L10n.string("需重新登录")
+        case .networkFailure:
+            return L10n.string("刷新失败")
+        case .endpointFailure:
+            return L10n.string("服务暂不可用")
+        case .responseChanged:
+            return L10n.string("接口变化")
+        case .unknownFailure, nil:
+            return L10n.string("数据陈旧")
+        }
+    }
+
+    private func staleWarning(_ snapshot: QuotaSnapshot) -> String? {
+        guard model.isStale(snapshot) else { return nil }
+        switch snapshot.staleReason {
+        case .authExpired:
+            return L10n.format("登录状态可能已失效。请在 %@ 重新登录。", displayName(for: snapshot.tool))
+        case .credentialReadFailed:
+            return L10n.format("无法读取本机登录凭据。请确认 %@ 已登录并允许 AgentMeter 读取。", displayName(for: snapshot.tool))
+        case .networkFailure:
+            return L10n.string("上次刷新遇到网络问题,已保留旧数据。可稍后再刷新。")
+        case .endpointFailure:
+            return L10n.string("用量服务暂时不可用,已保留旧数据。可稍后再试。")
+        case .responseChanged:
+            return L10n.string("用量接口返回发生变化,暂时无法解析最新数据。")
+        case .unknownFailure:
+            return L10n.string("上次刷新失败,已保留旧数据。")
+        case nil:
+            if snapshot.confidence == .unknown {
+                return L10n.format("从未成功取到数据。检查是否已登录 %@。", displayName(for: snapshot.tool))
+            }
+            return L10n.string("数据已超过刷新阈值,可能不是最新。")
         }
     }
 
@@ -574,6 +680,7 @@ private struct ToolRow: View {
     let brand: Brand
     let tool: ToolKind
     let isStale: Bool
+    let staleLabel: String
     let ageText: String
     let warning: String?
     let windows: [QuotaWindow]
@@ -637,7 +744,7 @@ private struct ToolRow: View {
             Spacer(minLength: 6)
 
             if isStale {
-                Text(L10n.string("需重新登录"))
+                Text(staleLabel)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: 0xB5731C))
                     .padding(.horizontal, 8)
@@ -817,6 +924,11 @@ private struct BrandMark: View {
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.white)
+        case .deepSeek:
+            Text("DS")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(-0.3)
+                .foregroundColor(.white)
         }
     }
 }
@@ -868,6 +980,14 @@ private func brand(for tool: ToolKind) -> Brand {
             track: Color(hex: 0xE8EAFB),
             planColor: Color(hex: 0x3A47A8)
         )
+    case .deepSeek:
+        // DeepSeek 官方蓝 #4D6BFE。余额卡不渲染进度条,Brand 仅图标用。
+        return Brand(
+            solid: Color(hex: 0x4D6BFE),
+            iconGradient: [Color(hex: 0x4D6BFE), Color(hex: 0x3A56D8)],
+            track: Color(hex: 0xE3E8FF),
+            planColor: Color(hex: 0x3A56D8)
+        )
     }
 }
 
@@ -880,5 +1000,270 @@ private extension Color {
             blue: Double(hex & 0xff) / 255,
             opacity: alpha
         )
+    }
+}
+
+// MARK: - DeepSeek 余额行(旁路,不计入 CloudKit 系统)
+
+/// DeepSeek 余额展示行。与 `ToolRow` 平级:左轨品牌色 + 标题行 + 总余额 + 赠金/充值拆分。
+/// 不渲染进度条或重置时间 —— 余额是绝对值,没有「剩余%」和「重置」概念(架构铁律 3 的例外)。
+private struct DeepSeekBalanceRow: View {
+    let balance: DeepSeekBalance
+    let isStale: Bool
+    let staleLabel: String
+    let ageText: String
+    let warning: String?
+
+    private let brandColor = Color(hex: 0x4D6BFE)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            // 左轨:陈旧→琥珀,无余额(`is_available == false`)→红,否则品牌蓝。
+            Rectangle()
+                .fill(railColor)
+                .frame(width: 3)
+                .padding(.vertical, 4)
+
+            VStack(alignment: .leading, spacing: 10) {
+                headerLine
+
+                if let warning {
+                    warningBox(warning)
+                        .padding(.top, 2)
+                }
+
+                if balance.hasKnownBalance {
+                    balanceGrid
+                } else {
+                    unknownBalancePlaceholder
+                }
+
+                if balance.shouldShowUnavailable {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(Color(hex: 0xC0392B))
+                        Text(L10n.string("账户无可用余额"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: 0xC0392B))
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding(.init(top: 11, leading: 16, bottom: 13, trailing: 16))
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var railColor: Color {
+        if isStale { return Color(hex: 0xD98C28) }
+        if !balance.isAvailable { return Color(hex: 0xC0392B) }
+        return brandColor
+    }
+
+    private var headerLine: some View {
+        HStack(spacing: 9) {
+            BrandMark(tool: .deepSeek, brand: brand(for: .deepSeek))
+
+            Text("DeepSeek")
+                .font(.system(size: 14, weight: .bold))
+                .tracking(-0.3)
+                .foregroundColor(Color(hex: 0x1C1C1E))
+
+            Text(L10n.string("余额"))
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundColor(brandColor)
+
+            Spacer(minLength: 6)
+
+            if isStale {
+                Text(staleLabel)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: 0xB5731C))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+            } else {
+                Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
+                Text(ageText)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: 0x9A9AA0))
+            }
+        }
+    }
+
+    /// 大号总余额 + 赠金/充值拆分两小行。币种符号按 currency 决定(CNY ¥ / USD $)。
+    private var balanceGrid: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(currencySymbol)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(brandColor)
+                Text(balance.totalBalance)
+                    .font(.system(size: 22, weight: .heavy, design: .rounded).monospacedDigit())
+                    .foregroundColor(Color(hex: 0x1C1C1E))
+                Text(balance.currency)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color(hex: 0x9A9AA0))
+                    .padding(.leading, 2)
+            }
+
+            HStack(spacing: 16) {
+                splitLine(label: L10n.string("赠金"), value: balance.grantedBalance)
+                splitLine(label: L10n.string("充值"), value: balance.toppedUpBalance)
+            }
+        }
+    }
+
+    private var unknownBalancePlaceholder: some View {
+        Text("—")
+            .font(.system(size: 22, weight: .heavy, design: .rounded))
+            .foregroundColor(Color(hex: 0x8E8E93))
+            .accessibilityLabel(L10n.string("未取到余额数据"))
+    }
+
+    private func splitLine(label: String, value: String) -> some View {
+        HStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(Color(hex: 0x6C6C70))
+            Text("\(currencySymbol)\(value)")
+                .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
+                .foregroundColor(Color(hex: 0x1C1C1E))
+        }
+    }
+
+    private var currencySymbol: String {
+        switch balance.currency.uppercased() {
+        case "CNY", "RMB": return "¥"
+        case "USD": return "$"
+        default: return ""
+        }
+    }
+
+    private func warningBox(_ text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lock")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: 0xB5731C))
+            Text(text)
+                .font(.system(size: 11.5))
+                .foregroundColor(Color(hex: 0x8A5A12))
+                .lineSpacing(1.5)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(hex: 0xFBF1DF)))
+    }
+}
+
+// MARK: - DeepSeek API key 设置区
+
+/// 设置面板里独立一栏:输入/更新/删除 DeepSeek API key。旁路工具没有 OAuth 登录态,
+/// 用户需手动从 platform.deepseek.com 创建 key 后粘贴进来。保存后立即触发一次采集。
+private struct DeepSeekKeySettingsSection: View {
+    let onSaved: () -> Void
+
+    @State private var keyInput: String = ""
+    @State private var hasExistingKey: Bool = false
+    @State private var saveError: String?
+    @State private var savedFlash: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L10n.string("DeepSeek API Key"))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: 0x6C6C70))
+                Text(L10n.string("余额在本地查询,不进 iCloud/Apple Watch。各端独立存储。"))
+                    .font(.system(size: 11.5))
+                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            SecureField("sk-...", text: $keyInput)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12.5, design: .monospaced))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: 0xF2F3F5)))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.06), lineWidth: 0.5))
+
+            if let saveError {
+                Text(saveError)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: 0xC0392B))
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    save()
+                } label: {
+                    Text(savedFlash ? L10n.string("已保存") : L10n.string("保存"))
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(keyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                if hasExistingKey {
+                    Button(role: .destructive) {
+                        delete()
+                    } label: {
+                        Text(L10n.string("删除"))
+                            .font(.system(size: 12, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .onAppear { reload() }
+    }
+
+    private func reload() {
+        do {
+            let key = try DeepSeekKeyStore.read()
+            hasExistingKey = (key?.isEmpty == false)
+            if hasExistingKey { keyInput = "" }  // 不回填到框里,避免误显明文
+        } catch {
+            saveError = "\(error)"
+        }
+    }
+
+    private func save() {
+        let trimmed = keyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        do {
+            try DeepSeekKeyStore.save(apiKey: trimmed)
+            hasExistingKey = true
+            keyInput = ""
+            saveError = nil
+            savedFlash = true
+            onSaved()
+            Task {
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                await MainActor.run { savedFlash = false }
+            }
+        } catch {
+            saveError = "\(error)"
+        }
+    }
+
+    private func delete() {
+        do {
+            try DeepSeekKeyStore.delete()
+            hasExistingKey = false
+            keyInput = ""
+            onSaved()
+        } catch {
+            saveError = "\(error)"
+        }
     }
 }

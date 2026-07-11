@@ -80,6 +80,7 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .deepSeek: return "DeepSeek"
         case .openCode: return "OpenCode"
         }
     }

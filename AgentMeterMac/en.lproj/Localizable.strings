@@ -12,7 +12,6 @@
 "周Opus" = "Weekly Opus";
 "周Sonnet" = "Weekly Sonnet";
 "每月" = "Monthly";
-"登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "The login credential may have expired, so usage could not refresh. Sign in to %@ again.";
 "从未成功取到数据。检查是否已登录 %@。" = "No data has been fetched yet. Check whether %@ is signed in.";
 "需重新登录" = "Re-login needed";
 "返回" = "Back";
@@ -32,6 +31,17 @@
 "暂无近期数据" = "No recent data";
 "超过 48 小时未更新的服务已隐藏。可在设置里关闭。" = "Services not updated for 48 hours are hidden. You can turn this off in Settings.";
 "5 小时重置提醒" = "5h reset reminder";
-"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "When fresh data shows the 5h quota is depleted, send a local notification at the estimated reset time.";
+"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Only reminds you at the estimated reset time when recently updated data shows the 5h quota is used up.";
 "%@ 5 小时额度已重置" = "%@ 5h quota has reset";
 "现在可以继续使用 5 小时窗口。" = "You can use the 5h window again.";
+"刷新失败" = "Refresh failed";
+"服务暂不可用" = "Service unavailable";
+"接口变化" = "API changed";
+"数据陈旧" = "Stale data";
+"登录状态可能已失效。请在 %@ 重新登录。" = "The sign-in may have expired. Sign in to %@ again.";
+"无法读取本机登录凭据。请确认 %@ 已登录并允许 AgentMeter 读取。" = "AgentMeter could not read the local credential. Make sure %@ is signed in and readable by AgentMeter.";
+"上次刷新遇到网络问题,已保留旧数据。可稍后再刷新。" = "The last refresh hit a network problem, so old data is kept. Try refreshing later.";
+"用量服务暂时不可用,已保留旧数据。可稍后再试。" = "The usage service is temporarily unavailable, so old data is kept. Try again later.";
+"用量接口返回发生变化,暂时无法解析最新数据。" = "The usage response changed, so the latest data cannot be parsed yet.";
+"上次刷新失败,已保留旧数据。" = "The last refresh failed, so old data is kept.";
+"数据已超过刷新阈值,可能不是最新。" = "This data is past the refresh threshold and may not be current.";

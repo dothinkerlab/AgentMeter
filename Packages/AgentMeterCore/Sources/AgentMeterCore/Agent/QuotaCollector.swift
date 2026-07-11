@@ -60,12 +60,12 @@ public struct QuotaCollector: Sendable {
             return Result(tool: tool, outcome: .skipped, snapshot: nil)
         } catch {
             log("\(tag) ✗ 读凭据失败: \(error)")
-            return await degrade(tool: tool, reason: "无法读取凭据")
+            return await degrade(tool: tool, reason: .credentialReadFailed, logReason: "无法读取凭据")
         }
 
         if creds.isExpired {
             log("\(tag) ⚠️ token 已过期,需重新登录")
-            return await degrade(tool: tool, reason: "token 过期")
+            return await degrade(tool: tool, reason: .authExpired, logReason: "token 过期")
         }
 
         let snapshot: QuotaSnapshot
@@ -73,7 +73,7 @@ public struct QuotaCollector: Sendable {
             snapshot = try await fetcher(tool, creds)
         } catch {
             log("\(tag) ✗ 取数失败: \(error)")
-            return await degrade(tool: tool, reason: "取数失败")
+            return await degrade(tool: tool, reason: Self.staleReason(for: error), logReason: "取数失败")
         }
 
         do {
@@ -87,12 +87,36 @@ public struct QuotaCollector: Sendable {
     }
 
     /// 降级:有旧记录翻 stale,没有写 unknown 占位。返回降级后的 snapshot 给 UI。
-    private func degrade(tool: ToolKind, reason: String) async -> Result {
+    private func degrade(tool: ToolKind, reason: QuotaStaleReason, logReason: String) async -> Result {
         let existing = try? await store.fetch(tool: tool)
-        let degraded = existing?.markedStale() ?? .unknown(tool: tool, source: Self.source(for: tool))
+        let degraded = existing?.markedStale(reason: reason)
+            ?? .unknown(tool: tool, source: Self.source(for: tool), reason: reason)
         try? await store.save(degraded)
-        log("  → 降级为 \(degraded.confidence.rawValue)(原因:\(reason))")
+        log("  → 降级为 \(degraded.confidence.rawValue)(原因:\(logReason), staleReason:\(reason.rawValue))")
         return Result(tool: tool, outcome: .degraded, snapshot: degraded)
+    }
+
+    public static func staleReason(for error: Error) -> QuotaStaleReason {
+        switch error {
+        case ClaudeCodeAdapter.FetchError.unauthorized,
+             CodexPlanAdapter.FetchError.unauthorized,
+             DeepSeekBalanceAdapter.FetchError.unauthorized:
+            return .authExpired
+        case ClaudeCodeAdapter.FetchError.transport,
+             CodexPlanAdapter.FetchError.transport,
+             DeepSeekBalanceAdapter.FetchError.transport:
+            return .networkFailure
+        case ClaudeCodeAdapter.FetchError.httpStatus,
+             CodexPlanAdapter.FetchError.httpStatus,
+             DeepSeekBalanceAdapter.FetchError.httpStatus:
+            return .endpointFailure
+        case ClaudeCodeAdapter.FetchError.decode,
+             CodexPlanAdapter.FetchError.decode,
+             DeepSeekBalanceAdapter.FetchError.decode:
+            return .responseChanged
+        default:
+            return .unknownFailure
+        }
     }
 
     static func source(for tool: ToolKind) -> String {
@@ -100,6 +124,7 @@ public struct QuotaCollector: Sendable {
         case .claudeCode: return ClaudeCodeAdapter.source
         case .codex: return CodexPlanAdapter.source
         case .openCode: return "unsupported"
+        case .deepSeek: return "deepseek_balance_endpoint"
         }
     }
 
@@ -112,7 +137,7 @@ public struct QuotaCollector: Sendable {
         case .codex:
             return try await CodexPlanAdapter().fetch(
                 accessToken: creds.accessToken, accountID: creds.accountID, plan: creds.subscriptionType)
-        case .openCode:
+        case .openCode, .deepSeek:
             throw UnsupportedTool(tool: tool)
         }
     }

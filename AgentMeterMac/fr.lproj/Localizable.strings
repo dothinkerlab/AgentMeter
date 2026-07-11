@@ -12,7 +12,6 @@
 "周Opus" = "Hebdo Opus";
 "周Sonnet" = "Hebdo Sonnet";
 "每月" = "Mensuel";
-"登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "L’identifiant a peut-être expiré, donc l’utilisation n’a pas pu être actualisée. Reconnectez-vous à %@.";
 "从未成功取到数据。检查是否已登录 %@。" = "Aucune donnée n’a encore été récupérée. Vérifiez que %@ est connecté.";
 "需重新登录" = "Reconnexion requise";
 "返回" = "Retour";
@@ -32,6 +31,17 @@
 "暂无近期数据" = "Aucune donnée récente";
 "超过 48 小时未更新的服务已隐藏。可在设置里关闭。" = "Les services non mis à jour depuis 48 h sont masqués. Vous pouvez désactiver cela dans Réglages.";
 "5 小时重置提醒" = "Rappel de reset 5 h";
-"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Quand les données fresh indiquent que le quota 5 h est épuisé, envoyez une notification locale à l'heure de reset estimée.";
+"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Rappelle uniquement à l'heure de réinitialisation estimée lorsque des données récemment mises à jour indiquent que le quota 5 h est épuisé.";
 "%@ 5 小时额度已重置" = "Le quota 5 h de %@ a été réinitialisé";
 "现在可以继续使用 5 小时窗口。" = "Vous pouvez de nouveau utiliser la fenêtre 5 h.";
+"刷新失败" = "Actualisation échouée";
+"服务暂不可用" = "Service indisponible";
+"接口变化" = "API modifiée";
+"数据陈旧" = "Données obsolètes";
+"登录状态可能已失效。请在 %@ 重新登录。" = "La connexion a peut-être expiré. Reconnectez-vous à %@.";
+"无法读取本机登录凭据。请确认 %@ 已登录并允许 AgentMeter 读取。" = "AgentMeter ne peut pas lire l’identifiant local. Vérifiez que %@ est connecté et lisible par AgentMeter.";
+"上次刷新遇到网络问题,已保留旧数据。可稍后再刷新。" = "La dernière actualisation a rencontré un problème réseau. Les anciennes données sont conservées. Réessayez plus tard.";
+"用量服务暂时不可用,已保留旧数据。可稍后再试。" = "Le service d’utilisation est temporairement indisponible. Les anciennes données sont conservées. Réessayez plus tard.";
+"用量接口返回发生变化,暂时无法解析最新数据。" = "La réponse de l’API d’utilisation a changé. Les nouvelles données ne peuvent pas encore être analysées.";
+"上次刷新失败,已保留旧数据。" = "La dernière actualisation a échoué. Les anciennes données sont conservées.";
+"数据已超过刷新阈值,可能不是最新。" = "Ces données dépassent le seuil d’actualisation et peuvent ne plus être à jour.";

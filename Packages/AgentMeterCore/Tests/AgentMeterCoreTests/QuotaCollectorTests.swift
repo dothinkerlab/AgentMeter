@@ -81,6 +81,7 @@ struct QuotaCollectorTests {
         let result = await collector.collect(tool: .claudeCode)
         #expect(result.outcome == .degraded)
         #expect(result.snapshot?.confidence == .stale)
+        #expect(result.snapshot?.staleReason == .unknownFailure)
         #expect(await store.savedSnapshot(.claudeCode)?.confidence == .stale)
     }
 
@@ -94,6 +95,7 @@ struct QuotaCollectorTests {
         let result = await collector.collect(tool: .codex)
         #expect(result.outcome == .degraded)
         #expect(result.snapshot?.confidence == .unknown)
+        #expect(result.snapshot?.staleReason == .unknownFailure)
     }
 
     @Test func expiredTokenDegradesWithoutFetching() async {
@@ -106,6 +108,31 @@ struct QuotaCollectorTests {
         let result = await collector.collect(tool: .claudeCode)
         #expect(result.outcome == .degraded)
         #expect(result.snapshot?.confidence == .unknown)
+        #expect(result.snapshot?.staleReason == .authExpired)
+    }
+
+    @Test func credentialReadFailureUsesCredentialReason() async {
+        let store = FakeStore()
+        let collector = QuotaCollector(
+            store: store,
+            credentials: { _ in throw KeychainReader.ReadError.osStatus(-1) },
+            fetcher: { tool, _ in sampleSnap(tool) }
+        )
+        let result = await collector.collect(tool: .claudeCode)
+        #expect(result.outcome == .degraded)
+        #expect(result.snapshot?.staleReason == .credentialReadFailed)
+    }
+
+    @Test func adapterErrorsMapToStaleReasons() {
+        #expect(QuotaCollector.staleReason(for: ClaudeCodeAdapter.FetchError.unauthorized) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: CodexPlanAdapter.FetchError.unauthorized) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: ClaudeCodeAdapter.FetchError.transport("lost")) == .networkFailure)
+        #expect(QuotaCollector.staleReason(for: CodexPlanAdapter.FetchError.transport("lost")) == .networkFailure)
+        #expect(QuotaCollector.staleReason(for: ClaudeCodeAdapter.FetchError.httpStatus(500)) == .endpointFailure)
+        #expect(QuotaCollector.staleReason(for: CodexPlanAdapter.FetchError.httpStatus(500)) == .endpointFailure)
+        #expect(QuotaCollector.staleReason(for: ClaudeCodeAdapter.FetchError.decode("bad")) == .responseChanged)
+        #expect(QuotaCollector.staleReason(for: CodexPlanAdapter.FetchError.decode("bad")) == .responseChanged)
+        #expect(QuotaCollector.staleReason(for: FetchBoom()) == .unknownFailure)
     }
 
     @Test func writeFailureReportsWriteFailed() async {

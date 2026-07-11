@@ -15,18 +15,34 @@ struct QuotaSnapshotTests {
 
     @Test func markedStaleKeepsDataAndAgeButFlipsConfidence() {
         let original = fresh()
-        let stale = original.markedStale()
+        let stale = original.markedStale(reason: .networkFailure)
         #expect(stale.confidence == .stale)
+        #expect(stale.staleReason == .networkFailure)
         // 窗口和真实数据年龄都保留 —— 不冒充新数,UI 自行据 updatedAt 判旧。
         #expect(stale.windows == original.windows)
         #expect(stale.updatedAt == original.updatedAt)
         #expect(stale.plan == original.plan)
     }
 
+    @Test func freshSnapshotDropsStaleReason() {
+        let snap = QuotaSnapshot(
+            tool: .claudeCode, plan: nil, windows: [],
+            confidence: .fresh, staleReason: .networkFailure,
+            source: "test", updatedAt: Date(timeIntervalSince1970: 1_750_000_000)
+        )
+        #expect(snap.staleReason == nil)
+    }
+
     @Test func unknownPlaceholderHasNoWindows() {
         let now = Date(timeIntervalSince1970: 1_750_000_000)
-        let snap = QuotaSnapshot.unknown(tool: .claudeCode, source: "oauth_usage_endpoint", now: now)
+        let snap = QuotaSnapshot.unknown(
+            tool: .claudeCode,
+            source: "oauth_usage_endpoint",
+            now: now,
+            reason: .credentialReadFailed
+        )
         #expect(snap.confidence == .unknown)
+        #expect(snap.staleReason == .credentialReadFailed)
         #expect(snap.windows.isEmpty)
         #expect(snap.updatedAt == now)
     }

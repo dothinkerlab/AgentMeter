@@ -12,7 +12,6 @@
 "周Opus" = "Semanal Opus";
 "周Sonnet" = "Semanal Sonnet";
 "每月" = "Mensual";
-"登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "La credencial puede haber caducado y el uso no se pudo actualizar. Inicia sesión en %@ otra vez.";
 "从未成功取到数据。检查是否已登录 %@。" = "Aún no se han obtenido datos. Comprueba si %@ tiene sesión iniciada.";
 "需重新登录" = "Reinicio de sesión necesario";
 "返回" = "Atrás";
@@ -32,6 +31,17 @@
 "暂无近期数据" = "Sin datos recientes";
 "超过 48 小时未更新的服务已隐藏。可在设置里关闭。" = "Se ocultan los servicios sin actualizar durante 48 horas. Puedes desactivarlo en Ajustes.";
 "5 小时重置提醒" = "Aviso de reinicio 5h";
-"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Cuando los datos fresh indiquen que la cuota de 5h se agotó, envía una notificación local a la hora estimada de reinicio.";
+"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Solo te avisa a la hora estimada de reinicio cuando los datos actualizados recientemente muestran que la cuota de 5h se agotó.";
 "%@ 5 小时额度已重置" = "La cuota de 5h de %@ se ha reiniciado";
 "现在可以继续使用 5 小时窗口。" = "Ya puedes volver a usar la ventana de 5h.";
+"刷新失败" = "Error al actualizar";
+"服务暂不可用" = "Servicio no disponible";
+"接口变化" = "API cambiada";
+"数据陈旧" = "Datos obsoletos";
+"登录状态可能已失效。请在 %@ 重新登录。" = "Es posible que la sesión haya caducado. Inicia sesión en %@ otra vez.";
+"无法读取本机登录凭据。请确认 %@ 已登录并允许 AgentMeter 读取。" = "AgentMeter no pudo leer la credencial local. Comprueba que %@ tenga sesión iniciada y sea legible por AgentMeter.";
+"上次刷新遇到网络问题,已保留旧数据。可稍后再刷新。" = "La última actualización tuvo un problema de red, así que se conservan los datos anteriores. Vuelve a intentarlo más tarde.";
+"用量服务暂时不可用,已保留旧数据。可稍后再试。" = "El servicio de uso no está disponible temporalmente, así que se conservan los datos anteriores. Inténtalo más tarde.";
+"用量接口返回发生变化,暂时无法解析最新数据。" = "La respuesta de la API de uso cambió y aún no se pueden analizar los datos nuevos.";
+"上次刷新失败,已保留旧数据。" = "La última actualización falló, así que se conservan los datos anteriores.";
+"数据已超过刷新阈值,可能不是最新。" = "Estos datos superan el umbral de actualización y puede que no estén al día.";

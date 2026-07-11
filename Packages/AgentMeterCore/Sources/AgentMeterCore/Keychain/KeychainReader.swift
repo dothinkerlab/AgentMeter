@@ -98,10 +98,18 @@ public enum KeychainReader {
             return codexService
         case .openCode:
             return "OpenCode-credentials"
+        case .deepSeek:
+            return DeepSeekKeyStore.service
         }
     }
 
     public static func readCredentials(tool: ToolKind = .claudeCode) throws -> Credentials {
+        switch tool {
+        case .deepSeek:
+            throw ReadError.notFound(serviceName(for: tool))
+        default:
+            break
+        }
         do {
             return try readCredentials(service: serviceName(for: tool), tool: tool)
         } catch ReadError.notFound where tool == .codex {
@@ -139,6 +147,8 @@ public enum KeychainReader {
             case .codex:
                 return codexOauth ?? codex
             case .openCode:
+                return nil
+            case .deepSeek:
                 return nil
             }
         }

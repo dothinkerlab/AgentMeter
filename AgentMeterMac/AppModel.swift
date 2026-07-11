@@ -3,7 +3,7 @@ import AppKit
 import ServiceManagement
 import AgentMeterCore
 
-/// 菜单栏 app 的运行时大脑:启动即采、每 5 分钟采、唤醒补采;登录项开关;状态供 UI/菜单栏 label 用。
+/// 菜单栏 app 的运行时大脑:启动即采、每 2 分钟采(额度 < 10% 时 1 分钟)、唤醒补采;登录项开关;状态供 UI/菜单栏 label 用。
 @MainActor
 final class AppModel: ObservableObject {
 
@@ -11,6 +11,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastCollectedAt: Date?
     @Published private(set) var isCollecting = false
     @Published private(set) var loginItemEnabled = false
+    /// DeepSeek 余额(旁路采集,不入 CloudKit/QuotaSnapshot 体系)。
+    /// 缺 API key 时为 nil;取数失败时翻 stale(若有旧值)或 unknown(无旧值)。
+    @Published private(set) var deepSeekBalance: DeepSeekBalance?
     @Published var toolDisplayOrder: String {
         didSet { defaults.set(toolDisplayOrder, forKey: Self.toolDisplayOrderKey) }
     }
@@ -27,7 +30,9 @@ final class AppModel: ObservableObject {
         }
     }
 
-    static let interval: TimeInterval = 5 * 60
+    static let defaultInterval: TimeInterval = 2 * 60
+    static let lowQuotaInterval: TimeInterval = 1 * 60
+    static let lowQuotaThreshold: Double = 10
     static let staleThreshold: TimeInterval = 15 * 60
     static let tools: [ToolKind] = AgentToolSelection.defaultTools   // [.claudeCode, .codex]
     private static let toolDisplayOrderKey = "toolDisplayOrder"
@@ -40,6 +45,7 @@ final class AppModel: ObservableObject {
     private let resetNotificationScheduler: FiveHourResetNotificationScheduling
     private var loopTask: Task<Void, Never>?
     private var started = false
+    private var deepSeekRequestGate = DeepSeekRequestGate()
 
     init(
         defaults: UserDefaults = .standard,
@@ -73,21 +79,75 @@ final class AppModel: ObservableObject {
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.collectNow()
+                let interval = await self?.nextCollectionInterval() ?? Self.defaultInterval
                 // `try?` 是有意为之:取消时 sleep 抛 CancellationError 被吞掉,
                 // 下一轮 `while` 读到 isCancelled==true 干净退出。别改成 `try`。
-                try? await Task.sleep(nanoseconds: UInt64(Self.interval * 1_000_000_000))
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
         }
     }
 
     func collectNow() async {
-        guard !isCollecting else { return }
+        // Claude/Codex 正在采集时仍刷新 DeepSeek。设置页保存/删除 key 会触发这里,
+        // 不能因全局采集锁而丢掉这次旁路刷新。
+        if isCollecting {
+            await collectDeepSeek()
+            return
+        }
         isCollecting = true
         results = await collector.collectAll(tools: Self.tools)
         lastCollectedAt = Date()
+        // DeepSeek 旁路采集 —— 不走 QuotaCollector,缺 key 跳过,失败降级 stale/unknown。
+        await collectDeepSeek()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
             await resetNotificationScheduler.scheduleResetAlerts(for: snapshots)
+        }
+    }
+
+    /// 基于刚采集到的 snapshots 决定下一轮采集间隔:
+    /// 剩余额度 < 10% 用 1 分钟,否则默认 2 分钟。
+    /// 数据陈旧不提速(架构铁律 2/4:不可靠数据不参与调度决策)。
+    private func nextCollectionInterval() -> TimeInterval {
+        guard let s = preferredSnapshot,
+              !isStale(s),
+              let w = preferredStatusWindow(in: s) else {
+            return Self.defaultInterval
+        }
+        return w.remainingPercent < Self.lowQuotaThreshold
+            ? Self.lowQuotaInterval
+            : Self.defaultInterval
+    }
+
+    /// DeepSeek 余额采集编排:读 Keychain API key → 调端点 → 失败时保留旧值翻 stale 或写 unknown。
+    /// 与 Claude/Codex 路径相互独立(铁律 2 容错):DeepSeek 失败不影响其余工具展示。
+    private func collectDeepSeek() async {
+        let requestGeneration = deepSeekRequestGate.begin()
+        let apiKey: String
+        do {
+            guard let key = try DeepSeekKeyStore.read(), !key.isEmpty else {
+                guard deepSeekRequestGate.isCurrent(requestGeneration) else { return }
+                deepSeekBalance = nil
+                return
+            }
+            apiKey = key
+        } catch {
+            guard deepSeekRequestGate.isCurrent(requestGeneration) else { return }
+            deepSeekBalance = .degraded(
+                from: deepSeekBalance,
+                reason: .credentialReadFailed
+            )
+            return
+        }
+
+        do {
+            let fetchedBalance = try await DeepSeekBalanceAdapter().fetch(apiKey: apiKey)
+            guard deepSeekRequestGate.isCurrent(requestGeneration) else { return }
+            deepSeekBalance = fetchedBalance
+        } catch {
+            guard deepSeekRequestGate.isCurrent(requestGeneration) else { return }
+            let reason = DeepSeekBalanceAdapter.staleReason(for: error)
+            deepSeekBalance = .degraded(from: deepSeekBalance, reason: reason)
         }
     }
 
@@ -170,6 +230,7 @@ final class AppModel: ObservableObject {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .deepSeek: return "DeepSeek"
         case .openCode: return "OpenCode"
         }
     }

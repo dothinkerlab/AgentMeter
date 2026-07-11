@@ -17,8 +17,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.2"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "1.4"
+    CURRENT_PROJECT_VERSION: "12"
     CLOUDKIT_CONTAINER_ENVIRONMENT: Development
   configs:
     Debug:
@@ -37,6 +37,8 @@ targets:
   AgentMeterMac:
     type: application
     platform: macOS
+    supportedDestinations:
+      - macOS
     sources:
       - path: AgentMeterMac
         excludes:

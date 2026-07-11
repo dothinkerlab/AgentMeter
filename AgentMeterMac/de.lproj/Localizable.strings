@@ -12,7 +12,6 @@
 "周Opus" = "Wöchentlich Opus";
 "周Sonnet" = "Wöchentlich Sonnet";
 "每月" = "Monatlich";
-"登录凭证可能已过期,无法刷新用量。请在 %@ 重新登录。" = "Die Anmeldedaten sind möglicherweise abgelaufen, daher konnte die Nutzung nicht aktualisiert werden. Melde dich erneut bei %@ an.";
 "从未成功取到数据。检查是否已登录 %@。" = "Es wurden noch keine Daten abgerufen. Prüfe, ob %@ angemeldet ist.";
 "需重新登录" = "Neue Anmeldung nötig";
 "返回" = "Zurück";
@@ -32,6 +31,17 @@
 "暂无近期数据" = "Keine aktuellen Daten";
 "超过 48 小时未更新的服务已隐藏。可在设置里关闭。" = "Dienste ohne Aktualisierung seit 48 Stunden werden ausgeblendet. Du kannst das in den Einstellungen ändern.";
 "5 小时重置提醒" = "5h-Reset-Erinnerung";
-"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Wenn fresh-Daten zeigen, dass das 5h-Kontingent aufgebraucht ist, wird zur geschätzten Reset-Zeit eine lokale Mitteilung gesendet.";
+"当 fresh 数据显示 5 小时额度已用尽时,在预计重置时间发送本地通知。" = "Erinnert dich nur zur geschätzten Reset-Zeit, wenn kürzlich aktualisierte Daten zeigen, dass das 5h-Kontingent aufgebraucht ist.";
 "%@ 5 小时额度已重置" = "%@ 5h-Kontingent wurde zurückgesetzt";
 "现在可以继续使用 5 小时窗口。" = "Du kannst das 5h-Fenster wieder nutzen.";
+"刷新失败" = "Aktualisierung fehlgeschlagen";
+"服务暂不可用" = "Dienst nicht verfügbar";
+"接口变化" = "API geändert";
+"数据陈旧" = "Veraltete Daten";
+"登录状态可能已失效。请在 %@ 重新登录。" = "Die Anmeldung ist möglicherweise abgelaufen. Melde dich erneut bei %@ an.";
+"无法读取本机登录凭据。请确认 %@ 已登录并允许 AgentMeter 读取。" = "AgentMeter konnte die lokale Anmeldung nicht lesen. Stelle sicher, dass %@ angemeldet und für AgentMeter lesbar ist.";
+"上次刷新遇到网络问题,已保留旧数据。可稍后再刷新。" = "Bei der letzten Aktualisierung gab es ein Netzwerkproblem. Alte Daten bleiben erhalten. Versuche es später erneut.";
+"用量服务暂时不可用,已保留旧数据。可稍后再试。" = "Der Nutzungsdienst ist vorübergehend nicht verfügbar. Alte Daten bleiben erhalten. Versuche es später erneut.";
+"用量接口返回发生变化,暂时无法解析最新数据。" = "Die Nutzungsantwort hat sich geändert. Die neuesten Daten können noch nicht gelesen werden.";
+"上次刷新失败,已保留旧数据。" = "Die letzte Aktualisierung ist fehlgeschlagen. Alte Daten bleiben erhalten.";
+"数据已超过刷新阈值,可能不是最新。" = "Diese Daten überschreiten den Aktualisierungsschwellenwert und sind möglicherweise nicht aktuell.";

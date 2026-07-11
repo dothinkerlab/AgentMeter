@@ -14,7 +14,7 @@
 
 ---
 
-Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** puts your Claude Code and Codex usage where you can check it in seconds: your Apple Watch, iPhone, and Mac menu bar.
+Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** puts your Claude Code and Codex usage where you can check it in seconds: your Apple Watch, iPhone, and Mac menu bar. The Mac companion can also show your DeepSeek API balance locally.
 
 It shows the remaining percentage in the current **5-hour window** and **weekly window**, plus each reset time, without opening a terminal.
 
@@ -38,6 +38,7 @@ The iPhone and Apple Watch app ships through the App Store:
 - **Watch complications and app views** for at-a-glance quota status.
 - **iPhone status view** when you want a larger quota snapshot.
 - **Mac menu-bar companion** that collects quota data and can show status locally.
+- **Local DeepSeek balance** on Mac, including the total, granted, and topped-up amounts.
 - **Multi-window tracking** for both short rolling windows and weekly limits.
 - **5-hour reset reminders** from the Mac companion when fresh data shows a depleted window.
 - **Stale-data warnings** when a quota refresh fails, instead of silently showing old values.
@@ -64,6 +65,8 @@ The iPhone and Apple Watch app ships through the App Store:
 3. It writes only **cleaned quota snapshots** - percentages, windows, reset times, and update timestamps - to your private iCloud database.
 4. Your **Apple Watch** and **iPhone** read those snapshots from iCloud and display them at a glance.
 
+DeepSeek is intentionally separate: you enter its API key on each device where you want to see the balance. The Mac app queries DeepSeek directly and keeps the key and balance local; DeepSeek data is never written to CloudKit or shown on Apple Watch.
+
 Your watch and iPhone never receive provider tokens and never connect directly to Anthropic or OpenAI.
 
 ## Privacy
@@ -73,6 +76,8 @@ AgentMeter is designed around a local-token, private-iCloud sync model:
 - OAuth tokens stay in your **Mac Keychain**.
 - Tokens are used only by the Mac companion, on your Mac, to refresh quota data.
 - Tokens are **never sent to us** and **never written to iCloud**.
+- A manually entered DeepSeek API key stays in the local Keychain with iCloud Keychain synchronization disabled.
+- DeepSeek balances stay local and are never included in CloudKit quota snapshots.
 - Synced records contain only cleaned quota snapshots such as percentages and reset times.
 - If data cannot be refreshed, AgentMeter marks it as **stale**.
 
@@ -81,13 +86,13 @@ AgentMeter is designed around a local-token, private-iCloud sync model:
 - macOS 13 or later for the Mac companion.
 - iOS/watchOS app installed from the [App Store](https://apps.apple.com/app/id6781480047).
 - iCloud enabled with the same Apple ID across your Mac, iPhone, and Apple Watch.
-- Claude Code or Codex signed in on your Mac.
+- Claude Code or Codex signed in on your Mac; DeepSeek is optional and uses an API key entered in the Mac app.
 
 ---
 
 <div align="center">
 
-AgentMeter tracks **Claude Code** and **Codex** today; more tools are planned.
+AgentMeter tracks **Claude Code** and **Codex**, with a local **DeepSeek** balance view on Mac and iPhone; more tools are planned.
 
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 
@@ -123,6 +128,6 @@ The checked-in `DEVELOPMENT_TEAM` and iCloud container ID belong to the maintain
 
 ## Disclaimer
 
-AgentMeter reads quota data from **unofficial, undocumented** Claude Code and Codex endpoints. These endpoints may change or stop working at any time, and using them may be subject to each provider's terms of service. Use AgentMeter at your own risk.
+AgentMeter reads quota data from **unofficial, undocumented** Claude Code and Codex endpoints. These endpoints may change or stop working at any time. DeepSeek balance data comes from DeepSeek's official balance API. Using these services may be subject to each provider's terms of service. Use AgentMeter at your own risk.
 
-AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** Anthropic or OpenAI. "Claude" and "Claude Code" are trademarks of Anthropic; "Codex" and "ChatGPT" are trademarks of OpenAI; "Apple Watch" is a trademark of Apple Inc. All trademarks belong to their respective owners.
+AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** Anthropic, OpenAI, or DeepSeek. "Claude" and "Claude Code" are trademarks of Anthropic; "Codex" and "ChatGPT" are trademarks of OpenAI; "DeepSeek" is a trademark of DeepSeek; "Apple Watch" is a trademark of Apple Inc. All trademarks belong to their respective owners.

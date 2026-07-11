@@ -14,7 +14,7 @@
 
 ---
 
-你离开键盘后，后台的 coding agent 可能还在消耗额度。**AgentMeter** 把 Claude Code 和 Codex 的额度状态放到你几秒内就能看到的地方：Apple Watch、iPhone 和 Mac 菜单栏。
+你离开键盘后，后台的 coding agent 可能还在消耗额度。**AgentMeter** 把 Claude Code 和 Codex 的额度状态放到你几秒内就能看到的地方：Apple Watch、iPhone 和 Mac 菜单栏。Mac 伴侣 app 还可以在本机显示 DeepSeek API 余额。
 
 它会显示当前 **5 小时窗口**和**每周窗口**的剩余额度百分比，以及各自的重置时间。不用回到终端里翻状态。
 
@@ -38,6 +38,7 @@ iPhone 和 Apple Watch app 通过 App Store 发布：
 - **Apple Watch 表盘组件与 app 视图**：抬腕查看额度状态。
 - **iPhone 状态页**：需要更大视图时查看完整快照。
 - **Mac 菜单栏伴侣**：负责采集额度，也能在本机显示状态。
+- **DeepSeek 本地余额**：在 Mac 查看总余额以及赠金、充值余额拆分。
 - **多窗口追踪**：同时关注短周期窗口和每周额度。
 - **5 小时重置提醒**：fresh 数据显示额度用尽时，由 Mac 伴侣 app 在预计重置时间提醒。
 - **陈旧数据提醒**：刷新失败时明确标记数据陈旧，而不是悄悄显示旧值。
@@ -64,6 +65,8 @@ iPhone 和 Apple Watch app 通过 App Store 发布：
 3. 它只把**清洗后的额度快照**写入你的私有 iCloud 数据库，包括百分比、窗口、重置时间和更新时间。
 4. 你的 **Apple Watch** 和 **iPhone** 从 iCloud 读取这些快照，并展示给你。
 
+DeepSeek 刻意采用独立旁路：你需要在每台希望查看余额的设备上单独输入 API key。Mac app 直接请求 DeepSeek，key 和余额只留在本机；DeepSeek 数据不会写入 CloudKit，也不会显示在 Apple Watch 上。
+
 手表和 iPhone 不会拿到服务商 token，也不会直连 Anthropic 或 OpenAI。
 
 ## 隐私
@@ -73,6 +76,8 @@ AgentMeter 采用“本机 token + 私有 iCloud 同步”的设计：
 - OAuth token 只保存在你的 **Mac Keychain**。
 - token 只由 Mac 伴侣 app 在你的 Mac 本机用于刷新额度。
 - token **绝不发送给我们**，也**绝不写入 iCloud**。
+- 手动输入的 DeepSeek API key 只存在本机 Keychain，并明确关闭 iCloud Keychain 同步。
+- DeepSeek 余额只留在本机，不会进入 CloudKit 额度快照。
 - 同步记录只包含清洗后的额度快照，例如百分比和重置时间。
 - 如果数据无法刷新，AgentMeter 会明确标记为**陈旧**。
 
@@ -81,13 +86,13 @@ AgentMeter 采用“本机 token + 私有 iCloud 同步”的设计：
 - Mac 伴侣 app 需要 macOS 13 或更高版本。
 - iPhone / Apple Watch app 需从 [App Store](https://apps.apple.com/app/id6781480047) 安装。
 - Mac、iPhone 和 Apple Watch 需使用同一个 Apple ID 开启 iCloud。
-- Mac 上已登录 Claude Code 或 Codex。
+- Mac 上已登录 Claude Code 或 Codex；DeepSeek 为可选功能，需要在 Mac app 中手动输入 API key。
 
 ---
 
 <div align="center">
 
-AgentMeter 当前支持 **Claude Code** 和 **Codex**，更多工具在规划中。
+AgentMeter 当前支持 **Claude Code** 和 **Codex**，并在 Mac 与 iPhone 提供本地 **DeepSeek** 余额视图；更多工具在规划中。
 
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 
@@ -123,6 +128,6 @@ open AgentMeter.xcodeproj
 
 ## 免责声明
 
-AgentMeter 从 Claude Code 与 Codex 的**非官方、未公开**端点读取额度数据。这些端点可能随时变动或失效，使用它们可能受各自服务商的服务条款约束。请自行承担使用风险。
+AgentMeter 从 Claude Code 与 Codex 的**非官方、未公开**端点读取额度数据，这些端点可能随时变动或失效；DeepSeek 余额来自 DeepSeek 官方余额 API。使用这些服务可能受各自服务商的服务条款约束，请自行承担风险。
 
-AgentMeter 为独立项目，**与 Anthropic、OpenAI 无任何隶属、背书或赞助关系**。“Claude”、“Claude Code” 是 Anthropic 的商标；“Codex”、“ChatGPT” 是 OpenAI 的商标；“Apple Watch” 是 Apple Inc. 的商标。所有商标归各自所有者所有。
+AgentMeter 为独立项目，**与 Anthropic、OpenAI、DeepSeek 无任何隶属、背书或赞助关系**。“Claude”、“Claude Code” 是 Anthropic 的商标；“Codex”、“ChatGPT” 是 OpenAI 的商标；“DeepSeek” 是 DeepSeek 的商标；“Apple Watch” 是 Apple Inc. 的商标。所有商标归各自所有者所有。

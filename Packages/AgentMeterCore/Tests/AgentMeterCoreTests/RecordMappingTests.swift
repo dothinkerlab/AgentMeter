@@ -57,6 +57,35 @@ struct RecordMappingTests {
         #expect(restored.plan == nil)
     }
 
+    @Test func staleReasonRoundTripsWhenPresent() throws {
+        let snap = QuotaSnapshot(tool: .codex, plan: "Plus", windows: [],
+                                 confidence: .stale, staleReason: .networkFailure,
+                                 source: "codex_plan_usage_endpoint",
+                                 updatedAt: Date(timeIntervalSince1970: 1_749_900_000))
+        let record = try RecordMapping.makeRecord(from: snap)
+        #expect(record["staleReason"] as? String == "networkFailure")
+        #expect(try RecordMapping.snapshot(from: record) == snap)
+    }
+
+    @Test func freshSnapshotClearsStaleReasonField() throws {
+        let snap = sampleSnapshot()
+        let record = try RecordMapping.makeRecord(from: snap)
+        #expect(record["staleReason"] == nil)
+        #expect(try RecordMapping.snapshot(from: record).staleReason == nil)
+    }
+
+    @Test func missingStaleReasonFieldKeepsOldRecordsCompatible() throws {
+        let snap = QuotaSnapshot(tool: .codex, plan: "Plus", windows: [],
+                                 confidence: .stale, staleReason: .networkFailure,
+                                 source: "codex_plan_usage_endpoint",
+                                 updatedAt: Date(timeIntervalSince1970: 1_749_900_000))
+        let record = try RecordMapping.makeRecord(from: snap)
+        record["staleReason"] = nil
+        let restored = try RecordMapping.snapshot(from: record)
+        #expect(restored.confidence == .stale)
+        #expect(restored.staleReason == nil)
+    }
+
     @Test func missingToolFieldThrows() {
         let record = CKRecord(recordType: RecordMapping.recordType,
                               recordID: RecordMapping.recordID(for: .claudeCode))
