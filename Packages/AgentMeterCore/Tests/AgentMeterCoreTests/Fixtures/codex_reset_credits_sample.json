@@ -1,0 +1,29 @@
+{
+  "available_count": 2,
+  "credits": [
+    {
+      "id": "not-synced-1",
+      "status": "available",
+      "reset_type": "codex_rate_limits",
+      "granted_at": "2026-06-26T23:37:59.168175Z",
+      "expires_at": "2026-07-26T23:37:59.168175Z",
+      "title": "Full reset"
+    },
+    {
+      "id": "not-synced-2",
+      "status": "available",
+      "reset_type": "codex_rate_limits",
+      "granted_at": "2026-07-01T19:57:54.481163Z",
+      "expires_at": "2026-07-31T19:57:54.481163Z",
+      "title": "Full reset"
+    },
+    {
+      "id": "not-synced-redeemed",
+      "status": "redeemed",
+      "reset_type": "codex_rate_limits",
+      "granted_at": "2026-06-01T00:00:00Z",
+      "expires_at": "2026-07-01T00:00:00Z",
+      "title": "Full reset"
+    }
+  ]
+}

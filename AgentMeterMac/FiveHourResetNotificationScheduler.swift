@@ -81,7 +81,9 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
         case .deepSeek: return "DeepSeek"
+        case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
+        case .grok: return "xAI API"
         }
     }
 }

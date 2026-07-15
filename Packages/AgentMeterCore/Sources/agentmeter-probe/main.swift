@@ -71,7 +71,7 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             accountID: credentials.accountID,
             plan: credentials.subscriptionType
         )
-    case .openCode, .deepSeek:
+    case .openCode, .deepSeek, .openRouter, .grok:
         throw ProbeError.unsupportedTool(tool.rawValue)
     }
 }

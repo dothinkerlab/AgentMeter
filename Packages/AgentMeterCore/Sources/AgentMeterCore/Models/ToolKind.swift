@@ -6,6 +6,8 @@ public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case codex
     case openCode
     case deepSeek
+    case openRouter
+    case grok
 }
 
 /// 额度窗口类型。Claude 端点返回 `five_hour` / `seven_day` / `seven_day_opus` /

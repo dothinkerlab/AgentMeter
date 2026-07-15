@@ -10,6 +10,8 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
     /// 订阅档位,如 "Max 5x"。能拿到就填,拿不到为 nil。
     public let plan: String?
     public let windows: [QuotaWindow]
+    /// Codex 专属的可用 rate-limit reset 附加状态。它不是额度窗口，并拥有独立 freshness。
+    public let resetCredits: RateLimitResetCredits?
     public let confidence: DataConfidence
     /// stale/unknown 数据的失败原因。旧记录可能没有该字段,此时 UI 回退为"数据陈旧"。
     public let staleReason: QuotaStaleReason?
@@ -22,6 +24,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         tool: ToolKind,
         plan: String?,
         windows: [QuotaWindow],
+        resetCredits: RateLimitResetCredits? = nil,
         confidence: DataConfidence,
         staleReason: QuotaStaleReason? = nil,
         source: String,
@@ -30,6 +33,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         self.tool = tool
         self.plan = plan
         self.windows = windows
+        self.resetCredits = tool == .codex ? resetCredits : nil
         self.confidence = confidence
         self.staleReason = confidence == .fresh ? nil : staleReason
         self.source = source
@@ -59,7 +63,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
     /// 取数失败时:保留上次成功的窗口和 `updatedAt`(真实数据年龄),仅把 confidence
     /// 降级为 `.stale`。UI 据此显示"数据陈旧",绝不用旧数冒充新数(铁律 2)。
     public func markedStale(reason: QuotaStaleReason? = nil) -> QuotaSnapshot {
-        QuotaSnapshot(tool: tool, plan: plan, windows: windows,
+        QuotaSnapshot(tool: tool, plan: plan, windows: windows, resetCredits: resetCredits,
                       confidence: .stale, staleReason: reason,
                       source: source, updatedAt: updatedAt)
     }
@@ -74,5 +78,18 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         QuotaSnapshot(tool: tool, plan: nil, windows: [],
                       confidence: .unknown, staleReason: reason,
                       source: source, updatedAt: now)
+    }
+
+    public func replacingResetCredits(_ resetCredits: RateLimitResetCredits?) -> QuotaSnapshot {
+        QuotaSnapshot(
+            tool: tool,
+            plan: plan,
+            windows: windows,
+            resetCredits: resetCredits,
+            confidence: confidence,
+            staleReason: staleReason,
+            source: source,
+            updatedAt: updatedAt
+        )
     }
 }

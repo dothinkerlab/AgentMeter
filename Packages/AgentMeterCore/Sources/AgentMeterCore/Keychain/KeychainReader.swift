@@ -100,12 +100,16 @@ public enum KeychainReader {
             return "OpenCode-credentials"
         case .deepSeek:
             return DeepSeekKeyStore.service
+        case .openRouter:
+            return OpenRouterKeyStore.service
+        case .grok:
+            return GrokManagementKeyStore.service
         }
     }
 
     public static func readCredentials(tool: ToolKind = .claudeCode) throws -> Credentials {
         switch tool {
-        case .deepSeek:
+        case .deepSeek, .openRouter, .grok:
             throw ReadError.notFound(serviceName(for: tool))
         default:
             break
@@ -149,6 +153,10 @@ public enum KeychainReader {
             case .openCode:
                 return nil
             case .deepSeek:
+                return nil
+            case .openRouter:
+                return nil
+            case .grok:
                 return nil
             }
         }

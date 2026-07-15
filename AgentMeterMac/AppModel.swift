@@ -14,6 +14,10 @@ final class AppModel: ObservableObject {
     /// DeepSeek 余额(旁路采集,不入 CloudKit/QuotaSnapshot 体系)。
     /// 缺 API key 时为 nil;取数失败时翻 stale(若有旧值)或 unknown(无旧值)。
     @Published private(set) var deepSeekBalance: DeepSeekBalance?
+    /// OpenRouter 当前 key 用量(本地旁路,不入 CloudKit/Watch)。
+    @Published private(set) var openRouterUsage: OpenRouterUsage?
+    /// xAI API 团队账单(本地旁路,不入 CloudKit/Watch)。
+    @Published private(set) var grokAPIUsage: GrokAPIUsage?
     @Published var toolDisplayOrder: String {
         didSet { defaults.set(toolDisplayOrder, forKey: Self.toolDisplayOrderKey) }
     }
@@ -46,6 +50,8 @@ final class AppModel: ObservableObject {
     private var loopTask: Task<Void, Never>?
     private var started = false
     private var deepSeekRequestGate = DeepSeekRequestGate()
+    private var openRouterRequestGate = OpenRouterRequestGate()
+    private var grokRequestGate = GrokRequestGate()
 
     init(
         defaults: UserDefaults = .standard,
@@ -91,14 +97,20 @@ final class AppModel: ObservableObject {
         // Claude/Codex 正在采集时仍刷新 DeepSeek。设置页保存/删除 key 会触发这里,
         // 不能因全局采集锁而丢掉这次旁路刷新。
         if isCollecting {
-            await collectDeepSeek()
+            async let deepSeek: Void = collectDeepSeek()
+            async let openRouter: Void = collectOpenRouter()
+            async let grok: Void = collectGrok()
+            _ = await (deepSeek, openRouter, grok)
             return
         }
         isCollecting = true
         results = await collector.collectAll(tools: Self.tools)
         lastCollectedAt = Date()
         // DeepSeek 旁路采集 —— 不走 QuotaCollector,缺 key 跳过,失败降级 stale/unknown。
-        await collectDeepSeek()
+        async let deepSeek: Void = collectDeepSeek()
+        async let openRouter: Void = collectOpenRouter()
+        async let grok: Void = collectGrok()
+        _ = await (deepSeek, openRouter, grok)
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
             await resetNotificationScheduler.scheduleResetAlerts(for: snapshots)
@@ -148,6 +160,68 @@ final class AppModel: ObservableObject {
             guard deepSeekRequestGate.isCurrent(requestGeneration) else { return }
             let reason = DeepSeekBalanceAdapter.staleReason(for: error)
             deepSeekBalance = .degraded(from: deepSeekBalance, reason: reason)
+        }
+    }
+
+    /// OpenRouter 本地旁路采集。普通 API key 只发送给 OpenRouter 官方 `/api/v1/key`。
+    private func collectOpenRouter() async {
+        let requestGeneration = openRouterRequestGate.begin()
+        let apiKey: String
+        do {
+            guard let key = try OpenRouterKeyStore.read(), !key.isEmpty else {
+                guard openRouterRequestGate.isCurrent(requestGeneration) else { return }
+                openRouterUsage = nil
+                return
+            }
+            apiKey = key
+        } catch {
+            guard openRouterRequestGate.isCurrent(requestGeneration) else { return }
+            openRouterUsage = .degraded(from: openRouterUsage, reason: .credentialReadFailed)
+            return
+        }
+
+        do {
+            let fetched = try await OpenRouterUsageAdapter().fetch(apiKey: apiKey)
+            guard openRouterRequestGate.isCurrent(requestGeneration) else { return }
+            openRouterUsage = fetched
+        } catch {
+            guard openRouterRequestGate.isCurrent(requestGeneration) else { return }
+            openRouterUsage = .degraded(
+                from: openRouterUsage,
+                reason: OpenRouterUsageAdapter.staleReason(for: error)
+            )
+        }
+    }
+
+    /// xAI API 团队账单旁路。Management Key 与 Team ID 只从本机 Keychain 读取。
+    private func collectGrok() async {
+        let requestGeneration = grokRequestGate.begin()
+        let credentials: GrokManagementCredentials
+        do {
+            guard let stored = try GrokManagementKeyStore.read(),
+                  !stored.managementKey.isEmpty,
+                  !stored.teamID.isEmpty else {
+                guard grokRequestGate.isCurrent(requestGeneration) else { return }
+                grokAPIUsage = nil
+                return
+            }
+            credentials = stored
+        } catch {
+            guard grokRequestGate.isCurrent(requestGeneration) else { return }
+            grokAPIUsage = .degraded(from: grokAPIUsage, reason: .credentialReadFailed)
+            return
+        }
+
+        do {
+            let fetched = try await GrokAPIUsageAdapter().fetch(credentials: credentials)
+            guard grokRequestGate.isCurrent(requestGeneration) else { return }
+            grokAPIUsage = fetched
+        } catch {
+            guard grokRequestGate.isCurrent(requestGeneration) else { return }
+            grokAPIUsage = .degraded(
+                from: grokAPIUsage,
+                reason: GrokAPIUsageAdapter.staleReason(for: error)
+            )
         }
     }
 
@@ -231,7 +305,9 @@ final class AppModel: ObservableObject {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
         case .deepSeek: return "DeepSeek"
+        case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
+        case .grok: return "xAI API"
         }
     }
 }

@@ -41,6 +41,22 @@ public enum SampleQuotaSnapshots {
                         kind: .sevenDay
                     )
                 ],
+                resetCredits: RateLimitResetCredits(
+                    availableCount: 2,
+                    credits: [
+                        RateLimitResetCredit(
+                            grantedAt: now.addingTimeInterval(-17 * 24 * 3600),
+                            expiresAt: now.addingTimeInterval(13 * 24 * 3600)
+                        ),
+                        RateLimitResetCredit(
+                            grantedAt: now.addingTimeInterval(-12 * 24 * 3600),
+                            expiresAt: now.addingTimeInterval(18 * 24 * 3600)
+                        )
+                    ],
+                    confidence: .fresh,
+                    source: "screenshot_sample",
+                    updatedAt: now.addingTimeInterval(-6 * 60)
+                ),
                 confidence: .fresh,
                 source: "screenshot_sample",
                 updatedAt: now.addingTimeInterval(-6 * 60)

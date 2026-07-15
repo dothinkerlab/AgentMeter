@@ -16,6 +16,7 @@ public enum RecordMapping {
         static let tool = "tool"
         static let plan = "plan"
         static let windowsJSON = "windowsJSON"
+        static let resetCreditsJSON = "resetCreditsJSON"
         static let confidence = "confidence"
         static let staleReason = "staleReason"
         static let source = "source"
@@ -58,6 +59,15 @@ public enum RecordMapping {
             throw MappingError.badValue("windows 无法编码为 UTF-8 JSON")
         }
         record[Field.windowsJSON] = json as CKRecordValue
+        if let resetCredits = snapshot.resetCredits {
+            let resetData = try makeEncoder().encode(resetCredits)
+            guard let resetJSON = String(data: resetData, encoding: .utf8) else {
+                throw MappingError.badValue("resetCredits 无法编码为 UTF-8 JSON")
+            }
+            record[Field.resetCreditsJSON] = resetJSON as CKRecordValue
+        } else {
+            record[Field.resetCreditsJSON] = nil
+        }
         record[Field.confidence] = snapshot.confidence.rawValue as CKRecordValue
         if snapshot.confidence == .fresh {
             record[Field.staleReason] = nil
@@ -105,11 +115,24 @@ public enum RecordMapping {
             throw MappingError.missingField(Field.updatedAt)
         }
         let plan = record[Field.plan] as? String
+        let resetCredits: RateLimitResetCredits?
+        if let resetJSON = record[Field.resetCreditsJSON] as? String,
+           let resetData = resetJSON.data(using: .utf8) {
+            do {
+                resetCredits = try makeDecoder().decode(RateLimitResetCredits.self, from: resetData)
+            } catch {
+                // 附加信息损坏不能让主额度窗口一起不可用。
+                resetCredits = nil
+            }
+        } else {
+            resetCredits = nil
+        }
 
         return QuotaSnapshot(
             tool: tool,
             plan: plan,
             windows: windows,
+            resetCredits: resetCredits,
             confidence: confidence,
             staleReason: staleReason,
             source: source,

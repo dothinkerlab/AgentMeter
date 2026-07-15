@@ -26,6 +26,46 @@ struct RecordMappingTests {
         #expect(restored == original)
     }
 
+    @Test func resetCreditsRoundTripAsOptionalJSON() throws {
+        let resetCredits = RateLimitResetCredits(
+            availableCount: 2,
+            credits: [
+                RateLimitResetCredit(
+                    grantedAt: Date(timeIntervalSince1970: 1_750_000_000),
+                    expiresAt: Date(timeIntervalSince1970: 1_752_592_000)
+                )
+            ],
+            confidence: .fresh,
+            updatedAt: Date(timeIntervalSince1970: 1_750_000_100)
+        )
+        let snapshot = QuotaSnapshot(
+            tool: .codex,
+            plan: "Pro",
+            windows: [],
+            resetCredits: resetCredits,
+            confidence: .fresh,
+            source: "test",
+            updatedAt: Date(timeIntervalSince1970: 1_750_000_100)
+        )
+        let record = try RecordMapping.makeRecord(from: snapshot)
+        #expect(record["resetCreditsJSON"] as? String != nil)
+        #expect(try RecordMapping.snapshot(from: record) == snapshot)
+    }
+
+    @Test func oldRecordWithoutResetCreditsRemainsCompatible() throws {
+        let record = try RecordMapping.makeRecord(from: sampleSnapshot())
+        record["resetCreditsJSON"] = nil
+        #expect(try RecordMapping.snapshot(from: record).resetCredits == nil)
+    }
+
+    @Test func malformedResetCreditsDoesNotDiscardQuotaWindows() throws {
+        let record = try RecordMapping.makeRecord(from: sampleSnapshot())
+        record["resetCreditsJSON"] = "{ broken" as CKRecordValue
+        let restored = try RecordMapping.snapshot(from: record)
+        #expect(restored.windows == sampleSnapshot().windows)
+        #expect(restored.resetCredits == nil)
+    }
+
     @Test func usesFixedRecordNamePerTool() throws {
         let record = try RecordMapping.makeRecord(from: sampleSnapshot())
         #expect(record.recordID.recordName == "snapshot-claudeCode")

@@ -1,0 +1,18 @@
+{
+  "data": {
+    "label": "AgentMeter",
+    "limit": 100.0,
+    "limit_remaining": 74.5,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false,
+    "usage": 25.5,
+    "usage_daily": 1.25,
+    "usage_weekly": 8.75,
+    "usage_monthly": 25.5,
+    "byok_usage": 17.38,
+    "byok_usage_daily": 0.5,
+    "byok_usage_weekly": 2.5,
+    "byok_usage_monthly": 7.5,
+    "expires_at": "2027-12-31T23:59:59Z"
+  }
+}

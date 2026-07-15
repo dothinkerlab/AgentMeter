@@ -6,6 +6,7 @@ struct AgentToolSelectionTests {
 
     @Test func defaultsToClaudeAndCodex() {
         #expect(AgentToolSelection.parseTools(env: [:], args: []) == [.claudeCode, .codex])
+        #expect(!AgentToolSelection.defaultTools.contains(.grok))
     }
 
     @Test func multiToolEnvParsedAndTrimmed() {
