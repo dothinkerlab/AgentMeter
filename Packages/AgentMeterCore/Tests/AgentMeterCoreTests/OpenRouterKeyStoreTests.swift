@@ -39,41 +39,49 @@ struct OpenRouterKeyStoreTests {
         if let value = (item as? [String: Any])?[kSecAttrSynchronizable as String] as? Bool {
             #expect(value == false)
         }
-
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: OpenRouterKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(openRouterDeviceOnlyStatus(service: service) == errSecSuccess)
     }
 
     @Test func saveUpgradesMigratableItemToThisDeviceOnly() throws {
         let service = scopedService()
         defer { wipeOpenRouterKey(service: service) }
-        let legacyItem: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: OpenRouterKeyStore.account,
-            kSecAttrSynchronizable as String: kCFBooleanFalse!,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-            kSecValueData as String: Data("sk-or-v1-legacy".utf8),
-        ]
-        #expect(SecItemAdd(legacyItem as CFDictionary, nil) == errSecSuccess)
+        #expect(addLegacyOpenRouterKey("sk-or-v1-legacy", service: service) == errSecSuccess)
 
         try OpenRouterKeyStore.save(apiKey: "sk-or-v1-upgraded", service: service)
 
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: OpenRouterKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(try OpenRouterKeyStore.read(service: service) == "sk-or-v1-upgraded")
+        #expect(openRouterDeviceOnlyStatus(service: service) == errSecSuccess)
     }
+
+    @Test func readUpgradesMigratableItemWithoutReentry() throws {
+        let service = scopedService()
+        defer { wipeOpenRouterKey(service: service) }
+        #expect(addLegacyOpenRouterKey("sk-or-v1-existing", service: service) == errSecSuccess)
+
+        #expect(try OpenRouterKeyStore.read(service: service) == "sk-or-v1-existing")
+        #expect(openRouterDeviceOnlyStatus(service: service) == errSecSuccess)
+    }
+}
+
+private func addLegacyOpenRouterKey(_ key: String, service: String) -> OSStatus {
+    SecItemAdd([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: OpenRouterKeyStore.account,
+        kSecAttrSynchronizable as String: kCFBooleanFalse!,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+        kSecValueData as String: Data(key.utf8),
+    ] as CFDictionary, nil)
+}
+
+private func openRouterDeviceOnlyStatus(service: String) -> OSStatus {
+    SecItemCopyMatching([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: OpenRouterKeyStore.account,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        kSecMatchLimit as String: kSecMatchLimitOne,
+    ] as CFDictionary, nil)
 }
 
 private func wipeOpenRouterKey(service: String) {

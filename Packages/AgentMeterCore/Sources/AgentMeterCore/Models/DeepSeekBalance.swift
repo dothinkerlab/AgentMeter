@@ -8,7 +8,8 @@ import FoundationNetworking
 /// 与 `QuotaSnapshot` 不同 —— DeepSeek 返回的是**绝对余额**(人民币/美元金额),
 /// 没有「已用 %」也没有「重置时间」,与铁律 3「内部统一存已用 %」不兼容。
 /// 所以 DeepSeek **不入 `QuotaSnapshot` / `QuotaWindow`** —— 它是 QuotaCollector 之外的
-/// 旁路,各端各自 fetch、各自展示,不进 CloudKit、不上 Apple Watch。
+/// 旁路,Mac/iPhone 各自 fetch,不进 CloudKit。iPhone 可将显式白名单展示 DTO
+/// 通过 WatchConnectivity 发给配对 Watch,但凭据永远不离开 iPhone。
 ///
 /// 复用 `DataConfidence` / `QuotaStaleReason` 描述数据陈旧原因(采集容错铁律 2 不变)。
 public struct DeepSeekBalance: Codable, Sendable, Equatable {

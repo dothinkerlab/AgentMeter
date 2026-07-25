@@ -14,10 +14,16 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         guard await requestAuthorizationIfNeeded() else { return }
         let existingIdentifiers = await pendingResetAlertIdentifiers()
         let candidates = FiveHourResetAlertPlanner.candidates(
-            from: snapshots,
-            existingIdentifiers: existingIdentifiers
+            from: snapshots
         )
-        for candidate in candidates {
+        let plan = FiveHourResetAlertReconciler.plan(
+            candidates: candidates,
+            pendingIdentifiers: existingIdentifiers
+        )
+        center.removePendingNotificationRequests(
+            withIdentifiers: Array(plan.identifiersToCancel)
+        )
+        for candidate in plan.candidatesToSchedule {
             await schedule(candidate)
         }
     }
@@ -80,6 +86,9 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .kimiCode: return "Kimi Code"
+        case .glmCoding: return "GLM Coding Plan"
+        case .miniMax: return "MiniMax Token Plan"
         case .deepSeek: return "DeepSeek"
         case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"

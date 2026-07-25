@@ -96,6 +96,12 @@ public enum KeychainReader {
             return claudeService
         case .codex:
             return codexService
+        case .kimiCode:
+            return ProviderCredentialStore.Kind.kimiCode.rawValue
+        case .glmCoding:
+            return ProviderCredentialStore.Kind.glmCoding.rawValue
+        case .miniMax:
+            return ProviderCredentialStore.Kind.miniMax.rawValue
         case .openCode:
             return "OpenCode-credentials"
         case .deepSeek:
@@ -109,7 +115,7 @@ public enum KeychainReader {
 
     public static func readCredentials(tool: ToolKind = .claudeCode) throws -> Credentials {
         switch tool {
-        case .deepSeek, .openRouter, .grok:
+        case .kimiCode, .glmCoding, .miniMax, .deepSeek, .openRouter, .grok:
             throw ReadError.notFound(serviceName(for: tool))
         default:
             break
@@ -150,6 +156,8 @@ public enum KeychainReader {
                 return claudeAiOauth
             case .codex:
                 return codexOauth ?? codex
+            case .kimiCode, .glmCoding, .miniMax:
+                return nil
             case .openCode:
                 return nil
             case .deepSeek:

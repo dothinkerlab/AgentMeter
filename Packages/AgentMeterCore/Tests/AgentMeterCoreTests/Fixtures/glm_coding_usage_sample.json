@@ -1,0 +1,7 @@
+{
+  "data": {"limits": [
+    {"type":"TOKENS_LIMIT","name":"5 hour","percentage":37.5,"nextResetTime":"2030-07-18T05:00:00Z"},
+    {"type":"TOKENS_LIMIT","name":"Weekly","percentage":20,"nextResetTime":"2030-07-24T00:00:00Z"},
+    {"type":"TIME_LIMIT","name":"MCP monthly","percentage":90,"nextResetTime":"2030-08-01T00:00:00Z"}
+  ]}
+}

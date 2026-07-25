@@ -8,23 +8,19 @@ import AgentMeterCore
 /// 登录失效(数据陈旧)、接近上限 / 额度耗尽的语义配色。
 struct MenuBarContentView: View {
     @ObservedObject var model: AppModel
-    @State private var showsSettings = false
     @State private var expandedLocalDataSource: LocalDataSource?
-
-    private static let githubURL = URL(string: "https://github.com/dothinkerlab/AgentMeter")!
-    private static let releasesURL = URL(string: "https://github.com/dothinkerlab/AgentMeter/releases")!
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider().overlay(Color.black.opacity(0.07))
-            if showsSettings {
-                settingsContent
-            } else {
+            ScrollView(.vertical) {
                 content
-                Divider().overlay(Color.black.opacity(0.07))
-                footer
+                    .frame(maxWidth: .infinity)
             }
+            .frame(maxHeight: 560)
+            Divider().overlay(Color.black.opacity(0.07))
+            footer
         }
         .frame(width: 320)
     }
@@ -33,50 +29,29 @@ struct MenuBarContentView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            if showsSettings {
-                Button { showsSettings = false } label: {
-                    ZStack {
-                        Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(hex: 0x6C6C70))
-                    }
-                }
-                .buttonStyle(.borderless)
-                .help(L10n.string("返回"))
+            Text("AgentMeter")
+                .font(.system(size: 16, weight: .heavy))
+                .tracking(-0.4)
+                .foregroundColor(Color(hex: 0x1C1C1E))
 
-                Text(L10n.string("设置"))
-                    .font(.system(size: 16, weight: .heavy))
-                    .tracking(-0.4)
-                    .foregroundColor(Color(hex: 0x1C1C1E))
-            } else {
-                Text("AgentMeter")
-                    .font(.system(size: 16, weight: .heavy))
-                    .tracking(-0.4)
-                    .foregroundColor(Color(hex: 0x1C1C1E))
-
-                // 同步状态胶囊:脉冲点 + 文案,反映真实的 lastCollectedAt(非伪造)。
-                // 近期采集为绿色「刚刚更新」,超过陈旧阈值转琥珀,从未采集则不显示(由加载骨架接管)。
-                if let last = model.lastCollectedAt {
-                    syncPill(last: last)
-                }
+            // 同步状态胶囊:脉冲点 + 文案,反映真实的 lastCollectedAt(非伪造)。
+            if let last = model.lastCollectedAt {
+                syncPill(last: last)
             }
 
             Spacer(minLength: 6)
 
-            if !showsSettings {
-                Button { Task { await model.collectNow() } } label: {
-                    ZStack {
-                        Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color(hex: 0x6C6C70))
-                    }
+            Button { Task { await model.collectNow() } } label: {
+                ZStack {
+                    Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: 0x6C6C70))
                 }
-                .buttonStyle(.borderless)
-                .disabled(model.isCollecting)
-                .help(L10n.string("立即刷新"))
             }
+            .buttonStyle(.borderless)
+            .disabled(model.isCollecting)
+            .help(L10n.string("立即刷新"))
         }
         .padding(.horizontal, 16)
         .padding(.top, 13)
@@ -106,17 +81,20 @@ struct MenuBarContentView: View {
 
     private var footer: some View {
         HStack {
-            Button {
-                expandedLocalDataSource = nil
-                showsSettings = true
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text(L10n.string("设置"))
-                        .font(.system(size: 12.5, weight: .semibold))
+            Group {
+                if #available(macOS 14.0, *) {
+                    SettingsLink {
+                        settingsFooterLabel
+                    }
+                } else {
+                    Button {
+                        expandedLocalDataSource = nil
+                        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                        NSApp.activate(ignoringOtherApps: true)
+                    } label: {
+                        settingsFooterLabel
+                    }
                 }
-                .foregroundColor(Color(hex: 0x3A3A3C))
             }
             .buttonStyle(.borderless)
 
@@ -137,227 +115,114 @@ struct MenuBarContentView: View {
         .padding(.vertical, 11)
     }
 
+    private var settingsFooterLabel: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 12, weight: .semibold))
+            Text(L10n.string("设置"))
+                .font(.system(size: 12.5, weight: .semibold))
+        }
+        .foregroundColor(Color(hex: 0x3A3A3C))
+    }
+
     // MARK: - 主体(正常 / 加载 / 空态)
 
     @ViewBuilder
     private var content: some View {
-        let snaps = model.orderedSnapshots()
-        let deepSeekBalance = model.deepSeekBalance
-        let openRouterUsage = model.openRouterUsage
-        let grokAPIUsage = model.grokAPIUsage
-        if snaps.isEmpty && openRouterUsage == nil && grokAPIUsage == nil && deepSeekBalance == nil {
+        let items = model.orderedVisibleDisplayItems()
+        if items.isEmpty {
             if model.lastCollectedAt == nil {
                 LoadingView()
-            } else if model.hidesInactiveTools && !model.snapshots.isEmpty {
+            } else if model.hidesInactiveTools && model.hasMainVisibleSnapshotsBeforeInactiveFilter {
                 inactiveHiddenState
+            } else if model.hasMainVisibilityFilteredSnapshots {
+                manuallyHiddenState
             } else {
                 emptyState
             }
         } else {
             VStack(spacing: 0) {
-                ForEach(Array(snaps.enumerated()), id: \.element.tool) { index, snapshot in
+                ForEach(Array(items.enumerated()), id: \.element) { index, item in
                     if index > 0 {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.07))
-                            .frame(height: 0.5)
-                            .padding(.leading, 19)
+                        localBillingDivider
                     }
-                    ToolRow(
-                        name: displayName(for: snapshot.tool),
-                        plan: snapshot.plan,
-                        brand: brand(for: snapshot.tool),
-                        tool: snapshot.tool,
-                        isStale: model.isStale(snapshot),
-                        staleLabel: staleLabel(snapshot),
-                        ageText: relativeAge(snapshot.updatedAt),
-                        warning: staleWarning(snapshot),
-                        windows: orderedWindows(snapshot.windows),
-                        resetSummary: resetSummary(snapshot.windows),
-                        resetCredits: snapshot.resetCredits,
-                        labelFor: shortLabel
-                    )
-                }
-
-                // OpenRouter 用量行(本地旁路):金额口径,不进入 QuotaSnapshot/CloudKit。
-                if let usage = openRouterUsage {
-                    if !snaps.isEmpty {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.07))
-                            .frame(height: 0.5)
-                            .padding(.leading, 19)
-                    }
-                    OpenRouterUsageRow(
-                        usage: usage,
-                        isStale: openRouterIsStale(usage),
-                        staleLabel: openRouterStaleLabel(usage),
-                        ageText: relativeAge(usage.updatedAt),
-                        warning: openRouterWarning(usage)
-                    )
-                }
-
-                // xAI API 团队账单(本地旁路):Management Key 不离开本机。
-                if let usage = grokAPIUsage {
-                    if !snaps.isEmpty || openRouterUsage != nil {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.07))
-                            .frame(height: 0.5)
-                            .padding(.leading, 19)
-                    }
-                    GrokAPIUsageRow(
-                        usage: usage,
-                        isStale: grokIsStale(usage),
-                        staleLabel: grokStaleLabel(usage),
-                        ageText: relativeAge(usage.updatedAt),
-                        warning: grokWarning(usage)
-                    )
-                }
-
-                // DeepSeek 余额行(旁路):不入 QuotaSnapshot 体系,与上面 snapshots 平级展示。
-                if let balance = deepSeekBalance {
-                    if !snaps.isEmpty || openRouterUsage != nil || grokAPIUsage != nil {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.07))
-                            .frame(height: 0.5)
-                            .padding(.leading, 19)
-                    }
-                    DeepSeekBalanceRow(
-                        balance: balance,
-                        isStale: deepSeekIsStale(balance),
-                        staleLabel: deepSeekStaleLabel(balance),
-                        ageText: relativeAge(balance.updatedAt),
-                        warning: deepSeekWarning(balance)
-                    )
+                    displayRow(for: item)
                 }
             }
         }
     }
 
-    private var settingsContent: some View {
-        VStack(spacing: 0) {
-                SettingsToggleRow(
-                    title: L10n.string("菜单栏显示百分比"),
-                    isOn: Binding(
-                        get: { model.showsStatusPercentage },
-                        set: { model.showsStatusPercentage = $0 }
-                    )
+    @ViewBuilder
+    private func displayRow(for item: MacDisplayItemID) -> some View {
+        switch item {
+        case .codex, .claudeCode, .kimiCode, .glmCoding, .miniMax:
+            if let snapshot = model.snapshot(for: item) {
+                ToolRow(
+                    name: displayName(for: snapshot.tool),
+                    plan: displayPlan(snapshot),
+                    brand: brand(for: snapshot.tool),
+                    tool: snapshot.tool,
+                    isStale: model.isStale(snapshot),
+                    staleLabel: staleLabel(snapshot),
+                    ageText: relativeAge(snapshot.updatedAt),
+                    warning: staleWarning(snapshot),
+                    windows: orderedWindows(snapshot.windows),
+                    resetSummary: resetSummary(snapshot.windows),
+                    resetCredits: snapshot.resetCredits,
+                    labelFor: shortLabel
                 )
-
-                settingsDivider
-
-                SettingsToggleRow(
-                    title: L10n.string("隐藏 48 小时未更新服务"),
-                    isOn: Binding(
-                        get: { model.hidesInactiveTools },
-                        set: { model.hidesInactiveTools = $0 }
-                    )
+            }
+        case .openAIAPI:
+            if let usage = model.openAIAPIUsage {
+                APICostUsageRow(
+                    name: "OpenAI API", monogram: "OA", color: Color(hex: 0x10A37F),
+                    usage: usage, isStale: apiCostIsStale(usage),
+                    staleLabel: apiCostStaleLabel(usage), ageText: relativeAge(usage.updatedAt),
+                    warning: apiCostWarning(usage, provider: "OpenAI")
                 )
-
-                settingsDivider
-
-                SettingsToggleRow(
-                    title: L10n.string("5 小时重置提醒"),
-                    isOn: Binding(
-                        get: { model.fiveHourResetNotificationsEnabled },
-                        set: { model.fiveHourResetNotificationsEnabled = $0 }
-                    )
+            }
+        case .anthropicAPI:
+            if let usage = model.anthropicAPIUsage {
+                APICostUsageRow(
+                    name: "Anthropic API", monogram: "A", color: Color(hex: 0xD97757),
+                    usage: usage, isStale: apiCostIsStale(usage),
+                    staleLabel: apiCostStaleLabel(usage), ageText: relativeAge(usage.updatedAt),
+                    warning: apiCostWarning(usage, provider: "Anthropic")
                 )
-
-                settingsDivider
-
-                SettingsToggleRow(
-                    title: L10n.string("开机自启"),
-                    isOn: Binding(
-                        get: { model.loginItemEnabled },
-                        set: { model.setLoginItem($0) }
-                    )
+            }
+        case .kimiAPI:
+            if let balance = model.kimiAPIBalance { MacKimiAPIBalanceRow(balance: balance) }
+        case .deepSeek:
+            if let balance = model.deepSeekBalance {
+                DeepSeekBalanceRow(
+                    balance: balance,
+                    isStale: deepSeekIsStale(balance),
+                    staleLabel: deepSeekStaleLabel(balance),
+                    ageText: relativeAge(balance.updatedAt),
+                    warning: deepSeekWarning(balance)
                 )
-
-                settingsDivider
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L10n.string("显示顺序"))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: 0x6C6C70))
-
-                    VStack(spacing: 8) {
-                        ForEach(Array(model.orderedTools.enumerated()), id: \.element) { index, tool in
-                            ToolOrderRow(
-                                name: displayName(for: tool),
-                                brand: brand(for: tool),
-                                tool: tool,
-                                canMoveUp: index > 0,
-                                canMoveDown: index < model.orderedTools.count - 1,
-                                moveUp: { moveTool(at: index, by: -1) },
-                                moveDown: { moveTool(at: index, by: 1) }
-                            )
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-
-                settingsDivider
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(L10n.string("本地数据源"))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: 0x6C6C70))
-                    Text(L10n.string("API 凭据只保存在本机,不进 iCloud 或 Apple Watch。"))
-                        .font(.system(size: 11.5))
-                        .foregroundColor(Color(hex: 0x8E8E93))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 8)
-
-                OpenRouterKeySettingsSection(
-                    isExpanded: expansionBinding(for: .openRouter),
-                    onSaved: { Task { await model.collectNow() } }
+            }
+        case .openRouter:
+            if let usage = model.openRouterUsage {
+                OpenRouterUsageRow(
+                    usage: usage,
+                    isStale: openRouterIsStale(usage),
+                    staleLabel: openRouterStaleLabel(usage),
+                    ageText: relativeAge(usage.updatedAt),
+                    warning: openRouterWarning(usage)
                 )
-
-                settingsDivider
-
-                GrokKeySettingsSection(
-                    isExpanded: expansionBinding(for: .grok),
-                    onSaved: { Task { await model.collectNow() } }
+            }
+        case .xAI:
+            if let usage = model.grokAPIUsage {
+                GrokAPIUsageRow(
+                    usage: usage,
+                    isStale: grokIsStale(usage),
+                    staleLabel: grokStaleLabel(usage),
+                    ageText: relativeAge(usage.updatedAt),
+                    warning: grokWarning(usage)
                 )
-
-                settingsDivider
-
-                DeepSeekKeySettingsSection(
-                    isExpanded: expansionBinding(for: .deepSeek),
-                    onSaved: { Task { await model.collectNow() } }
-                )
-
-                settingsDivider
-
-                VStack(spacing: 0) {
-                    SettingsInfoRow(
-                        icon: "info.circle",
-                        title: L10n.string("关于 AgentMeter"),
-                        trailingText: "\(L10n.string("版本")) \(appVersionDisplay)"
-                    )
-
-                    settingsDivider
-
-                    SettingsActionRow(
-                        icon: "link",
-                        title: "GitHub",
-                        action: { open(Self.githubURL) }
-                    )
-
-                    settingsDivider
-
-                    SettingsActionRow(
-                        icon: "arrow.down.circle",
-                        title: L10n.string("手动升级"),
-                        action: { open(Self.releasesURL) }
-                    )
-                }
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func expansionBinding(for source: LocalDataSource) -> Binding<Bool> {
@@ -367,14 +232,53 @@ struct MenuBarContentView: View {
         )
     }
 
-    private var settingsDivider: some View {
+    private var localBillingDivider: some View {
         Rectangle()
             .fill(Color.black.opacity(0.07))
             .frame(height: 0.5)
-            .padding(.leading, 16)
+            .padding(.leading, 19)
     }
 
     // MARK: - 本地旁路状态
+
+    private func apiCostIsStale(_ usage: APICostUsage) -> Bool {
+        usage.confidence != .fresh
+            || Date().timeIntervalSince(usage.updatedAt) > AppModel.staleThreshold
+    }
+
+    private func apiCostStaleLabel(_ usage: APICostUsage) -> String {
+        switch usage.confidence {
+        case .fresh: return ""
+        case .stale:
+            switch usage.staleReason {
+            case .authExpired: return L10n.string("需重新输入 key")
+            case .networkFailure: return L10n.string("网络失败")
+            case .endpointFailure: return L10n.string("服务暂不可用")
+            case .responseChanged: return L10n.string("接口变化")
+            default: return L10n.string("数据陈旧")
+            }
+        case .unknown:
+            return usage.staleReason == .credentialReadFailed
+                ? L10n.string("无法读取 key") : L10n.string("未取到数据")
+        }
+    }
+
+    private func apiCostWarning(_ usage: APICostUsage, provider: String) -> String? {
+        guard apiCostIsStale(usage) else { return nil }
+        switch usage.confidence {
+        case .fresh: return L10n.string("数据已超过刷新阈值,可能不是最新。")
+        case .stale:
+            switch usage.staleReason {
+            case .authExpired: return L10n.format("%@ Admin API key 无效，请在设置里重新输入。", provider)
+            case .networkFailure: return L10n.string("刷新遇到网络问题,已保留旧数据。")
+            case .endpointFailure: return L10n.format("%@ 成本接口暂时不可用，已保留旧数据。", provider)
+            case .responseChanged: return L10n.string("账单接口返回发生变化,暂时无法解析最新数据。")
+            default: return L10n.string("数据陈旧,已保留旧数据。")
+            }
+        case .unknown:
+            return L10n.format("从未成功取到 %@ API 账单，请确认 Admin API key 与组织权限。", provider)
+        }
+    }
 
     private func openRouterIsStale(_ usage: OpenRouterUsage) -> Bool {
         usage.confidence != .fresh
@@ -519,31 +423,6 @@ struct MenuBarContentView: View {
         }
     }
 
-    private func moveTool(at index: Int, by offset: Int) {
-        var tools = model.orderedTools
-        let target = index + offset
-        guard tools.indices.contains(index), tools.indices.contains(target) else { return }
-        let tool = tools.remove(at: index)
-        tools.insert(tool, at: target)
-        model.setToolOrder(tools)
-    }
-
-    private var appVersionDisplay: String {
-        "\(appVersion) (\(appBuild))"
-    }
-
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-    }
-
-    private var appBuild: String {
-        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-    }
-
-    private func open(_ url: URL) {
-        NSWorkspace.shared.open(url)
-    }
-
     private var inactiveHiddenState: some View {
         VStack(spacing: 0) {
             ZStack {
@@ -558,6 +437,32 @@ struct MenuBarContentView: View {
                 .font(.system(size: 13.5, weight: .semibold))
                 .foregroundColor(Color(hex: 0x1C1C1E))
             Text(L10n.string("超过 48 小时未更新的服务已隐藏。可在设置里关闭。"))
+                .font(.system(size: 12))
+                .foregroundColor(Color(hex: 0x8E8E93))
+                .multilineTextAlignment(.center)
+                .lineSpacing(1.5)
+                .padding(.top, 5)
+                .padding(.horizontal, 6)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 28)
+    }
+
+    private var manuallyHiddenState: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Circle().fill(Color(hex: 0xECEEF2)).frame(width: 46, height: 46)
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 21, weight: .regular))
+                    .foregroundColor(Color(hex: 0x8E8E93))
+            }
+            .padding(.bottom, 14)
+
+            Text(L10n.string("主界面未显示服务"))
+                .font(.system(size: 13.5, weight: .semibold))
+                .foregroundColor(Color(hex: 0x1C1C1E))
+            Text(L10n.string("可在“通用 → 主界面服务与顺序”中重新开启展示。"))
                 .font(.system(size: 12))
                 .foregroundColor(Color(hex: 0x8E8E93))
                 .multilineTextAlignment(.center)
@@ -627,11 +532,19 @@ struct MenuBarContentView: View {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .kimiCode: return "Kimi Code"
+        case .glmCoding: return "GLM Coding Plan"
+        case .miniMax: return "MiniMax Token Plan"
         case .deepSeek: return "DeepSeek"
         case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
         case .grok: return "xAI API"
         }
+    }
+
+    private func displayPlan(_ snapshot: QuotaSnapshot) -> String? {
+        guard snapshot.tool.supportsDeviceScopedSnapshots else { return snapshot.plan }
+        return [snapshot.plan, "Mac"].compactMap { $0 }.joined(separator: " · ")
     }
 
     private func shortLabel(_ kind: WindowKind) -> String {
@@ -688,139 +601,7 @@ struct MenuBarContentView: View {
     }
 }
 
-// MARK: - 设置行
-
-private struct SettingsToggleRow: View {
-    let title: String
-    @Binding var isOn: Bool
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
-
-            Spacer(minLength: 8)
-
-            Toggle("", isOn: $isOn)
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .labelsHidden()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-    }
-}
-
-private struct SettingsInfoRow: View {
-    let icon: String
-    let title: String
-    let trailingText: String
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            settingsIcon(icon)
-
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
-
-            Spacer(minLength: 8)
-
-            Text(trailingText)
-                .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x8E8E93))
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-    }
-}
-
-private struct SettingsActionRow: View {
-    let icon: String
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .center, spacing: 12) {
-                settingsIcon(icon)
-
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color(hex: 0x1C1C1E))
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: 0x6C6C70))
-            }
-            .contentShape(Rectangle())
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private func settingsIcon(_ systemName: String) -> some View {
-    ZStack {
-        Circle()
-            .fill(Color(hex: 0x787880, alpha: 0.1))
-            .frame(width: 26, height: 26)
-        Image(systemName: systemName)
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(Color(hex: 0x6C6C70))
-    }
-}
-
-private struct ToolOrderRow: View {
-    let name: String
-    let brand: Brand
-    let tool: ToolKind
-    let canMoveUp: Bool
-    let canMoveDown: Bool
-    let moveUp: () -> Void
-    let moveDown: () -> Void
-
-    var body: some View {
-        HStack(spacing: 10) {
-            BrandMark(tool: tool, brand: brand)
-
-            Text(name)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
-
-            Spacer(minLength: 8)
-
-            HStack(spacing: 4) {
-                reorderButton(systemName: "chevron.up", enabled: canMoveUp, action: moveUp)
-                reorderButton(systemName: "chevron.down", enabled: canMoveDown, action: moveDown)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(hex: 0xF6F7F8))
-        )
-    }
-
-    private func reorderButton(systemName: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(enabled ? Color(hex: 0x3A3A3C) : Color(hex: 0xC7C7CC))
-                .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.white.opacity(enabled ? 1 : 0.55)))
-        }
-        .buttonStyle(.borderless)
-        .disabled(!enabled)
-    }
-}
-
+// MARK: - 工具行(方向 C)
 // MARK: - 工具行(方向 C)
 
 private struct ToolRow: View {
@@ -1122,6 +903,12 @@ private struct BrandMark: View {
             Sunburst()
                 .stroke(.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 12, height: 12)
+        case .kimiCode:
+            Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(.white)
+        case .glmCoding:
+            Text("GLM").font(.system(size: 7.5, weight: .bold)).foregroundColor(.white)
+        case .miniMax:
+            Text("MM").font(.system(size: 9, weight: .bold)).foregroundColor(.white)
         case .openCode:
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 10, weight: .bold))
@@ -1185,6 +972,12 @@ private func brand(for tool: ToolKind) -> Brand {
             track: Color(hex: 0xF6E9E1),
             planColor: Color(hex: 0xA8482B)
         )
+    case .kimiCode:
+        return Brand(solid: Color(hex: 0x111827), iconGradient: [Color(hex: 0x374151), Color(hex: 0x111827)], track: Color(hex: 0xE5E7EB), planColor: Color(hex: 0x111827))
+    case .glmCoding:
+        return Brand(solid: Color(hex: 0x2563EB), iconGradient: [Color(hex: 0x3B82F6), Color(hex: 0x1D4ED8)], track: Color(hex: 0xDBEAFE), planColor: Color(hex: 0x1D4ED8))
+    case .miniMax:
+        return Brand(solid: Color(hex: 0x7C3AED), iconGradient: [Color(hex: 0x8B5CF6), Color(hex: 0x6D28D9)], track: Color(hex: 0xEDE9FE), planColor: Color(hex: 0x6D28D9))
     case .openCode:
         return Brand(
             solid: Color(hex: 0x5B6AD8),
@@ -1226,6 +1019,83 @@ private extension Color {
             blue: Double(hex & 0xff) / 255,
             opacity: alpha
         )
+    }
+}
+
+// MARK: - 组织 API 成本行(本地旁路)
+
+private struct APICostUsageRow: View {
+    let name: String
+    let monogram: String
+    let color: Color
+    let usage: APICostUsage
+    let isStale: Bool
+    let staleLabel: String
+    let ageText: String
+    let warning: String?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Rectangle().fill(isStale ? Color(hex: 0xD98C28) : color).frame(width: 3).padding(.vertical, 4)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 9) {
+                    Text(monogram)
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(width: 25, height: 25)
+                        .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    Text(name).font(.system(size: 14, weight: .bold)).tracking(-0.3)
+                    Spacer(minLength: 6)
+                    if isStale {
+                        Text(staleLabel).font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: 0xB5731C))
+                            .padding(.horizontal, 8).padding(.vertical, 2)
+                            .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                    } else {
+                        Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
+                        Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                    }
+                }
+                if let warning {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock").font(.system(size: 12, weight: .semibold))
+                        Text(warning).font(.system(size: 11.5)).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundColor(Color(hex: 0x8A5A12))
+                    .padding(.horizontal, 11).padding(.vertical, 9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: 0xFBF1DF)))
+                }
+                if usage.hasKnownUsage {
+                    HStack(spacing: 18) {
+                        metric("\(L10n.string("今日")) (UTC)", usage.usageDaily)
+                        metric("\(L10n.string("本周")) (UTC)", usage.usageWeekly)
+                        metric("\(L10n.string("本月")) (UTC)", usage.usageMonthly)
+                    }
+                } else {
+                    Text("—").font(.system(size: 22, weight: .heavy, design: .rounded)).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.init(top: 11, leading: 16, bottom: 13, trailing: 16))
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func metric(_ label: String, _ value: Decimal) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(dollars(value)).font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+        }
+    }
+
+    private func dollars(_ value: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 4
+        return formatter.string(from: NSDecimalNumber(decimal: value)) ?? "$\(value)"
     }
 }
 

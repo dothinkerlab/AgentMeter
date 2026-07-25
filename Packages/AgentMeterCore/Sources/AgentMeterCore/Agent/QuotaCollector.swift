@@ -200,12 +200,20 @@ public struct QuotaCollector: Sendable {
              OpenRouterUsageAdapter.FetchError.unauthorized,
              GrokAPIUsageAdapter.FetchError.unauthorized:
             return .authExpired
+        case KimiCodeAdapter.FetchError.unauthorized,
+             GLMCodingPlanAdapter.FetchError.unauthorized,
+             MiniMaxTokenPlanAdapter.FetchError.unauthorized:
+            return .authExpired
         case ClaudeCodeAdapter.FetchError.transport,
              CodexPlanAdapter.FetchError.transport,
              CodexResetCreditsAdapter.FetchError.transport,
              DeepSeekBalanceAdapter.FetchError.transport,
              OpenRouterUsageAdapter.FetchError.transport,
              GrokAPIUsageAdapter.FetchError.transport:
+            return .networkFailure
+        case KimiCodeAdapter.FetchError.transport,
+             GLMCodingPlanAdapter.FetchError.transport,
+             MiniMaxTokenPlanAdapter.FetchError.transport:
             return .networkFailure
         case ClaudeCodeAdapter.FetchError.httpStatus,
              CodexPlanAdapter.FetchError.httpStatus,
@@ -214,12 +222,20 @@ public struct QuotaCollector: Sendable {
              OpenRouterUsageAdapter.FetchError.httpStatus,
              GrokAPIUsageAdapter.FetchError.httpStatus:
             return .endpointFailure
+        case KimiCodeAdapter.FetchError.httpStatus,
+             GLMCodingPlanAdapter.FetchError.httpStatus,
+             MiniMaxTokenPlanAdapter.FetchError.httpStatus:
+            return .endpointFailure
         case ClaudeCodeAdapter.FetchError.decode,
              CodexPlanAdapter.FetchError.decode,
              CodexResetCreditsAdapter.FetchError.decode,
              DeepSeekBalanceAdapter.FetchError.decode,
              OpenRouterUsageAdapter.FetchError.decode,
              GrokAPIUsageAdapter.FetchError.decode:
+            return .responseChanged
+        case KimiCodeAdapter.FetchError.decode,
+             GLMCodingPlanAdapter.FetchError.decode,
+             MiniMaxTokenPlanAdapter.FetchError.decode:
             return .responseChanged
         default:
             return .unknownFailure
@@ -230,6 +246,9 @@ public struct QuotaCollector: Sendable {
         switch tool {
         case .claudeCode: return ClaudeCodeAdapter.source
         case .codex: return CodexPlanAdapter.source
+        case .kimiCode: return KimiCodeAdapter.source
+        case .glmCoding: return GLMCodingPlanAdapter.source
+        case .miniMax: return MiniMaxTokenPlanAdapter.source
         case .openCode: return "unsupported"
         case .deepSeek: return "deepseek_balance_endpoint"
         case .openRouter: return OpenRouterUsageAdapter.source
@@ -246,7 +265,7 @@ public struct QuotaCollector: Sendable {
         case .codex:
             return try await CodexPlanAdapter().fetch(
                 accessToken: creds.accessToken, accountID: creds.accountID, plan: creds.subscriptionType)
-        case .openCode, .deepSeek, .openRouter, .grok:
+        case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok:
             throw UnsupportedTool(tool: tool)
         }
     }

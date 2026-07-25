@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "starting_at": "2026-07-01T00:00:00Z",
+      "ending_at": "2026-07-02T00:00:00Z",
+      "results": [{"amount": "1012.34", "currency": "USD", "cost_type": "tokens"}]
+    },
+    {
+      "starting_at": "2026-07-19T00:00:00Z",
+      "ending_at": "2026-07-20T00:00:00Z",
+      "results": [{"amount": "200", "currency": "USD", "cost_type": "tokens"}]
+    },
+    {
+      "starting_at": "2026-07-20T00:00:00Z",
+      "ending_at": "2026-07-21T00:00:00Z",
+      "results": [
+        {"amount": "125", "currency": "USD", "cost_type": "tokens"},
+        {"amount": "5", "currency": "USD", "cost_type": "web_search"}
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

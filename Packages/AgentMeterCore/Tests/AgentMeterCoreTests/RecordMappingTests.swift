@@ -26,6 +26,19 @@ struct RecordMappingTests {
         #expect(restored == original)
     }
 
+    @Test func collectedByRoundTripsAndLegacyRecordDefaultsToMacSemantics() throws {
+        let scoped = QuotaSnapshot(tool: .kimiCode, plan: "Coding", windows: [],
+                                   confidence: .fresh, collectedBy: .iPhone,
+                                   source: "test", updatedAt: Date(timeIntervalSince1970: 100))
+        let record = try RecordMapping.makeRecord(from: scoped)
+        #expect(record["collectedBy"] as? String == "iphone")
+        #expect(try RecordMapping.snapshot(from: record).collectedBy == .iPhone)
+
+        let legacy = try RecordMapping.makeRecord(from: sampleSnapshot())
+        legacy["collectedBy"] = nil
+        #expect(try RecordMapping.snapshot(from: legacy).effectiveCollector == .mac)
+    }
+
     @Test func resetCreditsRoundTripAsOptionalJSON() throws {
         let resetCredits = RateLimitResetCredits(
             availableCount: 2,

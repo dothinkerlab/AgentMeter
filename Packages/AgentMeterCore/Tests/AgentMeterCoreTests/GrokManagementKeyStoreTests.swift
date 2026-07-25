@@ -46,45 +46,56 @@ struct GrokManagementKeyStoreTests {
         if let value = attributes[kSecAttrSynchronizable as String] as? Bool {
             #expect(value == false)
         }
-
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: GrokManagementKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(grokDeviceOnlyStatus(service: service) == errSecSuccess)
     }
 
     @Test func saveUpgradesMigratableItemToThisDeviceOnly() throws {
         let service = service()
         defer { wipeGrokCredentials(service: service) }
-        let legacyCredentials = GrokManagementCredentials(managementKey: "xai-legacy", teamID: "team")
-        let legacyItem: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: GrokManagementKeyStore.account,
-            kSecAttrSynchronizable as String: kCFBooleanFalse!,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-            kSecValueData as String: try JSONEncoder().encode(legacyCredentials),
-        ]
-        #expect(SecItemAdd(legacyItem as CFDictionary, nil) == errSecSuccess)
+        let legacy = GrokManagementCredentials(managementKey: "xai-legacy", teamID: "team")
+        #expect(addLegacyGrokCredentials(legacy, service: service) == errSecSuccess)
 
-        try GrokManagementKeyStore.save(
-            credentials: GrokManagementCredentials(managementKey: "xai-upgraded", teamID: "team"),
-            service: service
-        )
+        let upgraded = GrokManagementCredentials(managementKey: "xai-upgraded", teamID: "team")
+        try GrokManagementKeyStore.save(credentials: upgraded, service: service)
 
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: GrokManagementKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(try GrokManagementKeyStore.read(service: service) == upgraded)
+        #expect(grokDeviceOnlyStatus(service: service) == errSecSuccess)
     }
+
+    @Test func readUpgradesMigratableItemWithoutReentry() throws {
+        let service = service()
+        defer { wipeGrokCredentials(service: service) }
+        let legacy = GrokManagementCredentials(managementKey: "xai-existing", teamID: "team")
+        #expect(addLegacyGrokCredentials(legacy, service: service) == errSecSuccess)
+
+        #expect(try GrokManagementKeyStore.read(service: service) == legacy)
+        #expect(grokDeviceOnlyStatus(service: service) == errSecSuccess)
+    }
+}
+
+private func addLegacyGrokCredentials(
+    _ credentials: GrokManagementCredentials,
+    service: String
+) -> OSStatus {
+    guard let data = try? JSONEncoder().encode(credentials) else { return errSecParam }
+    return SecItemAdd([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: GrokManagementKeyStore.account,
+        kSecAttrSynchronizable as String: kCFBooleanFalse!,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+        kSecValueData as String: data,
+    ] as CFDictionary, nil)
+}
+
+private func grokDeviceOnlyStatus(service: String) -> OSStatus {
+    SecItemCopyMatching([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: GrokManagementKeyStore.account,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        kSecMatchLimit as String: kSecMatchLimitOne,
+    ] as CFDictionary, nil)
 }
 
 private func wipeGrokCredentials(service: String) {

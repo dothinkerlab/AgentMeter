@@ -1,0 +1,32 @@
+{
+  "object": "page",
+  "data": [
+    {
+      "object": "bucket",
+      "start_time": 1782864000,
+      "end_time": 1782950400,
+      "results": [
+        {"object": "organization.costs.result", "amount": {"value": 10.1234, "currency": "usd"}}
+      ]
+    },
+    {
+      "object": "bucket",
+      "start_time": 1784419200,
+      "end_time": 1784505600,
+      "results": [
+        {"object": "organization.costs.result", "amount": {"value": 2.00, "currency": "usd"}}
+      ]
+    },
+    {
+      "object": "bucket",
+      "start_time": 1784505600,
+      "end_time": 1784592000,
+      "results": [
+        {"object": "organization.costs.result", "amount": {"value": 1.25, "currency": "usd"}},
+        {"object": "organization.costs.result", "amount": {"value": 0.05, "currency": "usd"}}
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

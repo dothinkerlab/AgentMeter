@@ -3,7 +3,8 @@ import Foundation
 /// OpenRouter 当前 API key 的消费信息。
 ///
 /// OpenRouter 返回美元计价的绝对消费与可选 key 限额，没有 Claude/Codex 那种订阅
-/// 百分比窗口，因此走本地旁路：Mac/iPhone 各自持 key、各自查询，不进 CloudKit/Watch。
+/// 百分比窗口，因此走本地旁路：Mac/iPhone 各自持 key、各自查询，不进 CloudKit；
+/// Watch 只接收 iPhone 生成的不含 key/key label 的显示 DTO。
 public struct OpenRouterUsage: Codable, Sendable, Equatable {
     public let keyLabel: String?
     public let usage: Decimal

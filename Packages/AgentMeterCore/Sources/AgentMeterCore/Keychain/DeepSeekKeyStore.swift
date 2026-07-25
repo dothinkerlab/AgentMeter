@@ -10,8 +10,8 @@ import Security
 /// Claude Code/Codex 走 Mac→CloudKit→iOS/Watch 的同步路径,token 只在 Mac;
 /// DeepSeek 是旁路 —— Mac 和 iOS 各自持 key、各自 fetch、不入 CloudKit,Watch 不显示。
 ///
-/// **`synchronizable = false` 必须**:DeepSeek key 不允许走 iCloud Keychain 同步出去,
-/// 各端独立存储。
+/// **`synchronizable = false` + `ThisDeviceOnly` 必须**:DeepSeek key 不允许走 iCloud
+/// Keychain 同步或随加密备份迁移,各端独立存储。
 ///
 /// service 名沿用既有 KeychainReader 命名风格:工具名加 `-credentials` 后缀。
 public enum DeepSeekKeyStore {
@@ -89,6 +89,7 @@ public enum DeepSeekKeyStore {
         case errSecItemNotFound: return nil
         default: throw KeyError.osStatus(status)
         }
+        try hardenExistingItem(service: service)
         guard let data = item as? Data else { throw KeyError.notData }
         guard let key = String(data: data, encoding: .utf8) else { throw KeyError.decode }
         return key
@@ -106,5 +107,30 @@ public enum DeepSeekKeyStore {
         case errSecSuccess, errSecItemNotFound: return
         default: throw KeyError.osStatus(status)
         }
+    }
+
+    /// 把旧版本保存的可迁移条目原地升级为仅限当前设备。失败时不返回凭据，确保调用方
+    /// 不会继续使用不符合本地存储承诺的 key。
+    private static func hardenExistingItem(service: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrSynchronizable as String: kCFBooleanFalse!,
+        ]
+        var protectedQuery = query
+        protectedQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        protectedQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+        let protectedStatus = SecItemCopyMatching(protectedQuery as CFDictionary, nil)
+        switch protectedStatus {
+        case errSecSuccess: return
+        case errSecItemNotFound: break
+        default: throw KeyError.osStatus(protectedStatus)
+        }
+        let status = SecItemUpdate(
+            query as CFDictionary,
+            [kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly] as CFDictionary
+        )
+        guard status == errSecSuccess else { throw KeyError.osStatus(status) }
     }
 }

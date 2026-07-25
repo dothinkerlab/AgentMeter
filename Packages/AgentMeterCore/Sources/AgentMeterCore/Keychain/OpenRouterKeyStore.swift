@@ -1,7 +1,8 @@
 import Foundation
 import Security
 
-/// OpenRouter 普通 API key 的本机存储。Mac/iPhone 各自保存，不通过 iCloud Keychain 同步。
+/// OpenRouter 普通 API key 的本机存储。Mac/iPhone 各自保存，不通过 iCloud Keychain
+/// 同步，也不随加密备份迁移。
 public enum OpenRouterKeyStore {
     public static let service = "OpenRouter-credentials"
     public static let account = "default"
@@ -64,6 +65,7 @@ public enum OpenRouterKeyStore {
         case errSecItemNotFound: return nil
         default: throw KeyError.osStatus(status)
         }
+        try hardenExistingItem(service: service)
         guard let data = item as? Data else { throw KeyError.notData }
         guard let key = String(data: data, encoding: .utf8) else { throw KeyError.decode }
         return key
@@ -80,5 +82,29 @@ public enum OpenRouterKeyStore {
         case errSecSuccess, errSecItemNotFound: return
         default: throw KeyError.osStatus(status)
         }
+    }
+
+    /// 旧版本使用可迁移 accessibility；读取成功后必须原地升级，否则不返回 key。
+    private static func hardenExistingItem(service: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrSynchronizable as String: kCFBooleanFalse!,
+        ]
+        var protectedQuery = query
+        protectedQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        protectedQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+        let protectedStatus = SecItemCopyMatching(protectedQuery as CFDictionary, nil)
+        switch protectedStatus {
+        case errSecSuccess: return
+        case errSecItemNotFound: break
+        default: throw KeyError.osStatus(protectedStatus)
+        }
+        let status = SecItemUpdate(
+            query as CFDictionary,
+            [kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly] as CFDictionary
+        )
+        guard status == errSecSuccess else { throw KeyError.osStatus(status) }
     }
 }

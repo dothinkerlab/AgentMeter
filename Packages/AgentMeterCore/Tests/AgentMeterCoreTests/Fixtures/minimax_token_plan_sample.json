@@ -1,0 +1,7 @@
+{
+  "base_resp":{"status_code":0},
+  "model_remains":[
+    {"model_name":"MiniMax-M2.7","current_interval_total_count":1500,"current_interval_usage_count":300,"current_interval_end_time":1910571600,"weekly_total_count":15000,"weekly_remaining_count":12000,"weekly_end_time":1911081600},
+    {"model_name":"speech-2.8-hd","current_interval_total_count":4000,"current_interval_usage_count":10,"current_interval_end_time":1910571600}
+  ]
+}

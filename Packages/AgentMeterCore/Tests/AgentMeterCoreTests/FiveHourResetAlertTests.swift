@@ -5,7 +5,7 @@ import Testing
 struct FiveHourResetAlertTests {
     private let now = Date(timeIntervalSince1970: 2_000_000_000)
 
-    @Test func freshDepletedFiveHourCreatesCandidateAtResetTime() {
+    @Test func freshZeroRemainingFiveHourCreatesCandidateAtResetTime() {
         let resetsAt = now.addingTimeInterval(3600)
         let snapshot = snapshot(
             confidence: .fresh,
@@ -17,6 +17,19 @@ struct FiveHourResetAlertTests {
         #expect(candidate?.tool == .claudeCode)
         #expect(candidate?.resetsAt == resetsAt)
         #expect(candidate?.identifier == FiveHourResetAlertCandidate.identifier(tool: .claudeCode, resetsAt: resetsAt))
+    }
+
+    @Test func remainingBelowTenPercentCreatesCandidate() {
+        let resetsAt = now.addingTimeInterval(3600)
+        let snapshot = snapshot(
+            confidence: .fresh,
+            windows: [QuotaWindow(usedPercent: 90.01, resetsAt: resetsAt, kind: .fiveHour)]
+        )
+
+        let candidate = FiveHourResetAlertPlanner.candidate(from: snapshot, now: now)
+
+        #expect(abs((candidate?.remainingPercent ?? 0) - 9.99) < 0.0001)
+        #expect(candidate?.resetsAt == resetsAt)
     }
 
     @Test func staleSnapshotDoesNotCreateCandidate() {
@@ -46,10 +59,19 @@ struct FiveHourResetAlertTests {
         #expect(FiveHourResetAlertPlanner.candidate(from: snapshot, now: now) == nil)
     }
 
-    @Test func nonDepletedFiveHourDoesNotCreateCandidate() {
+    @Test func exactlyTenPercentRemainingDoesNotCreateCandidate() {
         let snapshot = snapshot(
             confidence: .fresh,
-            windows: [QuotaWindow(usedPercent: 99, resetsAt: now.addingTimeInterval(3600), kind: .fiveHour)]
+            windows: [QuotaWindow(usedPercent: 90, resetsAt: now.addingTimeInterval(3600), kind: .fiveHour)]
+        )
+
+        #expect(FiveHourResetAlertPlanner.candidate(from: snapshot, now: now) == nil)
+    }
+
+    @Test func moreThanTenPercentRemainingDoesNotCreateCandidate() {
+        let snapshot = snapshot(
+            confidence: .fresh,
+            windows: [QuotaWindow(usedPercent: 89.99, resetsAt: now.addingTimeInterval(3600), kind: .fiveHour)]
         )
 
         #expect(FiveHourResetAlertPlanner.candidate(from: snapshot, now: now) == nil)
@@ -94,6 +116,42 @@ struct FiveHourResetAlertTests {
         )
 
         #expect(candidate?.resetsAt == newReset)
+    }
+
+    @Test func reconciliationCancelsObsoleteAlertsAndSchedulesOnlyMissingOnes() throws {
+        let oldReset = now.addingTimeInterval(3600)
+        let newReset = now.addingTimeInterval(7200)
+        let candidate = try #require(FiveHourResetAlertPlanner.candidate(
+            from: snapshot(
+                confidence: .fresh,
+                windows: [QuotaWindow(usedPercent: 95, resetsAt: newReset, kind: .fiveHour)]
+            ),
+            now: now
+        ))
+        let oldIdentifier = FiveHourResetAlertCandidate.identifier(
+            tool: .claudeCode,
+            resetsAt: oldReset
+        )
+
+        let replacement = FiveHourResetAlertReconciler.plan(
+            candidates: [candidate],
+            pendingIdentifiers: [oldIdentifier]
+        )
+        #expect(replacement.identifiersToCancel == [oldIdentifier])
+        #expect(replacement.candidatesToSchedule == [candidate])
+
+        let settled = FiveHourResetAlertReconciler.plan(
+            candidates: [candidate],
+            pendingIdentifiers: [candidate.identifier]
+        )
+        #expect(settled.identifiersToCancel.isEmpty)
+        #expect(settled.candidatesToSchedule.isEmpty)
+
+        let recovered = FiveHourResetAlertReconciler.plan(
+            candidates: [],
+            pendingIdentifiers: [candidate.identifier]
+        )
+        #expect(recovered.identifiersToCancel == [candidate.identifier])
     }
 
     private func snapshot(

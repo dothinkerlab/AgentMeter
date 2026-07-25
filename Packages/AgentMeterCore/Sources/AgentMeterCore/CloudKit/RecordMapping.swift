@@ -19,6 +19,7 @@ public enum RecordMapping {
         static let resetCreditsJSON = "resetCreditsJSON"
         static let confidence = "confidence"
         static let staleReason = "staleReason"
+        static let collectedBy = "collectedBy"
         static let source = "source"
         static let updatedAt = "updatedAt"
     }
@@ -31,6 +32,13 @@ public enum RecordMapping {
     /// 某工具 snapshot 的固定 record ID。
     public static func recordID(for tool: ToolKind) -> CKRecord.ID {
         CKRecord.ID(recordName: "snapshot-\(tool.rawValue)")
+    }
+
+    /// Device-scoped providers deliberately use independent fixed records so
+    /// a Mac refresh can never overwrite the iPhone's local result.
+    public static func recordID(for tool: ToolKind, collector: QuotaCollectorDevice) -> CKRecord.ID {
+        guard tool.supportsDeviceScopedSnapshots else { return recordID(for: tool) }
+        return CKRecord.ID(recordName: "snapshot-\(tool.rawValue)-\(collector.rawValue)")
     }
 
     // windows 的 JSON 编解码用 ISO8601 日期,跨端稳定、人也读得懂。
@@ -73,6 +81,11 @@ public enum RecordMapping {
             record[Field.staleReason] = nil
         } else {
             record[Field.staleReason] = snapshot.staleReason?.rawValue as CKRecordValue?
+        }
+        if let collectedBy = snapshot.collectedBy {
+            record[Field.collectedBy] = collectedBy.rawValue as CKRecordValue
+        } else {
+            record[Field.collectedBy] = nil
         }
         record[Field.source] = snapshot.source as CKRecordValue
         record[Field.updatedAt] = snapshot.updatedAt as CKRecordValue
@@ -135,6 +148,8 @@ public enum RecordMapping {
             resetCredits: resetCredits,
             confidence: confidence,
             staleReason: staleReason,
+            collectedBy: (record[Field.collectedBy] as? String)
+                .flatMap(QuotaCollectorDevice.init(rawValue:)),
             source: source,
             updatedAt: updatedAt
         )

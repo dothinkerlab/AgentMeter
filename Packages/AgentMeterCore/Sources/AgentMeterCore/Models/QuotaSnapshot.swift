@@ -15,6 +15,10 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
     public let confidence: DataConfidence
     /// stale/unknown 数据的失败原因。旧记录可能没有该字段,此时 UI 回退为"数据陈旧"。
     public let staleReason: QuotaStaleReason?
+    /// Device that fetched this provider snapshot. Missing on legacy records,
+    /// which are treated as Mac-originated for backward compatibility.
+    public let collectedBy: QuotaCollectorDevice?
+    public var effectiveCollector: QuotaCollectorDevice { collectedBy ?? .mac }
     /// 数据来源标识,便于 UI 显示,如 "oauth_usage_endpoint"。
     public let source: String
     /// 这条数据**真正成功获取**的时间。UI 用它算"几分钟前"并判断是否陈旧。
@@ -27,6 +31,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         resetCredits: RateLimitResetCredits? = nil,
         confidence: DataConfidence,
         staleReason: QuotaStaleReason? = nil,
+        collectedBy: QuotaCollectorDevice? = nil,
         source: String,
         updatedAt: Date
     ) {
@@ -36,6 +41,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         self.resetCredits = tool == .codex ? resetCredits : nil
         self.confidence = confidence
         self.staleReason = confidence == .fresh ? nil : staleReason
+        self.collectedBy = collectedBy
         self.source = source
         self.updatedAt = updatedAt
     }
@@ -65,6 +71,7 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
     public func markedStale(reason: QuotaStaleReason? = nil) -> QuotaSnapshot {
         QuotaSnapshot(tool: tool, plan: plan, windows: windows, resetCredits: resetCredits,
                       confidence: .stale, staleReason: reason,
+                      collectedBy: collectedBy,
                       source: source, updatedAt: updatedAt)
     }
 
@@ -73,10 +80,12 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
         tool: ToolKind,
         source: String,
         now: Date = Date(),
-        reason: QuotaStaleReason? = nil
+        reason: QuotaStaleReason? = nil,
+        collectedBy: QuotaCollectorDevice? = nil
     ) -> QuotaSnapshot {
         QuotaSnapshot(tool: tool, plan: nil, windows: [],
                       confidence: .unknown, staleReason: reason,
+                      collectedBy: collectedBy,
                       source: source, updatedAt: now)
     }
 
@@ -88,8 +97,17 @@ public struct QuotaSnapshot: Codable, Sendable, Equatable {
             resetCredits: resetCredits,
             confidence: confidence,
             staleReason: staleReason,
+            collectedBy: collectedBy,
             source: source,
             updatedAt: updatedAt
+        )
+    }
+
+    public func collected(on device: QuotaCollectorDevice) -> QuotaSnapshot {
+        QuotaSnapshot(
+            tool: tool, plan: plan, windows: windows, resetCredits: resetCredits,
+            confidence: confidence, staleReason: staleReason, collectedBy: device,
+            source: source, updatedAt: updatedAt
         )
     }
 }

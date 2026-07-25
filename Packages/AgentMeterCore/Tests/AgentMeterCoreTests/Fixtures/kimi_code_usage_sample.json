@@ -1,0 +1,7 @@
+{
+  "usage": {"name":"Weekly limit","used":250,"limit":1000,"resetAt":"2030-07-24T00:00:00Z"},
+  "limits": [
+    {"detail":{"name":"5h limit","remaining":60,"limit":100,"reset_at":"2030-07-18T05:00:00Z"},"window":{"duration":5,"timeUnit":"HOUR"}},
+    {"detail":{"name":"Booster","used":1,"limit":10,"reset_at":"2030-07-18T05:00:00Z"}}
+  ]
+}

@@ -83,40 +83,49 @@ struct DeepSeekKeyStoreTests {
             }
         }
 
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: DeepSeekKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(deviceOnlyStatus(service: service) == errSecSuccess)
     }
 
     @Test func saveUpgradesMigratableItemToThisDeviceOnly() throws {
         let service = scopedService()
         defer { wipe(service: service) }
-        let legacyItem: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: DeepSeekKeyStore.account,
-            kSecAttrSynchronizable as String: kCFBooleanFalse!,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-            kSecValueData as String: Data("sk-legacy".utf8),
-        ]
-        #expect(SecItemAdd(legacyItem as CFDictionary, nil) == errSecSuccess)
+        #expect(addLegacyKey("sk-legacy", service: service) == errSecSuccess)
 
         try DeepSeekKeyStore.save(apiKey: "sk-upgraded", service: service)
 
-        let localOnlyQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: DeepSeekKeyStore.account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        #expect(SecItemCopyMatching(localOnlyQuery as CFDictionary, nil) == errSecSuccess)
+        #expect(try DeepSeekKeyStore.read(service: service) == "sk-upgraded")
+        #expect(deviceOnlyStatus(service: service) == errSecSuccess)
     }
+
+    @Test func readUpgradesMigratableItemWithoutReentry() throws {
+        let service = scopedService()
+        defer { wipe(service: service) }
+        #expect(addLegacyKey("sk-existing", service: service) == errSecSuccess)
+
+        #expect(try DeepSeekKeyStore.read(service: service) == "sk-existing")
+        #expect(deviceOnlyStatus(service: service) == errSecSuccess)
+    }
+}
+
+private func addLegacyKey(_ key: String, service: String) -> OSStatus {
+    SecItemAdd([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: DeepSeekKeyStore.account,
+        kSecAttrSynchronizable as String: kCFBooleanFalse!,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+        kSecValueData as String: Data(key.utf8),
+    ] as CFDictionary, nil)
+}
+
+private func deviceOnlyStatus(service: String) -> OSStatus {
+    SecItemCopyMatching([
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: DeepSeekKeyStore.account,
+        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        kSecMatchLimit as String: kSecMatchLimitOne,
+    ] as CFDictionary, nil)
 }
 
 /// 测试结束清理对应 service 下的条目,防止 leftover key 留在用户机器 Keychain。

@@ -3,7 +3,7 @@ import Foundation
 /// xAI Management API 返回的团队级 xAI API 账单摘要。
 ///
 /// 这是本地旁路模型：Mac/iPhone 各自持 Management Key、各自查询，
-/// 不进入 QuotaSnapshot / CloudKit / Apple Watch。
+/// 不进入 QuotaSnapshot / CloudKit。Apple Watch 只接收 iPhone 生成的不含凭据的显示 DTO。
 public struct GrokAPIUsage: Codable, Sendable, Equatable {
     public let usageDaily: Decimal
     public let usageWeekly: Decimal

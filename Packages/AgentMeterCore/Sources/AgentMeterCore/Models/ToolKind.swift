@@ -4,10 +4,30 @@ import Foundation
 public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case claudeCode
     case codex
+    case kimiCode
+    case glmCoding
+    case miniMax
     case openCode
     case deepSeek
     case openRouter
     case grok
+}
+
+public extension ToolKind {
+    /// Providers that are collected independently by both the Mac and iPhone.
+    var supportsDeviceScopedSnapshots: Bool {
+        switch self {
+        case .kimiCode, .glmCoding, .miniMax: true
+        default: false
+        }
+    }
+}
+
+/// Device that fetched a sanitized quota snapshot. Provider credentials never
+/// accompany this value into CloudKit.
+public enum QuotaCollectorDevice: String, Codable, Sendable, CaseIterable, Hashable {
+    case mac
+    case iPhone = "iphone"
 }
 
 /// 额度窗口类型。Claude 端点返回 `five_hour` / `seven_day` / `seven_day_opus` /

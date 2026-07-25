@@ -16,8 +16,9 @@ struct AgentMeterMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
-        // 纯菜单栏 agent(LSUIElement),不需要主窗口。Settings 场景满足 App 协议但不会自动开窗。
-        Settings { EmptyView() }
+        Settings {
+            MacSettingsView(model: delegate.model)
+        }
     }
 }
 
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
+    private var screenshotSettingsWindow: NSWindow?
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -40,7 +42,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] in self?.refreshButton() }
             .store(in: &cancellables)
 
-        model.start()
+        let isProviderSettingsScreenshot = ProcessInfo.processInfo.arguments.contains(
+            "--agentmeter-screenshot-provider-settings"
+        )
+        if isProviderSettingsScreenshot {
+            // 截图模式直接托管同一个 Settings 根视图，不依赖系统 Settings scene
+            // 注册时机，也不启动采集循环或读取 provider 凭据。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.showProviderSettingsScreenshotWindow()
+            }
+        } else {
+            model.start()
+        }
     }
 
     private func setUpStatusItem() {
@@ -59,6 +72,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: MenuBarContentView(model: model))
         hosting.sizingOptions = [.preferredContentSize]   // 弹窗随 SwiftUI 内容高度就地缩放
         popover.contentViewController = hosting
+    }
+
+    private func showProviderSettingsScreenshotWindow() {
+        let hosting = NSHostingController(rootView: MacSettingsView(model: model))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "AgentMeter Settings"
+        window.contentViewController = hosting
+        window.isReleasedWhenClosed = false
+        window.center()
+        screenshotSettingsWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     /// 刷新菜单栏图标 + 文字。两种图标都 `isTemplate = true`,随菜单栏外观自动反色(深色壁纸/深色模式不发黑)。
