@@ -14,9 +14,9 @@
 
 ---
 
-Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** puts Claude Code, Codex, Kimi Code, GLM Coding Plan, and MiniMax Token Plan usage where you can check it in seconds: your Apple Watch, iPhone, and Mac menu bar. The Mac companion also shows device-local billing data for DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API.
+Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** keeps coding-plan quota windows, reset times, and API billing status visible on your Apple Watch, iPhone, and Mac menu bar—without making you return to the terminal.
 
-It shows the remaining percentage in the current **5-hour window** and **weekly window**, plus each reset time, without opening a terminal.
+Track Claude Code, Codex, Kimi Code, GLM Coding Plan, and MiniMax Token Plan quota, alongside device-local billing data for DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API. AgentMeter shows the windows each provider actually reports, including short rolling windows, weekly limits, and other provider-specific periods.
 
 ## Download AgentMeter
 
@@ -33,34 +33,38 @@ The iPhone and Apple Watch app ships through the App Store:
 
 > The Mac companion is distributed outside the App Store because it needs Keychain access to your local Claude Code and Codex credentials, which is not compatible with the App Store sandbox.
 
-## What You Get
+All features are free.
 
-- **Watch complications and app views** for at-a-glance quota status.
-- **iPhone status view** when you want a larger quota snapshot.
-- **Mac menu-bar companion** that collects quota data and can show status locally.
-- **Dedicated provider settings** on Mac, with local visibility and ordering controls that do not stop collection or synchronization.
-- **More coding plans** for Kimi Code, GLM Coding Plan, and MiniMax Token Plan, using credentials you configure on each device.
-- **Local DeepSeek balance** on Mac, including the total, granted, and topped-up amounts.
-- **Local OpenRouter usage** for today, this week, and this month, plus an optional API-key limit.
-- **Local xAI API billing** with daily, weekly, and monthly spend, prepaid balance, and postpaid limit.
-- **Local Kimi API balance** plus OpenAI API and Anthropic API organization costs for today, this week, and this month.
-- **Multi-window tracking** for both short rolling windows and weekly limits.
-- **5-hour reset reminders** from the Mac companion when fresh data shows a depleted window.
-- **Codex reset credits and expiry reminders** when temporary credits are available.
-- **Stale-data warnings** when a quota refresh fails, instead of silently showing old values.
+## At a Glance
+
+- **Quota where you need it:** Apple Watch complications and app views, an iPhone status view, and a Mac menu-bar companion.
+- **Provider-aware windows:** remaining quota, reset times, Codex reset credits, and expiry reminders using the periods reported by each coding plan.
+- **Local API billing:** balances, limits, or daily/weekly/monthly costs where the provider API makes them available.
+- **Full Mac controls:** searchable provider settings, credential and region controls, collection pause/resume, plus local visibility and ordering preferences.
+- **Reliable status:** stale-data warnings instead of silently presenting old data, and optional 5-hour reset reminders when fresh data shows a depleted window.
+- **Privacy-safe support:** export sanitized diagnostics and open a structured bug report without sharing credentials or raw logs.
+
+## Supported Services
+
+| Data | Providers | Configuration and collection | Display and sync |
+| --- | --- | --- | --- |
+| Coding-plan quota | Claude Code, Codex, Kimi Code, GLM Coding Plan, MiniMax Token Plan | Claude Code and Codex use existing CLI sign-ins on Mac. Other plans are configured independently on Mac or iPhone. | Cleaned quota snapshots can sync through your private CloudKit database to iPhone and Apple Watch. |
+| Local API balance and billing | DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, Anthropic API | Credentials are configured separately on each supported device and stay in its local Keychain. | Billing records never enter CloudKit. Mac shows its local data; iPhone can send only a sanitized display snapshot to its widgets and paired Apple Watch. |
+
+OpenAI API and Anthropic API show organization-level developer API costs, not ChatGPT or Claude web/app subscription usage. xAI API billing requires a Management Key and Team ID.
 
 ## Screenshots
 
 <table>
   <tr>
-    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
     <td align="center" valign="center"><img src="screenshots/iphone.png" alt="iPhone" height="300"></td>
     <td align="center" valign="center"><img src="screenshots/mac.png" alt="Mac menu bar" height="300"></td>
+    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Apple Watch</b></sub></td>
     <td align="center"><sub><b>iPhone</b></sub></td>
     <td align="center"><sub><b>Mac menu bar</b></sub></td>
+    <td align="center"><sub><b>Apple Watch</b></sub></td>
   </tr>
 </table>
 
@@ -71,9 +75,7 @@ The iPhone and Apple Watch app ships through the App Store:
 3. Coding-plan collectors write only **cleaned quota snapshots** to your private iCloud database: tool and subscription tier, percentage windows and types, reset times, Codex reset-credit availability with grant/expiry timestamps, confidence, stale reason, collector device, source, and update time.
 4. Your **Apple Watch** and **iPhone** read those snapshots from iCloud and display them at a glance.
 
-DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API billing are intentionally separate local data sources. You configure their credentials independently on each device. Credentials and billing records are never written to CloudKit. The iPhone app may send only a sanitized display snapshot to its widgets and paired Apple Watch; provider credentials never leave the iPhone Keychain. xAI API billing requires a Management Key and Team ID. OpenAI API and Anthropic API show organization-level developer API costs, not ChatGPT or Claude web/app subscription usage.
-
-Your Apple Watch never receives provider tokens or connects directly to a provider. The iPhone connects only to providers you explicitly configure on that device, using credentials that remain in its local Keychain.
+Local API billing follows a separate path: credentials and billing records are never written to CloudKit. Your Apple Watch never receives provider tokens or connects directly to a provider. The iPhone connects only to providers you explicitly configure on that device, using credentials that remain in its local Keychain.
 
 ## Privacy
 
@@ -86,6 +88,17 @@ AgentMeter is designed around a local-token, private-iCloud sync model:
 - DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API billing records stay local and are never included in CloudKit quota snapshots.
 - Synced CloudKit records contain only cleaned coding-plan state: tool and subscription tier; percentage windows, types, and reset times; Codex reset-credit availability with grant/expiry timestamps; confidence, stale reason, collector device, source, and update time. They never contain provider credentials or upstream reset-credit IDs.
 - If data cannot be refreshed, AgentMeter marks it as **stale**.
+- Sanitized diagnostics are generated only when you request an export. They use an explicit allowlist and omit tokens, API keys, Keychain values, device names, raw logs, raw provider payloads, and billing amounts.
+
+## Troubleshooting and Bug Reports
+
+If Mac, iPhone, and Apple Watch disagree, first compare the **updated time** shown on each affected device.
+
+1. Export sanitized diagnostics from **Settings → About AgentMeter → Export Sanitized Diagnostics** on Mac, or **Settings → App Info** on iPhone.
+2. Open the structured [Bug Report form](https://github.com/dothinkerlab/AgentMeter/issues/new?template=bug_report.yml).
+3. Add reproduction steps, the updated time from each affected device, and the exported diagnostic file.
+
+The diagnostic report includes the app version and build, OS version, coding-plan window and reset status, update times, local billing service status, and pending CloudKit writes. It does **not** include credentials, Keychain data, device names, raw logs, raw provider payloads, or billing amounts. Review screenshots and any text you add before submitting.
 
 ## Requirements
 
@@ -98,7 +111,7 @@ AgentMeter is designed around a local-token, private-iCloud sync model:
 
 <div align="center">
 
-AgentMeter tracks **Claude Code**, **Codex**, **Kimi Code**, **GLM Coding Plan**, and **MiniMax Token Plan**, with device-local billing views for **DeepSeek**, **OpenRouter**, **xAI API**, **Kimi API**, **OpenAI API**, and **Anthropic API**. All features are free.
+Keep your AI coding quota visible across Mac, iPhone, and Apple Watch.
 
 © 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
 
@@ -125,6 +138,14 @@ open AgentMeter.xcodeproj
 ```
 
 The checked-in `DEVELOPMENT_TEAM` and iCloud container ID belong to the maintainer. If you fork the project, replace them with your own Apple Developer Team and CloudKit container in [`project.yml`](project.yml) and [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements).
+
+## Maintainer release validation
+
+Every public Mac release must be validated end-to-end with the exact iPhone build
+installed from TestFlight. Use the mandatory
+[Mac + iPhone release checklist](docs/RELEASE_CHECKLIST.md), including CloudKit
+Production schema review and testing the app installed from the final downloadable
+DMG.
 
 ## License
 

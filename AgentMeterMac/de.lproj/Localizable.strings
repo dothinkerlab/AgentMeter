@@ -158,3 +158,8 @@
 "连接并验证" = "Verbinden & prüfen";
 "凭据" = "Zugangsdaten";
 "只会停止此 Mac 使用这份凭据，不会影响服务商账号或其他设备。" = "Nur dieser Mac verwendet diese Zugangsdaten nicht mehr. Anbieter-Konto und andere Geräte bleiben unverändert.";
+"反馈问题" = "Problem melden";
+"导出脱敏诊断" = "Bereinigte Diagnose exportieren";
+"仅包含同步状态和更新时间，不包含 Token、API Key、Keychain、原始日志或账单金额。" = "Enthält nur Synchronisierungsstatus und Zeitstempel, keine Token, API-Schlüssel, Schlüsselbunddaten, Rohprotokolle oder Rechnungsbeträge.";
+"诊断导出失败" = "Diagnoseexport fehlgeschlagen";
+"好" = "OK";

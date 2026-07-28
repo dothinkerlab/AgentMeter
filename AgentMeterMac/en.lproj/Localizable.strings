@@ -158,3 +158,8 @@
 "连接并验证" = "Connect & Verify";
 "凭据" = "Credentials";
 "只会停止此 Mac 使用这份凭据，不会影响服务商账号或其他设备。" = "This only stops this Mac from using the credential. It does not affect the provider account or other devices.";
+"反馈问题" = "Report an Issue";
+"导出脱敏诊断" = "Export Sanitized Diagnostics";
+"仅包含同步状态和更新时间，不包含 Token、API Key、Keychain、原始日志或账单金额。" = "Includes only sync status and timestamps—never tokens, API keys, Keychain data, raw logs, or billing amounts.";
+"诊断导出失败" = "Diagnostics Export Failed";
+"好" = "OK";

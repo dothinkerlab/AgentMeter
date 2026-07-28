@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import AgentMeterCore
 
 enum MacSettingsRoute: Hashable {
@@ -85,7 +86,7 @@ struct MacSettingsView: View {
             MacManualProviderDetail(provider: provider, model: model)
                 .id(provider)
         case .about:
-            MacAboutSettingsView()
+            MacAboutSettingsView(model: model)
         }
     }
 
@@ -644,6 +645,14 @@ private struct ProviderMark: View {
 private struct MacAboutSettingsView: View {
     private static let githubURL = URL(string: "https://github.com/dothinkerlab/AgentMeter")!
     private static let releasesURL = URL(string: "https://github.com/dothinkerlab/AgentMeter/releases")!
+    private static let bugReportURL = URL(
+        string: "https://github.com/dothinkerlab/AgentMeter/issues/new?template=bug_report.yml"
+    )!
+    @ObservedObject var model: AppModel
+    @State private var diagnosticDocument = MacDiagnosticDocument(text: "")
+    @State private var diagnosticFilename = "AgentMeter-Diagnostics.txt"
+    @State private var isExportingDiagnostics = false
+    @State private var diagnosticExportError: String?
 
     var body: some View {
         Form {
@@ -651,16 +660,131 @@ private struct MacAboutSettingsView: View {
                 LabeledContent(L10n.string("版本"), value: version)
                 Link("GitHub", destination: Self.githubURL)
                 Link(L10n.string("手动升级"), destination: Self.releasesURL)
+                Link(L10n.string("反馈问题"), destination: Self.bugReportURL)
+                Button(action: exportDiagnostics) {
+                    Label(L10n.string("导出脱敏诊断"), systemImage: "square.and.arrow.up")
+                }
+                Text(L10n.string("仅包含同步状态和更新时间，不包含 Token、API Key、Keychain、原始日志或账单金额。"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
         .navigationTitle(L10n.string("关于 AgentMeter"))
+        .fileExporter(
+            isPresented: $isExportingDiagnostics,
+            document: diagnosticDocument,
+            contentType: .plainText,
+            defaultFilename: diagnosticFilename
+        ) { result in
+            if case .failure(let error) = result {
+                diagnosticExportError = error.localizedDescription
+            }
+        }
+        .alert(
+            L10n.string("诊断导出失败"),
+            isPresented: Binding(
+                get: { diagnosticExportError != nil },
+                set: { if !$0 { diagnosticExportError = nil } }
+            )
+        ) {
+            Button(L10n.string("好"), role: .cancel) {}
+        } message: {
+            Text(diagnosticExportError ?? "")
+        }
     }
 
     private var version: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
         return "\(short) (\(build))"
+    }
+
+    private func exportDiagnostics() {
+        let report = makeDiagnosticReport()
+        diagnosticDocument = MacDiagnosticDocument(text: report.text)
+        diagnosticFilename = report.suggestedFilename
+        isExportingDiagnostics = true
+    }
+
+    private func makeDiagnosticReport() -> AgentMeterDiagnosticReport {
+        let localServices = [
+            status("DeepSeek", model.deepSeekBalance),
+            status("OpenRouter", model.openRouterUsage),
+            status("xAI API", model.grokAPIUsage),
+            status("Kimi API", model.kimiAPIBalance),
+            status("OpenAI API", model.openAIAPIUsage),
+            status("Anthropic API", model.anthropicAPIUsage),
+        ].compactMap { $0 }
+
+        return AgentMeterDiagnosticReport(
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—",
+            appBuild: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—",
+            platform: "Mac",
+            operatingSystem: ProcessInfo.processInfo.operatingSystemVersionString,
+            snapshots: model.snapshots,
+            localServices: localServices,
+            cloudSyncPendingTools: model.deviceCodingCloudSyncPendingTools
+        )
+    }
+
+    private func status(
+        _ service: String,
+        _ value: DeepSeekBalance?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
+
+    private func status(
+        _ service: String,
+        _ value: OpenRouterUsage?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
+
+    private func status(
+        _ service: String,
+        _ value: GrokAPIUsage?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
+
+    private func status(
+        _ service: String,
+        _ value: KimiAPIBalance?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
+
+    private func status(
+        _ service: String,
+        _ value: APICostUsage?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
+}
+
+private struct MacDiagnosticDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.plainText] }
+    var text: String
+
+    init(text: String) {
+        self.text = text
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents,
+              let text = String(data: data, encoding: .utf8) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        self.text = text
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        guard let data = text.data(using: .utf8) else {
+            throw CocoaError(.fileWriteInapplicableStringEncoding)
+        }
+        return FileWrapper(regularFileWithContents: data)
     }
 }
 

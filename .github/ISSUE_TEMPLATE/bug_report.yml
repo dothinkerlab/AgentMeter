@@ -1,0 +1,112 @@
+name: Bug report / 问题反馈
+description: Report a reproducible AgentMeter problem without sharing credentials / 反馈可复现问题，请勿提交凭据
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve AgentMeter.
+
+        If this is a sync issue, compare the **updated time** shown on the Mac, iPhone, and Apple Watch before submitting. You can attach the sanitized diagnostics exported from **Settings → App Info** on iPhone or **Settings → About AgentMeter** on Mac.
+
+        请先比较 Mac、iPhone 和 Apple Watch 上显示的**更新时间**。可附加 iPhone「设置 → App 信息」或 Mac「设置 → 关于 AgentMeter」导出的脱敏诊断。
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface / 受影响端
+      options:
+        - iPhone app
+        - iPhone widget
+        - Apple Watch app
+        - Apple Watch complication
+        - Mac app
+        - Mac → CloudKit → iPhone/Watch sync
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider / 服务商
+      multiple: true
+      options:
+        - Claude Code
+        - ChatGPT / Codex
+        - Kimi Code
+        - GLM Coding Plan
+        - MiniMax Token Plan
+        - DeepSeek API
+        - OpenRouter
+        - xAI API
+        - Kimi API
+        - OpenAI API
+        - Anthropic API
+        - Not provider-specific
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: AgentMeter version and build / 版本和构建号
+      description: Example / 示例：iPhone 1.6 (17), Mac 1.6 (17)
+      placeholder: iPhone …; Mac …
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS versions / 系统版本
+      placeholder: iOS …; watchOS …; macOS …
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened? / 实际发生了什么？
+      description: Include any stale/error message and the updated time shown on each affected device.
+      placeholder: |
+        Mac updated time:
+        iPhone updated time:
+        Watch updated time:
+        Actual behavior:
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect? / 预期结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots and sanitized diagnostics / 截图与脱敏诊断
+      description: Drag files here. The diagnostic export intentionally omits tokens, API keys, Keychain data, raw logs, device names, and billing amounts.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check / 隐私确认
+      options:
+        - label: I confirmed that this report contains no Token, API Key, password, Keychain value, or other credential. / 我确认反馈中不含 Token、API Key、密码、Keychain 内容或其他凭据。
+          required: true
