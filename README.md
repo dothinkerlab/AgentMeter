@@ -23,9 +23,16 @@ Track Claude Code, Codex, Kimi Code, GLM Coding Plan, and MiniMax Token Plan quo
 | Platform | Get it |
 | --- | --- |
 | macOS companion | [Download the notarized DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg) |
+| macOS via Homebrew | `brew install --cask dothinkerlab/tap/agentmeter` |
 | iPhone + Apple Watch | [Download on the App Store](https://apps.apple.com/app/id6781480047) |
 
 The Mac app is Developer ID-signed and notarized by Apple. Drag **AgentMeter.app** into your Applications folder; on first launch, it asks for permission to read the local Claude Code and Codex credentials already stored on your Mac. Previous builds are available on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
+
+Homebrew users can install or upgrade the same notarized build with:
+
+```sh
+brew install --cask dothinkerlab/tap/agentmeter
+```
 
 The iPhone and Apple Watch app ships through the App Store:
 

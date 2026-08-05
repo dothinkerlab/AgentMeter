@@ -23,9 +23,16 @@
 | 平台 | 下载 |
 | --- | --- |
 | macOS 伴侣 app | [下载已公证的 DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg) |
+| 通过 Homebrew 安装 macOS 版 | `brew install --cask dothinkerlab/tap/agentmeter` |
 | iPhone + Apple Watch | [在 App Store 下载](https://apps.apple.com/app/id6781480047) |
 
 Mac app 已使用 Developer ID 签名，并通过 Apple 公证。把 **AgentMeter.app** 拖进「应用程序」即可；首次启动时，它会请求读取本机已保存的 Claude Code 和 Codex 凭据。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
+
+Homebrew 用户可以安装或升级同一份已公证构建：
+
+```sh
+brew install --cask dothinkerlab/tap/agentmeter
+```
 
 iPhone 和 Apple Watch app 通过 App Store 发布：
 

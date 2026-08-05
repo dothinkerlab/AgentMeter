@@ -1,0 +1,54 @@
+name: Dispatch published release to Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dispatch-homebrew-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: github.event.release.prerelease == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate published release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "Refusing to dispatch an invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          grep -qx 'AgentMeter.dmg' <<< "$ASSETS"
+          grep -qx 'SHA256SUMS.txt' <<< "$ASSETS"
+
+      - name: Dispatch Homebrew update
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "Required Actions secret is empty: TAP_DISPATCH_TOKEN" >&2
+            exit 1
+          fi
+
+          gh api \
+            --method POST \
+            repos/dothinkerlab/homebrew-tap/dispatches \
+            -f 'event_type=agentmeter-release' \
+            -f 'client_payload[repository]=dothinkerlab/AgentMeter' \
+            -f "client_payload[tag]=$RELEASE_TAG"

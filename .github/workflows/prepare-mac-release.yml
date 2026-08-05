@@ -1,0 +1,210 @@
+name: Prepare macOS release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prepare-mac-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
+      APPLE_TEAM_ID: KCBS4SALKB
+      DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+      DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
+      DEVELOPER_ID_PROFILE_BASE64: ${{ secrets.DEVELOPER_ID_PROVISIONING_PROFILE_BASE64 }}
+      APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release metadata and secrets
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "$DEVELOPER_DIR" ]]; then
+            echo "Pinned Xcode not found: $DEVELOPER_DIR" >&2
+            exit 1
+          fi
+
+          required_secrets=(
+            DEVELOPER_ID_P12_BASE64
+            DEVELOPER_ID_P12_PASSWORD
+            DEVELOPER_ID_PROFILE_BASE64
+            APP_STORE_CONNECT_KEY_BASE64
+            APP_STORE_CONNECT_KEY_ID
+            APP_STORE_CONNECT_ISSUER_ID
+          )
+          for secret_name in "${required_secrets[@]}"; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "Required Actions secret is empty: $secret_name" >&2
+              exit 1
+            fi
+          done
+
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done < <(./scripts/package_mac_release.sh --print-metadata)
+
+          VERSION="$(./scripts/package_mac_release.sh --print-metadata | awk -F= '$1 == "version" { print $2 }')"
+          TAG="v$VERSION"
+          NOTES_TEMPLATE="docs/releases/$TAG.md"
+
+          if [[ ! -f "$NOTES_TEMPLATE" ]]; then
+            echo "Missing bilingual release notes template: $NOTES_TEMPLATE" >&2
+            exit 1
+          fi
+          if grep -q 'TODO' "$NOTES_TEMPLATE"; then
+            echo "Release notes still contain TODO markers: $NOTES_TEMPLATE" >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists: $TAG" >&2
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG" >&2
+            exit 1
+          fi
+
+      - name: Install XcodeGen
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+          xcodebuild -version
+
+      - name: Run AgentMeterCore tests
+        shell: bash
+        run: swift test --package-path Packages/AgentMeterCore
+
+      - name: Decode release credentials
+        id: credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          P12_PATH="$RUNNER_TEMP/developer-id-application.p12"
+          PROFILE_PATH="$RUNNER_TEMP/developer-id.provisionprofile"
+          ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+
+          printf '%s' "$DEVELOPER_ID_P12_BASE64" | /usr/bin/base64 --decode > "$P12_PATH"
+          printf '%s' "$DEVELOPER_ID_PROFILE_BASE64" | /usr/bin/base64 --decode > "$PROFILE_PATH"
+          printf '%s' "$APP_STORE_CONNECT_KEY_BASE64" | /usr/bin/base64 --decode > "$ASC_KEY_PATH"
+          chmod 600 "$P12_PATH" "$PROFILE_PATH" "$ASC_KEY_PATH"
+
+          echo "p12_path=$P12_PATH" >> "$GITHUB_OUTPUT"
+          echo "profile_path=$PROFILE_PATH" >> "$GITHUB_OUTPUT"
+          echo "asc_key_path=$ASC_KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Build, sign, notarize, and package
+        id: package
+        shell: bash
+        env:
+          DEVELOPER_ID_P12_PATH: ${{ steps.credentials.outputs.p12_path }}
+          DEVELOPER_ID_PROVISIONING_PROFILE_PATH: ${{ steps.credentials.outputs.profile_path }}
+          APP_STORE_CONNECT_KEY_PATH: ${{ steps.credentials.outputs.asc_key_path }}
+          RELEASE_KEYCHAIN_PASSWORD: ${{ runner.temp }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: ./scripts/package_mac_release.sh "$RUNNER_TEMP/agentmeter-release"
+
+      - name: Render bilingual release notes
+        id: notes
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.package.outputs.version }}
+          RELEASE_BUILD: ${{ steps.package.outputs.build }}
+          RELEASE_SHA256: ${{ steps.package.outputs.sha256 }}
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
+        run: |
+          set -euo pipefail
+          TEMPLATE="docs/releases/$RELEASE_TAG.md"
+          RENDERED="$RUNNER_TEMP/release-notes.md"
+
+          TEMPLATE="$TEMPLATE" RENDERED="$RENDERED" ruby -e '
+            text = File.read(ENV.fetch("TEMPLATE"))
+            replacements = {
+              "{{VERSION}}" => ENV.fetch("RELEASE_VERSION"),
+              "{{BUILD}}" => ENV.fetch("RELEASE_BUILD"),
+              "{{SHA256}}" => ENV.fetch("RELEASE_SHA256")
+            }
+            replacements.each { |placeholder, value| text = text.gsub(placeholder, value) }
+            abort("unresolved release-note placeholder") if text.match?(/\{\{[^}]+\}\}/)
+            File.write(ENV.fetch("RENDERED"), text)
+          '
+
+          echo "path=$RENDERED" >> "$GITHUB_OUTPUT"
+
+      - name: Upload dSYM as a private workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: AgentMeter-${{ steps.package.outputs.version }}-${{ steps.package.outputs.build }}-dSYMs
+          path: ${{ steps.package.outputs.dsym_dir }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create draft GitHub Release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.package.outputs.version }}
+          RELEASE_BUILD: ${{ steps.package.outputs.build }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.path }}
+          ARTIFACT_DIR: ${{ steps.package.outputs.artifact_dir }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" \
+            "$ARTIFACT_DIR/AgentMeter-$RELEASE_VERSION-$RELEASE_BUILD.dmg" \
+            "$ARTIFACT_DIR/AgentMeter.dmg" \
+            "$ARTIFACT_DIR/SHA256SUMS.txt" \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "AgentMeter $RELEASE_VERSION" \
+            --notes-file "$RELEASE_NOTES"
+
+      - name: Write release gate summary
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.package.outputs.version }}
+          RELEASE_BUILD: ${{ steps.package.outputs.build }}
+          RELEASE_SHA256: ${{ steps.package.outputs.sha256 }}
+        run: |
+          {
+            echo "## AgentMeter macOS draft release"
+            echo
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Version: \`$RELEASE_VERSION ($RELEASE_BUILD)\`"
+            echo "- Tag: \`$RELEASE_TAG\`"
+            echo "- SHA-256: \`$RELEASE_SHA256\`"
+            echo "- Draft: https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
+            echo
+            echo "Before publishing, complete \`docs/RELEASE_CHECKLIST.md\` with the exact Draft DMG."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove decoded credentials
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "$RUNNER_TEMP/developer-id-application.p12" \
+            "$RUNNER_TEMP/developer-id.provisionprofile" \
+            "$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
