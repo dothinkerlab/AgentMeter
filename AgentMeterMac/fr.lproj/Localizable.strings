@@ -4,7 +4,7 @@
 "开机自启" = "Lancer à l’ouverture de session";
 "退出" = "Quitter";
 "未连接任何账户" = "Aucun compte connecté";
-"在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。" = "Connectez-vous à Claude Code ou Codex pour suivre l’utilisation. Ce Mac doit utiliser le même compte iCloud.";
+"在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。" = "Connectez-vous à Claude Code, Codex ou Cursor pour suivre l’utilisation. Ce Mac doit utiliser le même compte iCloud.";
 "两个窗口均已重置" = "Les deux fenêtres sont réinitialisées";
 "%@ 后重置" = "%@ avant réinit.";
 "5 小时" = "5 h";
@@ -163,3 +163,17 @@
 "仅包含同步状态和更新时间，不包含 Token、API Key、Keychain、原始日志或账单金额。" = "Contient uniquement l’état de synchronisation et les horodatages, sans jetons, clés API, données du trousseau, journaux bruts ni montants.";
 "诊断导出失败" = "Échec de l’export du diagnostic";
 "好" = "OK";
+"用量由此 Mac 的 Cursor 登录自动采集。" = "L’utilisation est collectée automatiquement depuis Cursor connecté sur ce Mac.";
+"AgentMeter 以只读方式访问 Cursor 本机登录数据库，不刷新 token，也不修改 Cursor 数据。" = "AgentMeter lit la base de connexion locale de Cursor sans renouveler les jetons ni modifier ses données.";
+"打开 Cursor 并完成登录，然后回到这里重新检测。" = "Ouvrez Cursor et connectez-vous, puis revenez vérifier ici.";
+"需要 Cursor Team 或 Enterprise 管理员创建的 Admin API key。团队成员与金额仅保留在此 Mac。" = "Nécessite une clé API Admin créée par un administrateur Cursor Team ou Enterprise. Les membres et montants restent sur ce Mac.";
+"Admin API key、团队成员和金额仅保存在此 Mac，不会进入 iCloud 或发送到其他设备。" = "La clé API Admin, les membres et les montants restent sur ce Mac et ne sont jamais envoyés vers iCloud ou d’autres appareils.";
+"Cursor 团队用量" = "Utilisation Cursor Team";
+"团队总览" = "Vue d’ensemble de l’équipe";
+"成员" = "Membres";
+"套餐内用量" = "Utilisation incluse";
+"额外付费" = "Dépenses à l’usage";
+"成员排行" = "Classement des membres";
+"搜索姓名或邮箱" = "Rechercher un nom ou un e-mail";
+"账期开始" = "Début du cycle de facturation";
+"额度占用" = "Quota utilisé";

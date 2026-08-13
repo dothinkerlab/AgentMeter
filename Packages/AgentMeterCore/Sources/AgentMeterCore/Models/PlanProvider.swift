@@ -5,6 +5,7 @@ import Foundation
 public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
     case chatGPT
     case claude
+    case cursor
     case kimiCode
     case glmCoding
     case miniMax
@@ -21,6 +22,7 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
         switch self {
         case .chatGPT: .codex
         case .claude: .claudeCode
+        case .cursor: .cursor
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
@@ -29,7 +31,7 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
 
     public var manualProvider: ManualProviderKind? {
         switch self {
-        case .chatGPT, .claude: nil
+        case .chatGPT, .claude, .cursor: nil
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax

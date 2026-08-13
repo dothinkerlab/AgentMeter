@@ -193,18 +193,16 @@ private struct MacAutomaticProviderDetail: View {
             }
 
             Section(L10n.string("数据来源")) {
-                Text(provider == .chatGPT
-                     ? L10n.string("用量由此 Mac 的 Codex CLI 登录自动采集。")
-                     : L10n.string("用量由此 Mac 的 Claude Code 登录自动采集。"))
-                Text(L10n.string("AgentMeter 不保存或接管登录流程；请先在对应 CLI 中完成登录。"))
+                Text(sourceDescription)
+                Text(provider == .cursor
+                     ? L10n.string("AgentMeter 以只读方式访问 Cursor 本机登录数据库，不刷新 token，也不修改 Cursor 数据。")
+                     : L10n.string("AgentMeter 不保存或接管登录流程；请先在对应 CLI 中完成登录。"))
                     .foregroundStyle(.secondary)
             }
 
             if state != .connected {
                 Section(L10n.string("下一步")) {
-                    Text(provider == .chatGPT
-                         ? L10n.string("在终端打开 Codex 并完成登录，然后回到这里重新检测。")
-                         : L10n.string("在终端运行 Claude Code 并使用 /login 完成登录，然后回到这里重新检测。"))
+                    Text(nextStepDescription)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -220,6 +218,24 @@ private struct MacAutomaticProviderDetail: View {
         }
         .formStyle(.grouped)
         .navigationTitle(provider.settingsDisplayName)
+    }
+
+    private var sourceDescription: String {
+        switch provider {
+        case .chatGPT: L10n.string("用量由此 Mac 的 Codex CLI 登录自动采集。")
+        case .claude: L10n.string("用量由此 Mac 的 Claude Code 登录自动采集。")
+        case .cursor: L10n.string("用量由此 Mac 的 Cursor 登录自动采集。")
+        default: ""
+        }
+    }
+
+    private var nextStepDescription: String {
+        switch provider {
+        case .chatGPT: L10n.string("在终端打开 Codex 并完成登录，然后回到这里重新检测。")
+        case .claude: L10n.string("在终端运行 Claude Code 并使用 /login 完成登录，然后回到这里重新检测。")
+        case .cursor: L10n.string("打开 Cursor 并完成登录，然后回到这里重新检测。")
+        default: ""
+        }
     }
 }
 
@@ -238,6 +254,7 @@ private struct MacManualProviderDetail: View {
     @State private var message: String?
     @State private var busy = false
     @State private var confirmRemoval = false
+    @State private var memberSearch = ""
 
     var body: some View {
         Form {
@@ -274,6 +291,12 @@ private struct MacManualProviderDetail: View {
                 }
             }
 
+            if provider == .cursorTeam {
+                Section(L10n.string("权限要求")) {
+                    Text(L10n.string("需要 Cursor Team 或 Enterprise 管理员创建的 Admin API key。团队成员与金额仅保留在此 Mac。"))
+                }
+            }
+
             Section {
                 if provider.supportsRegion {
                     Picker(L10n.string("区域"), selection: $region) {
@@ -289,7 +312,7 @@ private struct MacManualProviderDetail: View {
                     credentialField(
                         provider.category == .codingPlan
                             ? "手动回退 API key"
-                            : (provider == .openAIAPI || provider == .anthropicAPI ? "Admin API key" : "API key"),
+                            : (provider == .openAIAPI || provider == .anthropicAPI || provider == .cursorTeam ? "Admin API key" : "API key"),
                         placeholder: hasManualCredential ? "已保存，输入新 key 以替换" : provider.settingsPlaceholder,
                         text: $keyInput,
                         secure: true
@@ -320,7 +343,13 @@ private struct MacManualProviderDetail: View {
             } header: {
                 Text(L10n.string("凭据"))
             } footer: {
-                Text(L10n.string("凭据仅保存在此 Mac。跨设备只分发清洗后的用量数据，绝不传输 API key。"))
+                Text(provider == .cursorTeam
+                     ? L10n.string("Admin API key、团队成员和金额仅保存在此 Mac，不会进入 iCloud 或发送到其他设备。")
+                     : L10n.string("凭据仅保存在此 Mac。跨设备只分发清洗后的用量数据，绝不传输 API key。"))
+            }
+
+            if provider == .cursorTeam, let usage = model.cursorTeamUsage, usage.hasKnownUsage {
+                cursorTeamDetails(usage)
             }
 
             if let url = provider.settingsConsoleURL(region: region) {
@@ -388,6 +417,72 @@ private struct MacManualProviderDetail: View {
         return !key.isEmpty || (hasManualCredential && regionChanged)
     }
 
+    @ViewBuilder
+    private func cursorTeamDetails(_ usage: CursorTeamUsage) -> some View {
+        Section(L10n.string("团队总览")) {
+            LabeledContent(L10n.string("成员"), value: "\(usage.totalMembers)")
+            LabeledContent(
+                L10n.string("账期开始"),
+                value: usage.subscriptionCycleStart.formatted(date: .abbreviated, time: .omitted)
+            )
+            if let included = usage.includedSpendCents {
+                LabeledContent(L10n.string("套餐内用量"), value: dollars(cents: included))
+            }
+            LabeledContent(L10n.string("额外付费"), value: dollars(cents: usage.onDemandSpendCents))
+        }
+        Section(L10n.string("成员排行")) {
+            TextField(L10n.string("搜索姓名或邮箱"), text: $memberSearch)
+                .textFieldStyle(.roundedBorder)
+            ForEach(filteredCursorMembers(usage)) { member in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(member.name.isEmpty ? member.email : member.name).fontWeight(.semibold)
+                        Spacer()
+                        Text(dollars(cents: member.totalUsageCents)).monospacedDigit()
+                    }
+                    HStack {
+                        Text(member.email)
+                        Spacer()
+                        Text(member.role)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    HStack(spacing: 12) {
+                        if let included = member.includedSpendCents {
+                            Text("\(L10n.string("套餐内用量")) \(dollars(cents: included))")
+                        }
+                        Text("\(L10n.string("额外付费")) \(dollars(cents: member.onDemandSpendCents))")
+                        if let percent = member.totalPercentUsed {
+                            Text("\(L10n.string("额度占用")) \(percent.formatted(.number.precision(.fractionLength(0...1))))%")
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                }
+                .padding(.vertical, 3)
+            }
+        }
+    }
+
+    private func filteredCursorMembers(_ usage: CursorTeamUsage) -> [CursorTeamMemberUsage] {
+        let query = memberSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return usage.members }
+        return usage.members.filter {
+            $0.name.localizedCaseInsensitiveContains(query)
+                || $0.email.localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    private func dollars(cents: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 4
+        return formatter.string(from: NSDecimalNumber(decimal: cents / 100)) ?? "$—"
+    }
+
     private func load() {
         resetTransientState()
         if let screenshotState {
@@ -437,6 +532,7 @@ private struct MacManualProviderDetail: View {
         case .xAI: .storageFailure
         case .openAIAPI: .connected
         case .anthropicAPI: .disabled
+        case .cursorTeam: .connected
         }
     }
 
@@ -546,6 +642,7 @@ private struct MacManualProviderDetail: View {
         case .xAI: try GrokManagementKeyStore.read() != nil
         case .openAIAPI: try ProviderCredentialStore.read(kind: .openAIAdmin)?.isEmpty == false
         case .anthropicAPI: try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
+        case .cursorTeam: try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
         }
     }
 
@@ -567,6 +664,7 @@ private struct MacManualProviderDetail: View {
             try GrokManagementKeyStore.save(credentials: merged)
         case .openAIAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .openAIAdmin) }
         case .anthropicAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .anthropicAdmin) }
+        case .cursorTeam: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .cursorAdmin) }
         }
     }
 
@@ -581,6 +679,7 @@ private struct MacManualProviderDetail: View {
         case .xAI: try GrokManagementKeyStore.delete()
         case .openAIAPI: try ProviderCredentialStore.delete(kind: .openAIAdmin)
         case .anthropicAPI: try ProviderCredentialStore.delete(kind: .anthropicAdmin)
+        case .cursorTeam: try ProviderCredentialStore.delete(kind: .cursorAdmin)
         }
     }
 
@@ -715,6 +814,7 @@ private struct MacAboutSettingsView: View {
             status("Kimi API", model.kimiAPIBalance),
             status("OpenAI API", model.openAIAPIUsage),
             status("Anthropic API", model.anthropicAPIUsage),
+            status("Cursor Team", model.cursorTeamUsage),
         ].compactMap { $0 }
 
         return AgentMeterDiagnosticReport(
@@ -762,6 +862,13 @@ private struct MacAboutSettingsView: View {
     ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
         value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
     }
+
+    private func status(
+        _ service: String,
+        _ value: CursorTeamUsage?
+    ) -> AgentMeterDiagnosticReport.LocalServiceStatus? {
+        value.map { .init(service: service, confidence: $0.confidence, staleReason: $0.staleReason, updatedAt: $0.updatedAt) }
+    }
 }
 
 private struct MacDiagnosticDocument: FileDocument {
@@ -789,9 +896,30 @@ private struct MacDiagnosticDocument: FileDocument {
 }
 
 private extension PlanProviderKind {
-    var settingsDisplayName: String { self == .chatGPT ? "ChatGPT" : self == .claude ? "Claude" : manualProvider!.settingsDisplayName }
-    var settingsMonogram: String { self == .chatGPT ? ">_" : self == .claude ? "✱" : manualProvider!.settingsMonogram }
-    var settingsTint: Color { self == .chatGPT ? Color(red: 0.06, green: 0.62, blue: 0.45) : self == .claude ? Color(red: 0.82, green: 0.38, blue: 0.23) : manualProvider!.settingsTint }
+    var settingsDisplayName: String {
+        switch self {
+        case .chatGPT: "ChatGPT"
+        case .claude: "Claude"
+        case .cursor: "Cursor"
+        default: manualProvider!.settingsDisplayName
+        }
+    }
+    var settingsMonogram: String {
+        switch self {
+        case .chatGPT: ">_"
+        case .claude: "✱"
+        case .cursor: "C"
+        default: manualProvider!.settingsMonogram
+        }
+    }
+    var settingsTint: Color {
+        switch self {
+        case .chatGPT: Color(red: 0.06, green: 0.62, blue: 0.45)
+        case .claude: Color(red: 0.82, green: 0.38, blue: 0.23)
+        case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
+        default: manualProvider!.settingsTint
+        }
+    }
 }
 
 private extension ManualProviderKind {
@@ -806,6 +934,7 @@ private extension ManualProviderKind {
         case .xAI: L10n.string("xAI API 账单")
         case .openAIAPI: L10n.string("OpenAI API 账单")
         case .anthropicAPI: L10n.string("Anthropic API 账单")
+        case .cursorTeam: L10n.string("Cursor 团队用量")
         }
     }
     var settingsPlaceholder: String {
@@ -814,6 +943,7 @@ private extension ManualProviderKind {
         case .xAI: "xai-…"
         case .openAIAPI: "sk-admin-…"
         case .anthropicAPI: "sk-ant-admin-…"
+        case .cursorTeam: "key_…"
         default: "sk-…"
         }
     }
@@ -827,6 +957,7 @@ private extension ManualProviderKind {
         case .xAI: "xAI"
         case .openAIAPI: "OA"
         case .anthropicAPI: "A"
+        case .cursorTeam: "CT"
         }
     }
     var settingsTint: Color {
@@ -839,6 +970,7 @@ private extension ManualProviderKind {
         case .xAI: Color(red: 0.12, green: 0.12, blue: 0.13)
         case .openAIAPI: Color(red: 0.04, green: 0.55, blue: 0.42)
         case .anthropicAPI: Color(red: 0.76, green: 0.32, blue: 0.21)
+        case .cursorTeam: Color(red: 0.12, green: 0.12, blue: 0.14)
         }
     }
     func settingsConsoleURL(region: ProviderRegion) -> URL? {
@@ -854,6 +986,7 @@ private extension ManualProviderKind {
         case (.xAI, _): URL(string: "https://console.x.ai/home")
         case (.openAIAPI, _): URL(string: "https://platform.openai.com/settings/organization/admin-keys")
         case (.anthropicAPI, _): URL(string: "https://console.anthropic.com/settings/admin-keys")
+        case (.cursorTeam, _): URL(string: "https://cursor.com/dashboard/settings")
         }
     }
 }
@@ -863,6 +996,7 @@ private extension MacDisplayItemID {
         switch self {
         case .codex: "ChatGPT"
         case .claudeCode: "Claude"
+        case .cursor: "Cursor"
         case .kimiCode: ManualProviderKind.kimiCode.settingsDisplayName
         case .glmCoding: ManualProviderKind.glmCoding.settingsDisplayName
         case .miniMax: ManualProviderKind.miniMax.settingsDisplayName
@@ -872,12 +1006,14 @@ private extension MacDisplayItemID {
         case .deepSeek: ManualProviderKind.deepSeek.settingsDisplayName
         case .openRouter: ManualProviderKind.openRouter.settingsDisplayName
         case .xAI: ManualProviderKind.xAI.settingsDisplayName
+        case .cursorTeam: ManualProviderKind.cursorTeam.settingsDisplayName
         }
     }
     var settingsMonogram: String {
         switch self {
         case .codex: ">_"
         case .claudeCode: "✱"
+        case .cursor: "C"
         default: manualProvider!.settingsMonogram
         }
     }
@@ -885,6 +1021,7 @@ private extension MacDisplayItemID {
         switch self {
         case .codex: Color(red: 0.06, green: 0.62, blue: 0.45)
         case .claudeCode: Color(red: 0.82, green: 0.38, blue: 0.23)
+        case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
         default: manualProvider!.settingsTint
         }
     }

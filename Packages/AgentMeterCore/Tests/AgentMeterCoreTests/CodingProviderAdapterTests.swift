@@ -113,6 +113,7 @@ private func codingFixture(_ name: String) throws -> Data {
     #expect(RecordMapping.recordID(for: .kimiCode, collector: .mac).recordName == "snapshot-kimiCode-mac")
     #expect(RecordMapping.recordID(for: .kimiCode, collector: .iPhone).recordName == "snapshot-kimiCode-iphone")
     #expect(RecordMapping.recordID(for: .claudeCode, collector: .iPhone).recordName == "snapshot-claudeCode")
+    #expect(RecordMapping.recordID(for: .cursor).recordName == "snapshot-cursor")
 }
 
 @Test func watchPrefersActivePhoneEvenWhenStaleThenFallsBackAfter48Hours() {

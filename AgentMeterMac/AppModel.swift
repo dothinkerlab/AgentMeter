@@ -101,6 +101,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var kimiAPIBalance: KimiAPIBalance?
     @Published private(set) var openAIAPIUsage: APICostUsage?
     @Published private(set) var anthropicAPIUsage: APICostUsage?
+    @Published private(set) var cursorTeamUsage: CursorTeamUsage?
     @Published private(set) var deviceCodingSnapshots: [QuotaSnapshot] = []
     @Published private(set) var deviceCodingCloudSyncPendingTools: Set<ToolKind> = []
     @Published private(set) var displayOrder: [MacDisplayItemID]
@@ -139,6 +140,7 @@ final class AppModel: ObservableObject {
     static let lowQuotaInterval: TimeInterval = 1 * 60
     static let lowQuotaThreshold: Double = 10
     static let staleThreshold: TimeInterval = 15 * 60
+    static let cursorTeamInterval: TimeInterval = 10 * 60
     static let legacyTools: [ToolKind] = AgentToolSelection.defaultTools
     static let tools: [ToolKind] = legacyTools + MacCodingProviderPreferences.tools
     private static let toolDisplayOrderKey = "toolDisplayOrder"
@@ -158,6 +160,8 @@ final class AppModel: ObservableObject {
     private var kimiAPIRequestGate = KimiAPIRequestGate()
     private var openAIAPIRequestGate = APICostRequestGate()
     private var anthropicAPIRequestGate = APICostRequestGate()
+    private var cursorTeamRequestGate = CursorTeamRequestGate()
+    private var cursorTeamLastAttemptAt: Date?
     private var deviceCodingRequestGate = DeviceCodingRequestGate()
     private var deviceCodingPublishGenerations: [ToolKind: UInt64] = [:]
 
@@ -226,7 +230,8 @@ final class AppModel: ObservableObject {
             async let kimiAPI: Void = collectKimiAPI()
             async let openAIAPI: Void = collectOpenAIAPI()
             async let anthropicAPI: Void = collectAnthropicAPI()
-            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI)
+            async let cursorTeam: Void = collectCursorTeam()
+            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam)
             return
         }
         isCollecting = true
@@ -239,8 +244,9 @@ final class AppModel: ObservableObject {
         async let kimiAPI: Void = collectKimiAPI()
         async let openAIAPI: Void = collectOpenAIAPI()
         async let anthropicAPI: Void = collectAnthropicAPI()
+        async let cursorTeam: Void = collectCursorTeam()
         results = await legacyResults
-        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI)
+        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam)
         lastCollectedAt = Date()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
@@ -556,6 +562,42 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func collectCursorTeam(force: Bool = false) async {
+        if !force, let last = cursorTeamLastAttemptAt,
+           Date().timeIntervalSince(last) < Self.cursorTeamInterval { return }
+        cursorTeamLastAttemptAt = Date()
+        let generation = cursorTeamRequestGate.begin()
+        let key: String
+        do {
+            guard let stored = try ProviderCredentialStore.read(kind: .cursorAdmin), !stored.isEmpty else {
+                guard cursorTeamRequestGate.isCurrent(generation) else { return }
+                cursorTeamUsage = nil
+                return
+            }
+            guard ManualProviderPreferences.isEnabled(.cursorTeam, credentialExists: true, defaults: defaults) else {
+                guard cursorTeamRequestGate.isCurrent(generation) else { return }
+                cursorTeamUsage = nil
+                return
+            }
+            key = stored
+        } catch {
+            guard cursorTeamRequestGate.isCurrent(generation) else { return }
+            cursorTeamUsage = .degraded(from: cursorTeamUsage, reason: .credentialReadFailed)
+            return
+        }
+        do {
+            let fetched = try await CursorTeamUsageAdapter().fetch(adminKey: key)
+            guard cursorTeamRequestGate.isCurrent(generation) else { return }
+            cursorTeamUsage = fetched
+        } catch {
+            guard cursorTeamRequestGate.isCurrent(generation) else { return }
+            cursorTeamUsage = .degraded(
+                from: cursorTeamUsage,
+                reason: CursorTeamUsageAdapter.staleReason(for: error)
+            )
+        }
+    }
+
     func manualProviderState(_ provider: ManualProviderKind) -> ProviderConnectionState {
         do {
             let hasCredential = try macProviderCredentialExists(provider)
@@ -579,6 +621,8 @@ final class AppModel: ObservableObject {
                 fact = (openAIAPIUsage?.confidence, openAIAPIUsage?.staleReason)
             case .anthropicAPI:
                 fact = (anthropicAPIUsage?.confidence, anthropicAPIUsage?.staleReason)
+            case .cursorTeam:
+                fact = (cursorTeamUsage?.confidence, cursorTeamUsage?.staleReason)
             }
             return .resolved(
                 hasCredential: hasCredential,
@@ -594,7 +638,10 @@ final class AppModel: ObservableObject {
     func automaticPlanProviderState(_ provider: PlanProviderKind) -> ProviderConnectionState {
         guard provider.collectionMode == .macAutomatic else { return .unconfigured }
         if ProcessInfo.processInfo.arguments.contains("--agentmeter-screenshot-provider-settings") {
-            return provider == .chatGPT ? .connected : .pendingVerification(.networkFailure)
+            return switch provider {
+            case .chatGPT, .cursor: .connected
+            default: .pendingVerification(.networkFailure)
+            }
         }
         guard let result = results.first(where: { $0.tool == provider.toolKind }) else {
             return isCollecting ? .checking : .unconfigured
@@ -669,6 +716,8 @@ final class AppModel: ObservableObject {
             await collectOpenAIAPI()
         case .anthropicAPI:
             await collectAnthropicAPI()
+        case .cursorTeam:
+            await collectCursorTeam(force: true)
         }
         return manualProviderState(provider)
     }
@@ -702,6 +751,10 @@ final class AppModel: ObservableObject {
         case .anthropicAPI:
             _ = anthropicAPIRequestGate.begin()
             anthropicAPIUsage = nil
+        case .cursorTeam:
+            _ = cursorTeamRequestGate.begin()
+            cursorTeamLastAttemptAt = nil
+            cursorTeamUsage = nil
         }
         return true
     }
@@ -748,6 +801,8 @@ final class AppModel: ObservableObject {
             return try ProviderCredentialStore.read(kind: .openAIAdmin)?.isEmpty == false
         case .anthropicAPI:
             return try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
+        case .cursorTeam:
+            return try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
         }
     }
 
@@ -816,6 +871,7 @@ final class AppModel: ObservableObject {
         case .deepSeek: deepSeekBalance != nil
         case .openRouter: openRouterUsage != nil
         case .xAI: grokAPIUsage != nil
+        case .cursorTeam: cursorTeamUsage != nil
         default: false
         }
     }
@@ -862,6 +918,7 @@ final class AppModel: ObservableObject {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
         case .miniMax: return "MiniMax Token Plan"

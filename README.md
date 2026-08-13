@@ -16,7 +16,7 @@
 
 Coding agents can keep spending quota after you leave the keyboard. **AgentMeter** keeps coding-plan quota windows, reset times, and API billing status visible on your Apple Watch, iPhone, and Mac menu bar—without making you return to the terminal.
 
-Track Claude Code, Codex, Kimi Code, GLM Coding Plan, and MiniMax Token Plan quota, alongside device-local billing data for DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API. AgentMeter shows the windows each provider actually reports, including short rolling windows, weekly limits, and other provider-specific periods.
+Track Claude Code, Codex, Cursor, Kimi Code, GLM Coding Plan, and MiniMax Token Plan quota, alongside device-local billing data for Cursor Team, DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API. AgentMeter shows short rolling windows, weekly limits, monthly billing cycles, and other provider-specific periods.
 
 ## Download AgentMeter
 
@@ -26,7 +26,7 @@ Track Claude Code, Codex, Kimi Code, GLM Coding Plan, and MiniMax Token Plan quo
 | macOS via Homebrew | `brew install --cask dothinkerlab/tap/agentmeter` |
 | iPhone + Apple Watch | [Download on the App Store](https://apps.apple.com/app/id6781480047) |
 
-The Mac app is Developer ID-signed and notarized by Apple. Drag **AgentMeter.app** into your Applications folder; on first launch, it asks for permission to read the local Claude Code and Codex credentials already stored on your Mac. Previous builds are available on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
+The Mac app is Developer ID-signed and notarized by Apple. Drag **AgentMeter.app** into your Applications folder; it reads existing Claude Code and Codex credentials and detects Cursor's local sign-in in read-only mode. Previous builds are available on the [Releases page](https://github.com/dothinkerlab/AgentMeter/releases).
 
 Homebrew users can install or upgrade the same notarized build with:
 
@@ -55,8 +55,8 @@ All features are free.
 
 | Data | Providers | Configuration and collection | Display and sync |
 | --- | --- | --- | --- |
-| Coding-plan quota | Claude Code, Codex, Kimi Code, GLM Coding Plan, MiniMax Token Plan | Claude Code and Codex use existing CLI sign-ins on Mac. Other plans are configured independently on Mac or iPhone. | Cleaned quota snapshots can sync through your private CloudKit database to iPhone and Apple Watch. |
-| Local API balance and billing | DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, Anthropic API | Credentials are configured separately on each supported device and stay in its local Keychain. | Billing records never enter CloudKit. Mac shows its local data; iPhone can send only a sanitized display snapshot to its widgets and paired Apple Watch. |
+| Coding-plan quota | Claude Code, Codex, Cursor, Kimi Code, GLM Coding Plan, MiniMax Token Plan | Claude Code, Codex, and Cursor use existing Mac sign-ins. Other plans are configured independently on Mac or iPhone. | Cleaned quota snapshots can sync through your private CloudKit database to iPhone and Apple Watch. |
+| Local API balance and billing | Cursor Team, DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, Anthropic API | Credentials stay in the local Keychain. Cursor Team requires an Admin API key. | Billing records never enter CloudKit. Cursor Team member identities and amounts remain on Mac only. |
 
 OpenAI API and Anthropic API show organization-level developer API costs, not ChatGPT or Claude web/app subscription usage. xAI API billing requires a Management Key and Team ID.
 
@@ -77,7 +77,7 @@ OpenAI API and Anthropic API show organization-level developer API costs, not Ch
 
 ## How it works
 
-1. The **Mac menu-bar companion** reads your existing Claude Code and Codex credentials from the local Keychain. Kimi Code, GLM Coding Plan, and MiniMax Token Plan can be configured separately on Mac and iPhone.
+1. The **Mac menu-bar companion** reads existing Claude Code, Codex, and Cursor sign-ins locally. Cursor's state database is opened read-only; AgentMeter does not refresh its token or modify Cursor data. Kimi Code, GLM Coding Plan, and MiniMax Token Plan can be configured separately on Mac and iPhone.
 2. Each device uses only its local credentials to query the corresponding provider.
 3. Coding-plan collectors write only **cleaned quota snapshots** to your private iCloud database: tool and subscription tier, percentage windows and types, reset times, Codex reset-credit availability with grant/expiry timestamps, confidence, stale reason, collector device, source, and update time.
 4. Your **Apple Watch** and **iPhone** read those snapshots from iCloud and display them at a glance.
@@ -92,7 +92,7 @@ AgentMeter is designed around a local-token, private-iCloud sync model:
 - Tokens are used only by the Mac companion, on your Mac, to refresh quota data.
 - Tokens are **never sent to us** and **never written to iCloud**.
 - Manually entered coding-plan and billing credentials stay in the local Keychain with iCloud Keychain synchronization and encrypted-backup migration disabled.
-- DeepSeek, OpenRouter, xAI API, Kimi API, OpenAI API, and Anthropic API billing records stay local and are never included in CloudKit quota snapshots.
+- Cursor Team member identities and amounts stay on the Mac holding the Admin API key. Other billing records stay local and are never included in CloudKit quota snapshots.
 - Synced CloudKit records contain only cleaned coding-plan state: tool and subscription tier; percentage windows, types, and reset times; Codex reset-credit availability with grant/expiry timestamps; confidence, stale reason, collector device, source, and update time. They never contain provider credentials or upstream reset-credit IDs.
 - If data cannot be refreshed, AgentMeter marks it as **stale**.
 - Sanitized diagnostics are generated only when you request an export. They use an explicit allowlist and omit tokens, API keys, Keychain values, device names, raw logs, raw provider payloads, and billing amounts.
@@ -112,7 +112,7 @@ The diagnostic report includes the app version and build, OS version, coding-pla
 - macOS 13 or later for the Mac companion.
 - iOS/watchOS app installed from the [App Store](https://apps.apple.com/app/id6781480047).
 - iCloud enabled with the same Apple ID across your Mac, iPhone, and Apple Watch.
-- Claude Code or Codex signed in on your Mac. Other coding plans and billing sources use credentials entered independently on each device; xAI API billing requires a Management Key and Team ID, while OpenAI API and Anthropic API costs require organization Admin API keys.
+- Claude Code, Codex, or Cursor signed in on your Mac. Cursor Team requires a Team/Enterprise Admin API key; other billing sources use credentials entered independently on each device.
 
 ---
 
@@ -162,6 +162,6 @@ DMG.
 
 ## Disclaimer
 
-AgentMeter reads quota data from **unofficial, undocumented** Claude Code and Codex endpoints. These endpoints may change or stop working at any time. Other integrations use their providers' APIs, which may also change. Using these services may be subject to each provider's terms of service. Use AgentMeter at your own risk.
+AgentMeter reads quota data from **unofficial, undocumented** Claude Code, Codex, and [Cursor dashboard endpoints](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md). These endpoints may change or stop working at any time. Cursor Team uses Cursor's [official Admin API](https://docs.cursor.com/en/account/teams/admin-api) and requires an administrator-created key. Other integrations use their providers' APIs, which may also change. Using these services may be subject to each provider's terms of service. Use AgentMeter at your own risk.
 
 AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** any listed provider. Provider and product names are trademarks of their respective owners.

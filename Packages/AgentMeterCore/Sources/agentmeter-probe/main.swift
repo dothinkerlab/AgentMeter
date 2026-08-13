@@ -54,7 +54,7 @@ func selectedTool(from arguments: [String] = CommandLine.arguments) -> ToolKind?
 }
 
 func usageAndExit() -> Never {
-    FileHandle.standardError.write(Data("Usage: agentmeter-probe [--tool claudeCode|codex]\n".utf8))
+    FileHandle.standardError.write(Data("Usage: agentmeter-probe [--tool claudeCode|codex|cursor]\n".utf8))
     exit(64)
 }
 
@@ -70,6 +70,11 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             accessToken: credentials.accessToken,
             accountID: credentials.accountID,
             plan: credentials.subscriptionType
+        )
+    case .cursor:
+        return try await CursorPlanAdapter().fetch(
+            accessToken: credentials.accessToken,
+            fallbackPlan: credentials.subscriptionType
         )
     case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok:
         throw ProbeError.unsupportedTool(tool.rawValue)
@@ -100,6 +105,13 @@ func describeFetchError(_ error: Error) -> String {
         switch e {
         case .unauthorized: return "端点返回 401/403 —— token 可能过期,需重激活"
         case .httpStatus(let code): return "端点返回 HTTP \(code) —— 非官方端点可能已变"
+        case .transport(let msg): return "网络失败: \(msg)"
+        case .decode(let msg): return "响应解析失败(字段可能变了): \(msg)"
+        }
+    case let e as CursorPlanAdapter.FetchError:
+        switch e {
+        case .unauthorized: return "端点返回 401/403 —— Cursor 登录可能已过期"
+        case .httpStatus(let code): return "端点返回 HTTP \(code) —— 未公开端点可能已变"
         case .transport(let msg): return "网络失败: \(msg)"
         case .decode(let msg): return "响应解析失败(字段可能变了): \(msg)"
         }

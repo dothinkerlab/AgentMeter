@@ -86,6 +86,7 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
         case .miniMax: return "MiniMax Token Plan"

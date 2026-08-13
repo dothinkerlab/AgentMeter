@@ -195,6 +195,7 @@ public struct QuotaCollector: Sendable {
         switch error {
         case ClaudeCodeAdapter.FetchError.unauthorized,
              CodexPlanAdapter.FetchError.unauthorized,
+             CursorPlanAdapter.FetchError.unauthorized,
              CodexResetCreditsAdapter.FetchError.unauthorized,
              DeepSeekBalanceAdapter.FetchError.unauthorized,
              OpenRouterUsageAdapter.FetchError.unauthorized,
@@ -206,6 +207,7 @@ public struct QuotaCollector: Sendable {
             return .authExpired
         case ClaudeCodeAdapter.FetchError.transport,
              CodexPlanAdapter.FetchError.transport,
+             CursorPlanAdapter.FetchError.transport,
              CodexResetCreditsAdapter.FetchError.transport,
              DeepSeekBalanceAdapter.FetchError.transport,
              OpenRouterUsageAdapter.FetchError.transport,
@@ -217,6 +219,7 @@ public struct QuotaCollector: Sendable {
             return .networkFailure
         case ClaudeCodeAdapter.FetchError.httpStatus,
              CodexPlanAdapter.FetchError.httpStatus,
+             CursorPlanAdapter.FetchError.httpStatus,
              CodexResetCreditsAdapter.FetchError.httpStatus,
              DeepSeekBalanceAdapter.FetchError.httpStatus,
              OpenRouterUsageAdapter.FetchError.httpStatus,
@@ -228,6 +231,7 @@ public struct QuotaCollector: Sendable {
             return .endpointFailure
         case ClaudeCodeAdapter.FetchError.decode,
              CodexPlanAdapter.FetchError.decode,
+             CursorPlanAdapter.FetchError.decode,
              CodexResetCreditsAdapter.FetchError.decode,
              DeepSeekBalanceAdapter.FetchError.decode,
              OpenRouterUsageAdapter.FetchError.decode,
@@ -246,6 +250,7 @@ public struct QuotaCollector: Sendable {
         switch tool {
         case .claudeCode: return ClaudeCodeAdapter.source
         case .codex: return CodexPlanAdapter.source
+        case .cursor: return CursorPlanAdapter.source
         case .kimiCode: return KimiCodeAdapter.source
         case .glmCoding: return GLMCodingPlanAdapter.source
         case .miniMax: return MiniMaxTokenPlanAdapter.source
@@ -265,6 +270,9 @@ public struct QuotaCollector: Sendable {
         case .codex:
             return try await CodexPlanAdapter().fetch(
                 accessToken: creds.accessToken, accountID: creds.accountID, plan: creds.subscriptionType)
+        case .cursor:
+            return try await CursorPlanAdapter().fetch(
+                accessToken: creds.accessToken, fallbackPlan: creds.subscriptionType)
         case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok:
             throw UnsupportedTool(tool: tool)
         }

@@ -6,6 +6,7 @@ import AgentMeterCore
 enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case codex
     case claudeCode
+    case cursor
     case kimiCode
     case glmCoding
     case miniMax
@@ -15,6 +16,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case deepSeek
     case openRouter
     case xAI
+    case cursorTeam
 
     var id: String { rawValue }
 
@@ -22,13 +24,14 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         switch self {
         case .codex: .codex
         case .claudeCode: .claudeCode
+        case .cursor: .cursor
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
-        case .openAIAPI, .anthropicAPI, .kimiAPI: nil
+        case .openAIAPI, .anthropicAPI, .kimiAPI, .cursorTeam: nil
         }
     }
 
@@ -43,7 +46,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .xAI
-        case .codex, .claudeCode: nil
+        case .cursorTeam: .cursorTeam
+        case .codex, .claudeCode, .cursor: nil
         }
     }
 
@@ -51,6 +55,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         switch tool {
         case .codex: .codex
         case .claudeCode: .claudeCode
+        case .cursor: .cursor
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax

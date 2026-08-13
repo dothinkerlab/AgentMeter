@@ -3,14 +3,14 @@ import Foundation
 /// 后台 agent 一次要采集哪些工具的选择逻辑。纯函数(env/args 注入),便于单测。
 public enum AgentToolSelection {
 
-    /// 没有任何配置时的缺省:Claude + Codex 都采。
-    public static let defaultTools: [ToolKind] = [.claudeCode, .codex]
+    /// 没有任何配置时的缺省：自动尝试 Claude、Codex 与 Cursor。
+    public static let defaultTools: [ToolKind] = [.claudeCode, .codex, .cursor]
 
     /// 解析这次要采集哪些工具。优先级从高到低:
     /// 1. **单工具覆盖**(probe / 旧行为兼容,只采一个):
     ///    env `AGENTMETER_TOOL` 或 `--tool <x>` / `--tool=<x>`。
-    /// 2. **多工具**:env `AGENTMETER_TOOLS=claudeCode,codex`(逗号分隔)。
-    /// 3. **缺省**:`[.claudeCode, .codex]`。
+    /// 2. **多工具**:env `AGENTMETER_TOOLS=claudeCode,codex,cursor`(逗号分隔)。
+    /// 3. **缺省**:`[.claudeCode, .codex, .cursor]`。
     ///
     /// 非法 rawValue 忽略;去重保序;若多工具列表全非法则回落缺省。结果非空。
     public static func parseTools(env: [String: String], args: [String] = []) -> [ToolKind] {

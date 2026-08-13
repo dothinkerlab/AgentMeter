@@ -12,6 +12,7 @@ public enum ProviderCredentialStore {
         case kimiAPI = "KimiAPI-credentials"
         case openAIAdmin = "OpenAIAdmin-credentials"
         case anthropicAdmin = "AnthropicAdmin-credentials"
+        case cursorAdmin = "CursorAdmin-credentials"
     }
 
     public enum KeyError: Error, Equatable {

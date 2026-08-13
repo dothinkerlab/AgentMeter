@@ -16,7 +16,7 @@
 
 你离开键盘后，后台的 coding agent 可能还在消耗额度。**AgentMeter** 把编程套餐额度窗口、重置时间和 API 账单状态放到 Apple Watch、iPhone 与 Mac 菜单栏，让你不用回到终端也能随时查看。
 
-它支持 Claude Code、Codex、Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 额度，并提供 DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API 与 Anthropic API 的设备本地账单数据。AgentMeter 会按各服务商实际返回的周期展示短时滚动窗口、每周限额及其他特定周期。
+它支持 Claude Code、Codex、Cursor、Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 额度，并提供 Cursor Team、DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API 与 Anthropic API 的设备本地账单数据。AgentMeter 会展示短时滚动窗口、每周限额、月度账期及其他特定周期。
 
 ## 下载 AgentMeter
 
@@ -26,7 +26,7 @@
 | 通过 Homebrew 安装 macOS 版 | `brew install --cask dothinkerlab/tap/agentmeter` |
 | iPhone + Apple Watch | [在 App Store 下载](https://apps.apple.com/app/id6781480047) |
 
-Mac app 已使用 Developer ID 签名，并通过 Apple 公证。把 **AgentMeter.app** 拖进「应用程序」即可；首次启动时，它会请求读取本机已保存的 Claude Code 和 Codex 凭据。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
+Mac app 已使用 Developer ID 签名，并通过 Apple 公证。把 **AgentMeter.app** 拖进「应用程序」即可；它会读取本机已有的 Claude Code 与 Codex 凭据，并以只读方式检测 Cursor 登录。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
 
 Homebrew 用户可以安装或升级同一份已公证构建：
 
@@ -55,8 +55,8 @@ iPhone 和 Apple Watch app 通过 App Store 发布：
 
 | 数据类型 | 服务商 | 配置与采集 | 展示与同步 |
 | --- | --- | --- | --- |
-| 编程套餐额度 | Claude Code、Codex、Kimi Code、GLM Coding Plan、MiniMax Token Plan | Claude Code 与 Codex 使用 Mac 上已有的 CLI 登录；其他套餐可分别在 Mac 或 iPhone 配置。 | 清洗后的额度快照可通过你的私有 CloudKit 数据库同步到 iPhone 与 Apple Watch。 |
-| 本地 API 余额与账单 | DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API、Anthropic API | 凭据需在每台支持的设备上单独配置，并留在该设备的本地 Keychain。 | 账单记录不会进入 CloudKit。Mac 展示本机数据；iPhone 只会向本机 Widget 和配对 Apple Watch 发送脱敏后的显示快照。 |
+| 编程套餐额度 | Claude Code、Codex、Cursor、Kimi Code、GLM Coding Plan、MiniMax Token Plan | Claude Code、Codex 与 Cursor 使用 Mac 上已有的登录；其他套餐可分别在 Mac 或 iPhone 配置。 | 清洗后的额度快照可通过你的私有 CloudKit 数据库同步到 iPhone 与 Apple Watch。 |
+| 本地 API 余额与账单 | Cursor Team、DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API、Anthropic API | 凭据留在本机 Keychain；Cursor Team 需要 Admin API key。 | 账单记录不会进入 CloudKit；Cursor Team 成员身份与金额仅留在 Mac。 |
 
 OpenAI API 和 Anthropic API 展示的是组织级开发者 API 成本，不是 ChatGPT 或 Claude 网页/App 订阅用量。xAI API 账单需要 Management Key 与 Team ID。
 
@@ -77,7 +77,7 @@ OpenAI API 和 Anthropic API 展示的是组织级开发者 API 成本，不是 
 
 ## 工作原理
 
-1. **Mac 菜单栏伴侣 app** 从本机 Keychain 读取你已有的 Claude Code 和 Codex 凭据；Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 可分别在 Mac 与 iPhone 配置。
+1. **Mac 菜单栏伴侣 app** 在本机读取已有的 Claude Code、Codex 与 Cursor 登录；Cursor 数据库以只读方式打开，AgentMeter 不刷新 token、也不修改 Cursor 数据。Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 可分别在 Mac 与 iPhone 配置。
 2. 每台设备只使用本机凭据查询对应服务商。
 3. 编程套餐采集器只把**清洗后的额度快照**写入你的私有 iCloud 数据库，包括工具和订阅档位、百分比窗口及类型、重置时间、Codex reset credit 的可用数量和授予/到期时间，以及 confidence、stale reason、采集设备、source 和更新时间。
 4. 你的 **Apple Watch** 和 **iPhone** 从 iCloud 读取这些快照，并展示给你。
@@ -92,7 +92,7 @@ AgentMeter 采用“本机 token + 私有 iCloud 同步”的设计：
 - token 只由 Mac 伴侣 app 在你的 Mac 本机用于刷新额度。
 - token **绝不发送给我们**，也**绝不写入 iCloud**。
 - 手动输入的编程套餐与账单凭据只存在本机 Keychain，并明确关闭 iCloud Keychain 同步和加密备份迁移。
-- DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API 与 Anthropic API 的账单记录只留在本机，不会进入 CloudKit 额度快照。
+- Cursor Team 的成员身份与金额只留在持有 Admin API key 的 Mac；其他账单记录只留在本机，不会进入 CloudKit 额度快照。
 - CloudKit 同步记录只包含清洗后的编程套餐状态：工具和订阅档位；百分比窗口、类型与重置时间；Codex reset credit 的可用数量和授予/到期时间；confidence、stale reason、采集设备、source 与更新时间。绝不包含服务商凭据或上游 reset credit ID。
 - 如果数据无法刷新，AgentMeter 会明确标记为**陈旧**。
 - 脱敏诊断只会在你主动导出时生成，采用明确的字段白名单，不包含 Token、API Key、Keychain 内容、设备名称、原始日志、服务商原始响应或账单金额。
@@ -112,7 +112,7 @@ AgentMeter 采用“本机 token + 私有 iCloud 同步”的设计：
 - Mac 伴侣 app 需要 macOS 13 或更高版本。
 - iPhone / Apple Watch app 需从 [App Store](https://apps.apple.com/app/id6781480047) 安装。
 - Mac、iPhone 和 Apple Watch 需使用同一个 Apple ID 开启 iCloud。
-- Mac 上已登录 Claude Code 或 Codex；其他编程套餐和账单来源需在各设备单独输入凭据。xAI API 账单使用 Management Key + Team ID，OpenAI API 与 Anthropic API 成本使用组织级 Admin API key。
+- Mac 上已登录 Claude Code、Codex 或 Cursor；Cursor Team 需要 Team/Enterprise 管理员创建的 Admin API key，其他账单来源需在各设备单独输入凭据。
 
 ---
 
@@ -160,6 +160,6 @@ open AgentMeter.xcodeproj
 
 ## 免责声明
 
-AgentMeter 从 Claude Code 与 Codex 的**非官方、未公开**端点读取额度数据，这些端点可能随时变动或失效；其他集成使用各服务商 API，也可能发生变化。使用这些服务可能受各自服务商的服务条款约束，请自行承担风险。
+AgentMeter 从 Claude Code、Codex 与 [Cursor Dashboard](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md) 的**非官方、未公开**端点读取额度数据，这些端点可能随时变动或失效；Cursor Team 使用 Cursor [官方 Admin API](https://docs.cursor.com/en/account/teams/admin-api)，并要求管理员创建 key。其他集成使用各服务商 API，也可能发生变化。使用这些服务可能受各自服务商的服务条款约束，请自行承担风险。
 
 AgentMeter 为独立项目，**与文中列出的任何服务商均无隶属、背书或赞助关系**。所有服务商与产品名称均为各自权利人的商标。

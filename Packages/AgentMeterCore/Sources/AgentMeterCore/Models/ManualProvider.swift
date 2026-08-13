@@ -14,6 +14,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     case xAI
     case openAIAPI
     case anthropicAPI
+    case cursorTeam
 
     public enum Category: Sendable {
         case codingPlan
@@ -28,7 +29,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     public var category: Category {
         switch self {
         case .kimiCode, .glmCoding, .miniMax: .codingPlan
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI: .billing
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam: .billing
         }
     }
 
@@ -51,7 +52,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
-        case .kimiAPI, .openAIAPI, .anthropicAPI: nil
+        case .kimiAPI, .openAIAPI, .anthropicAPI, .cursorTeam: nil
         }
     }
 
@@ -63,6 +64,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .xAI: .xAI
         case .openAIAPI: .openAIAPI
         case .anthropicAPI: .anthropicAPI
+        case .cursorTeam: nil
         default: nil
         }
     }
@@ -125,7 +127,7 @@ public enum ManualProviderPreferences {
         switch provider {
         case .kimiCode, .glmCoding, .miniMax:
             return "codingProvider.\(provider.rawValue).enabled"
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI:
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam:
             return "manualProvider.\(provider.rawValue).enabled"
         }
     }

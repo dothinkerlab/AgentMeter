@@ -5,10 +5,12 @@ import Testing
 struct PlanProviderTests {
     @Test func catalogOrderAndMappingsAreStable() {
         #expect(PlanProviderKind.allCases == [
-            .chatGPT, .claude, .kimiCode, .glmCoding, .miniMax,
+            .chatGPT, .claude, .cursor, .kimiCode, .glmCoding, .miniMax,
         ])
         #expect(PlanProviderKind.chatGPT.toolKind == .codex)
         #expect(PlanProviderKind.claude.toolKind == .claudeCode)
+        #expect(PlanProviderKind.cursor.toolKind == .cursor)
+        #expect(PlanProviderKind.cursor.collectionMode == .macAutomatic)
         #expect(PlanProviderKind.chatGPT.collectionMode == .macAutomatic)
         #expect(PlanProviderKind.claude.manualProvider == nil)
         #expect(PlanProviderKind.kimiCode.manualProvider == .kimiCode)

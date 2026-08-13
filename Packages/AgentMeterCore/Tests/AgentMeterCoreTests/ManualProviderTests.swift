@@ -3,8 +3,8 @@ import Testing
 @testable import AgentMeterCore
 
 struct ManualProviderTests {
-    @Test func providerMappingsCoverAllNineServices() {
-        #expect(ManualProviderKind.allCases.count == 9)
+    @Test func providerMappingsCoverAllServices() {
+        #expect(ManualProviderKind.allCases.count == 10)
         #expect(ManualProviderKind.kimiCode.toolKind == .kimiCode)
         #expect(ManualProviderKind.kimiAPI.toolKind == nil)
         #expect(ManualProviderKind.xAI.toolKind == .grok)
@@ -15,6 +15,8 @@ struct ManualProviderTests {
         #expect(ManualProviderKind.openAIAPI.localBillingService == .openAIAPI)
         #expect(ManualProviderKind.anthropicAPI.localBillingService == .anthropicAPI)
         #expect(ManualProviderKind.anthropicAPI.credentialShape == .apiKey)
+        #expect(ManualProviderKind.cursorTeam.localBillingService == nil)
+        #expect(ManualProviderKind.cursorTeam.toolKind == nil)
     }
 
     @Test func billingProvidersMigrateExistingCredentialsToEnabled() throws {

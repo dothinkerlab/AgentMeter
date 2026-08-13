@@ -155,7 +155,7 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private func displayRow(for item: MacDisplayItemID) -> some View {
         switch item {
-        case .codex, .claudeCode, .kimiCode, .glmCoding, .miniMax:
+        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax:
             if let snapshot = model.snapshot(for: item) {
                 ToolRow(
                     name: displayName(for: snapshot.tool),
@@ -220,6 +220,14 @@ struct MenuBarContentView: View {
                     staleLabel: grokStaleLabel(usage),
                     ageText: relativeAge(usage.updatedAt),
                     warning: grokWarning(usage)
+                )
+            }
+        case .cursorTeam:
+            if let usage = model.cursorTeamUsage {
+                CursorTeamUsageRow(
+                    usage: usage,
+                    isStale: usage.confidence != .fresh,
+                    ageText: relativeAge(usage.updatedAt)
                 )
             }
         }
@@ -532,6 +540,7 @@ struct MenuBarContentView: View {
         switch tool {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
         case .miniMax: return "MiniMax Token Plan"
@@ -903,6 +912,8 @@ private struct BrandMark: View {
             Sunburst()
                 .stroke(.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 12, height: 12)
+        case .cursor:
+            Text("C").font(.system(size: 11, weight: .black)).foregroundColor(.white)
         case .kimiCode:
             Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(.white)
         case .glmCoding:
@@ -972,6 +983,13 @@ private func brand(for tool: ToolKind) -> Brand {
             track: Color(hex: 0xF6E9E1),
             planColor: Color(hex: 0xA8482B)
         )
+    case .cursor:
+        return Brand(
+            solid: Color(hex: 0x202124),
+            iconGradient: [Color(hex: 0x35363A), Color(hex: 0x111214)],
+            track: Color(hex: 0xE8E8EA),
+            planColor: Color(hex: 0x202124)
+        )
     case .kimiCode:
         return Brand(solid: Color(hex: 0x111827), iconGradient: [Color(hex: 0x374151), Color(hex: 0x111827)], track: Color(hex: 0xE5E7EB), planColor: Color(hex: 0x111827))
     case .glmCoding:
@@ -1019,6 +1037,73 @@ private extension Color {
             blue: Double(hex & 0xff) / 255,
             opacity: alpha
         )
+    }
+}
+
+// MARK: - Cursor Team 用量行（仅本机）
+
+private struct CursorTeamUsageRow: View {
+    let usage: CursorTeamUsage
+    let isStale: Bool
+    let ageText: String
+
+    private let color = Color(hex: 0x202124)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Rectangle().fill(isStale ? Color(hex: 0xD98C28) : color).frame(width: 3).padding(.vertical, 4)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 9) {
+                    Text("CT")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(width: 25, height: 25)
+                        .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    Text(L10n.string("Cursor 团队用量")).font(.system(size: 14, weight: .bold)).tracking(-0.3)
+                    Spacer(minLength: 6)
+                    if isStale {
+                        Text(L10n.string("数据陈旧")).font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: 0xB5731C))
+                    } else {
+                        Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
+                        Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                    }
+                }
+                if usage.hasKnownUsage {
+                    HStack(spacing: 18) {
+                        if let included = usage.includedSpendCents {
+                            metric(L10n.string("套餐内用量"), cents: included)
+                        }
+                        metric(L10n.string("额外付费"), cents: usage.onDemandSpendCents)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(L10n.string("成员")).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+                            Text("\(usage.totalMembers)").font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                        }
+                    }
+                } else {
+                    Text("—").font(.system(size: 22, weight: .heavy, design: .rounded)).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.init(top: 11, leading: 16, bottom: 13, trailing: 16))
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func metric(_ label: String, cents: Decimal) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(dollars(cents / 100)).font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+        }
+    }
+
+    private func dollars(_ value: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 4
+        return formatter.string(from: NSDecimalNumber(decimal: value)) ?? "$—"
     }
 }
 

@@ -96,6 +96,7 @@ public enum BrandPresentation {
         switch tool {
         case .claudeCode: standard = short ? "Claude" : "Claude Code"
         case .codex: standard = "Codex"
+        case .cursor: standard = "Cursor"
         case .kimiCode: standard = short ? "Kimi" : "Kimi Code"
         case .glmCoding: standard = short ? "GLM" : "GLM Coding Plan"
         case .miniMax: standard = short ? "MiniMax" : "MiniMax Token Plan"

@@ -1,9 +1,10 @@
 import Foundation
 
-/// 被监控的 AI 编程工具。第一版只用 `.claudeCode`,其余为将来多工具预留。
+/// 被监控的 AI 编程工具。raw value 同时用作持久化和 CloudKit 身份，必须保持稳定。
 public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case claudeCode
     case codex
+    case cursor
     case kimiCode
     case glmCoding
     case miniMax
@@ -31,7 +32,7 @@ public enum QuotaCollectorDevice: String, Codable, Sendable, CaseIterable, Hasha
 }
 
 /// 额度窗口类型。Claude 端点返回 `five_hour` / `seven_day` / `seven_day_opus` /
-/// `seven_day_sonnet`;`.monthly` 为将来其他工具预留。
+/// `seven_day_sonnet`; Cursor 个人套餐使用 `.monthly`。
 public enum WindowKind: String, Codable, Sendable {
     case fiveHour
     case sevenDay
