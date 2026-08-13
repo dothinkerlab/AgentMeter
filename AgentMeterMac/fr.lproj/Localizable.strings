@@ -163,6 +163,11 @@
 "仅包含同步状态和更新时间，不包含 Token、API Key、Keychain、原始日志或账单金额。" = "Contient uniquement l’état de synchronisation et les horodatages, sans jetons, clés API, données du trousseau, journaux bruts ni montants.";
 "诊断导出失败" = "Échec de l’export du diagnostic";
 "好" = "OK";
+"App Store 版本" = "Version App Store";
+"在 iPhone 和 Apple Watch 上查看 AgentMeter 用量。" = "Consultez votre utilisation d’AgentMeter sur iPhone et Apple Watch.";
+"使用 iPhone 扫描二维码，或直接打开 App Store。" = "Scannez le code QR avec votre iPhone ou ouvrez directement l’App Store.";
+"在 App Store 下载" = "Télécharger dans l’App Store";
+"AgentMeter App Store 下载二维码" = "Code QR pour télécharger AgentMeter dans l’App Store";
 "用量由此 Mac 的 Cursor 登录自动采集。" = "L’utilisation est collectée automatiquement depuis Cursor connecté sur ce Mac.";
 "AgentMeter 以只读方式访问 Cursor 本机登录数据库，不刷新 token，也不修改 Cursor 数据。" = "AgentMeter lit la base de connexion locale de Cursor sans renouveler les jetons ni modifier ses données.";
 "打开 Cursor 并完成登录，然后回到这里重新检测。" = "Ouvrez Cursor et connectez-vous, puis revenez vérifier ici.";

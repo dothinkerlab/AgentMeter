@@ -1,3 +1,5 @@
+import AppKit
+import CoreImage.CIFilterBuiltins
 import SwiftUI
 import UniformTypeIdentifiers
 import AgentMeterCore
@@ -161,6 +163,8 @@ private struct MacGeneralSettingsView: View {
             } footer: {
                 Text(L10n.string("这里只控制此 Mac 的展示，不会停止采集、同步或通知。"))
             }
+
+            MacAppStoreDownloadSection()
         }
         .formStyle(.grouped)
         .navigationTitle(L10n.string("通用"))
@@ -741,6 +745,55 @@ private struct ProviderMark: View {
     }
 }
 
+private struct MacAppStoreDownloadSection: View {
+    private static let appStoreURL = URL(
+        string: "https://apps.apple.com/app/apple-store/id6781480047?pt=75343804&ct=mac&mt=8"
+    )!
+    private static let qrCodeImage: NSImage? = {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(Self.appStoreURL.absoluteString.utf8)
+        filter.correctionLevel = "M"
+
+        guard let outputImage = filter.outputImage else { return nil }
+        let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+        guard let cgImage = CIContext().createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+        return NSImage(cgImage: cgImage, size: NSSize(width: scaledImage.extent.width, height: scaledImage.extent.height))
+    }()
+
+    var body: some View {
+        Section(L10n.string("App Store 版本")) {
+            HStack(alignment: .center, spacing: 18) {
+                if let qrCodeImage = Self.qrCodeImage {
+                    Image(nsImage: qrCodeImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 104, height: 104)
+                        .padding(12)
+                        .background(Color.white)
+                        .overlay {
+                            Rectangle()
+                                .stroke(Color.black.opacity(0.12), lineWidth: 1)
+                        }
+                        .accessibilityLabel(L10n.string("AgentMeter App Store 下载二维码"))
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.string("在 iPhone 和 Apple Watch 上查看 AgentMeter 用量。"))
+                        .font(.headline)
+                    Text(L10n.string("使用 iPhone 扫描二维码，或直接打开 App Store。"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Link(destination: Self.appStoreURL) {
+                        Label(L10n.string("在 App Store 下载"), systemImage: "arrow.up.right.square")
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+        }
+    }
+}
+
 private struct MacAboutSettingsView: View {
     private static let githubURL = URL(string: "https://github.com/dothinkerlab/AgentMeter")!
     private static let releasesURL = URL(string: "https://github.com/dothinkerlab/AgentMeter/releases")!
@@ -767,6 +820,8 @@ private struct MacAboutSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            MacAppStoreDownloadSection()
         }
         .formStyle(.grouped)
         .navigationTitle(L10n.string("关于 AgentMeter"))
