@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
 
-          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          ASSETS="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
           grep -qx 'AgentMeter.dmg' <<< "$ASSETS"
           grep -qx 'SHA256SUMS.txt' <<< "$ASSETS"
 
