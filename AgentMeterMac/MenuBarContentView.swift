@@ -13,13 +13,13 @@ struct MenuBarContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider().overlay(Color.black.opacity(0.07))
+            Divider().overlay(Color.menuSeparator)
             ScrollView(.vertical) {
                 content
                     .frame(maxWidth: .infinity)
             }
             .frame(maxHeight: 560)
-            Divider().overlay(Color.black.opacity(0.07))
+            Divider().overlay(Color.menuSeparator)
             footer
         }
         .frame(width: 320)
@@ -32,7 +32,7 @@ struct MenuBarContentView: View {
             Text("AgentMeter")
                 .font(.system(size: 16, weight: .heavy))
                 .tracking(-0.4)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
 
             // 同步状态胶囊:脉冲点 + 文案,反映真实的 lastCollectedAt(非伪造)。
             if let last = model.lastCollectedAt {
@@ -43,10 +43,10 @@ struct MenuBarContentView: View {
 
             Button { Task { await model.collectNow() } } label: {
                 ZStack {
-                    Circle().fill(Color(hex: 0x787880, alpha: 0.1)).frame(width: 24, height: 24)
+                    Circle().fill(Color.menuMutedFill).frame(width: 24, height: 24)
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: 0x6C6C70))
+                        .foregroundColor(Color.secondary)
                 }
             }
             .buttonStyle(.borderless)
@@ -61,12 +61,12 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private func syncPill(last: Date) -> some View {
         let fresh = Date().timeIntervalSince(last) <= AppModel.staleThreshold
-        let tint = fresh ? Color(hex: 0x34C759) : Color(hex: 0xD98C28)
+        let tint = fresh ? Color.menuStatusSuccess : Color.menuStatusWarning
         HStack(spacing: 4) {
             PulseDot(color: tint, animating: fresh && !model.isCollecting)
             Text(model.isCollecting ? L10n.string("更新中…") : freshnessText(last))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(hex: 0x8E8E93))
+                .foregroundColor(Color.secondary)
         }
         .padding(.leading, 6)
         .padding(.trailing, 7)
@@ -107,7 +107,7 @@ struct MenuBarContentView: View {
                     Text(L10n.string("退出"))
                         .font(.system(size: 12.5, weight: .semibold))
                 }
-                .foregroundColor(Color(hex: 0xC0392B))
+                .foregroundColor(Color.menuStatusDanger)
             }
             .buttonStyle(.borderless)
         }
@@ -122,7 +122,7 @@ struct MenuBarContentView: View {
             Text(L10n.string("设置"))
                 .font(.system(size: 12.5, weight: .semibold))
         }
-        .foregroundColor(Color(hex: 0x3A3A3C))
+        .foregroundColor(Color.primary)
     }
 
     // MARK: - 主体(正常 / 加载 / 空态)
@@ -175,7 +175,7 @@ struct MenuBarContentView: View {
         case .openAIAPI:
             if let usage = model.openAIAPIUsage {
                 APICostUsageRow(
-                    name: "OpenAI API", monogram: "OA", color: Color(hex: 0x10A37F),
+                    name: "OpenAI API", monogram: "OA", color: Color.menuBrandCodex,
                     usage: usage, isStale: apiCostIsStale(usage),
                     staleLabel: apiCostStaleLabel(usage), ageText: relativeAge(usage.updatedAt),
                     warning: apiCostWarning(usage, provider: "OpenAI")
@@ -184,7 +184,7 @@ struct MenuBarContentView: View {
         case .anthropicAPI:
             if let usage = model.anthropicAPIUsage {
                 APICostUsageRow(
-                    name: "Anthropic API", monogram: "A", color: Color(hex: 0xD97757),
+                    name: "Anthropic API", monogram: "A", color: Color.menuBrandClaude,
                     usage: usage, isStale: apiCostIsStale(usage),
                     staleLabel: apiCostStaleLabel(usage), ageText: relativeAge(usage.updatedAt),
                     warning: apiCostWarning(usage, provider: "Anthropic")
@@ -242,7 +242,7 @@ struct MenuBarContentView: View {
 
     private var localBillingDivider: some View {
         Rectangle()
-            .fill(Color.black.opacity(0.07))
+            .fill(Color.menuSeparator)
             .frame(height: 0.5)
             .padding(.leading, 19)
     }
@@ -434,19 +434,19 @@ struct MenuBarContentView: View {
     private var inactiveHiddenState: some View {
         VStack(spacing: 0) {
             ZStack {
-                Circle().fill(Color(hex: 0xECEEF2)).frame(width: 46, height: 46)
+                Circle().fill(Color.menuMutedFill).frame(width: 46, height: 46)
                 Image(systemName: "eye.slash")
                     .font(.system(size: 21, weight: .regular))
-                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .foregroundColor(Color.secondary)
             }
             .padding(.bottom, 14)
 
             Text(L10n.string("暂无近期数据"))
                 .font(.system(size: 13.5, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
             Text(L10n.string("超过 48 小时未更新的服务已隐藏。可在设置里关闭。"))
                 .font(.system(size: 12))
-                .foregroundColor(Color(hex: 0x8E8E93))
+                .foregroundColor(Color.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(1.5)
                 .padding(.top, 5)
@@ -460,19 +460,19 @@ struct MenuBarContentView: View {
     private var manuallyHiddenState: some View {
         VStack(spacing: 0) {
             ZStack {
-                Circle().fill(Color(hex: 0xECEEF2)).frame(width: 46, height: 46)
+                Circle().fill(Color.menuMutedFill).frame(width: 46, height: 46)
                 Image(systemName: "eye.slash")
                     .font(.system(size: 21, weight: .regular))
-                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .foregroundColor(Color.secondary)
             }
             .padding(.bottom, 14)
 
             Text(L10n.string("主界面未显示服务"))
                 .font(.system(size: 13.5, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
             Text(L10n.string("可在“通用 → 主界面服务与顺序”中重新开启展示。"))
                 .font(.system(size: 12))
-                .foregroundColor(Color(hex: 0x8E8E93))
+                .foregroundColor(Color.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(1.5)
                 .padding(.top, 5)
@@ -488,19 +488,19 @@ struct MenuBarContentView: View {
     private var emptyState: some View {
         VStack(spacing: 0) {
             ZStack {
-                Circle().fill(Color(hex: 0xECEEF2)).frame(width: 46, height: 46)
+                Circle().fill(Color.menuMutedFill).frame(width: 46, height: 46)
                 Image(systemName: "person.crop.circle")
                     .font(.system(size: 22, weight: .regular))
-                    .foregroundColor(Color(hex: 0x8E8E93))
+                    .foregroundColor(Color.secondary)
             }
             .padding(.bottom, 14)
 
             Text(L10n.string("未连接任何账户"))
                 .font(.system(size: 13.5, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
             Text(L10n.string("在 Claude Code / Codex 登录后即可追踪用量,且本机需登录同一 iCloud 账号。"))
                 .font(.system(size: 12))
-                .foregroundColor(Color(hex: 0x8E8E93))
+                .foregroundColor(Color.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(1.5)
                 .padding(.top, 5)
@@ -650,7 +650,7 @@ private struct ToolRow: View {
 
                 Text(resetSummary)
                     .font(.system(size: 10.5))
-                    .foregroundColor(Color(hex: 0x9A9AA0))
+                    .foregroundColor(Color.menuTertiaryText)
                     .padding(.top, 8)
 
                 if let resetCredits,
@@ -668,10 +668,10 @@ private struct ToolRow: View {
 
     /// 行左轨颜色反映该工具最紧的状态:陈旧→琥珀,有窗口耗尽→红,接近上限→琥珀,否则品牌色。
     private var railColor: Color {
-        if isStale { return Color(hex: 0xD98C28) }
-        if windows.contains(where: { $0.remainingPercent <= 0 }) { return Color(hex: 0xC0392B) }
-        if windows.contains(where: { $0.remainingPercent <= 10 }) { return Color(hex: 0xD98C28) }
-        return brand.solid
+        if isStale { return Color.menuStatusWarning }
+        if windows.contains(where: { $0.remainingPercent <= 0 }) { return Color.menuStatusDanger }
+        if windows.contains(where: { $0.remainingPercent <= 10 }) { return Color.menuStatusWarning }
+        return brand.accent
     }
 
     private var headerLine: some View {
@@ -681,12 +681,12 @@ private struct ToolRow: View {
             Text(name)
                 .font(.system(size: 14, weight: .bold))
                 .tracking(-0.3)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
 
             if let plan, !plan.isEmpty {
                 Text(plan)
                     .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundColor(brand.planColor)
+                    .foregroundColor(brand.accent)
             }
 
             Spacer(minLength: 6)
@@ -694,15 +694,15 @@ private struct ToolRow: View {
             if isStale {
                 Text(staleLabel)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: 0xB5731C))
+                    .foregroundColor(Color.menuStatusWarning)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                    .background(Capsule().fill(Color.menuStatusWarning.opacity(0.12)))
             } else {
-                Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
+                Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
                 Text(ageText)
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: 0x9A9AA0))
+                    .foregroundColor(Color.menuTertiaryText)
             }
         }
     }
@@ -711,17 +711,17 @@ private struct ToolRow: View {
         HStack(spacing: 8) {
             Image(systemName: "lock")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xB5731C))
+                .foregroundColor(Color.menuStatusWarning)
             Text(text)
                 .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x8A5A12))
+                .foregroundColor(Color.menuStatusWarning)
                 .lineSpacing(1.5)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(hex: 0xFBF1DF)))
+        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.menuStatusWarning.opacity(0.12)))
     }
 }
 
@@ -747,12 +747,12 @@ private struct MacResetCreditsSummary: View {
                 .lineLimit(2)
             Spacer(minLength: 0)
         }
-        .foregroundColor((isStale || isExpiringSoon) ? Color(hex: 0xB5731C) : Color(hex: 0x5E6C64))
+        .foregroundColor((isStale || isExpiringSoon) ? Color.menuStatusWarning : Color.menuStatusSuccess)
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill((isStale || isExpiringSoon) ? Color(hex: 0xFBF1DF) : Color(hex: 0xF1F5F2))
+                .fill((isStale || isExpiringSoon) ? Color.menuStatusWarning.opacity(0.12) : Color.menuStatusSuccess.opacity(0.10))
         )
     }
 
@@ -779,7 +779,7 @@ private struct WindowLine: View {
         HStack(spacing: 10) {
             Text(label)
                 .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x6C6C70))
+                .foregroundColor(Color.secondary)
                 .frame(width: 44, alignment: .leading)
 
             GeometryReader { geo in
@@ -806,25 +806,25 @@ private struct WindowLine: View {
 
     private var fill: Color {
         switch severity {
-        case 2: return Color(hex: 0xC0392B)
-        case 1: return Color(hex: 0xD98C28)
-        default: return brand.solid
+        case 2: return Color.menuStatusDanger
+        case 1: return Color.menuStatusWarning
+        default: return brand.accent
         }
     }
 
     private var track: Color {
         switch severity {
-        case 2: return Color(hex: 0xF6E0DA)
-        case 1: return Color(hex: 0xF8EAD3)
-        default: return brand.track
+        case 2: return Color.menuStatusDanger.opacity(0.16)
+        case 1: return Color.menuStatusWarning.opacity(0.16)
+        default: return brand.accent.opacity(0.14)
         }
     }
 
     private var pctColor: Color {
         switch severity {
-        case 2: return Color(hex: 0xC0392B)
-        case 1: return Color(hex: 0xB5731C)
-        default: return Color(hex: 0x1C1C1E)
+        case 2: return Color.menuStatusDanger
+        case 1: return Color.menuStatusWarning
+        default: return Color.primary
         }
     }
 }
@@ -879,7 +879,7 @@ private struct LoadingView: View {
 
     private func bar(width: CGFloat? = nil, height: CGFloat, radius: CGFloat = 999) -> some View {
         RoundedRectangle(cornerRadius: radius, style: .continuous)
-            .fill(Color(hex: 0xECEDF0))
+            .fill(Color.menuMutedFill)
             .frame(width: width, height: height)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
     }
@@ -894,8 +894,7 @@ private struct BrandMark: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(LinearGradient(colors: brand.iconGradient,
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(brand.accent)
                 .frame(width: 22, height: 22)
             mark
         }
@@ -907,38 +906,38 @@ private struct BrandMark: View {
         case .codex:
             Text(">_")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
+                .foregroundColor(Color.menuOnBrand)
         case .claudeCode:
             Sunburst()
-                .stroke(.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .stroke(Color.menuOnBrand, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 12, height: 12)
         case .cursor:
-            Text("C").font(.system(size: 11, weight: .black)).foregroundColor(.white)
+            Text("C").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
         case .kimiCode:
-            Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(.white)
+            Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .glmCoding:
-            Text("GLM").font(.system(size: 7.5, weight: .bold)).foregroundColor(.white)
+            Text("GLM").font(.system(size: 7.5, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .miniMax:
-            Text("MM").font(.system(size: 9, weight: .bold)).foregroundColor(.white)
+            Text("MM").font(.system(size: 9, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .openCode:
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Color.menuOnBrand)
         case .deepSeek:
             Text("DS")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(-0.3)
-                .foregroundColor(.white)
+                .foregroundColor(Color.menuOnBrand)
         case .openRouter:
             Text("OR")
                 .font(.system(size: 9.5, weight: .bold, design: .monospaced))
                 .tracking(-0.4)
-                .foregroundColor(.white)
+                .foregroundColor(Color.menuOnBrand)
         case .grok:
             Text("xAI")
                 .font(.system(size: 8.5, weight: .bold, design: .monospaced))
                 .tracking(-0.6)
-                .foregroundColor(.white)
+                .foregroundColor(Color.menuOnBrand)
         }
     }
 }
@@ -961,83 +960,55 @@ private struct Sunburst: Shape {
 
 /// 每个服务一个品牌色。Codex 墨绿、Claude 陶土橙。
 private struct Brand {
-    let solid: Color        // 进度条 / 左轨颜色(方向 C 用平涂)
-    let iconGradient: [Color]
-    let track: Color
-    let planColor: Color
+    let accent: Color
 }
 
 private func brand(for tool: ToolKind) -> Brand {
     switch tool {
     case .codex:
-        return Brand(
-            solid: Color(hex: 0x0E9E76),
-            iconGradient: [Color(hex: 0x16B083), Color(hex: 0x0C8C68)],
-            track: Color(hex: 0xE2F3EC),
-            planColor: Color(hex: 0x0A7D5C)
-        )
+        return Brand(accent: .menuBrandCodex)
     case .claudeCode:
-        return Brand(
-            solid: Color(hex: 0xCB6A45),
-            iconGradient: [Color(hex: 0xDA7B57), Color(hex: 0xC05F3C)],
-            track: Color(hex: 0xF6E9E1),
-            planColor: Color(hex: 0xA8482B)
-        )
+        return Brand(accent: .menuBrandClaude)
     case .cursor:
-        return Brand(
-            solid: Color(hex: 0x202124),
-            iconGradient: [Color(hex: 0x35363A), Color(hex: 0x111214)],
-            track: Color(hex: 0xE8E8EA),
-            planColor: Color(hex: 0x202124)
-        )
+        return Brand(accent: .menuBrandCursor)
     case .kimiCode:
-        return Brand(solid: Color(hex: 0x111827), iconGradient: [Color(hex: 0x374151), Color(hex: 0x111827)], track: Color(hex: 0xE5E7EB), planColor: Color(hex: 0x111827))
+        return Brand(accent: .menuBrandKimi)
     case .glmCoding:
-        return Brand(solid: Color(hex: 0x2563EB), iconGradient: [Color(hex: 0x3B82F6), Color(hex: 0x1D4ED8)], track: Color(hex: 0xDBEAFE), planColor: Color(hex: 0x1D4ED8))
+        return Brand(accent: .menuBrandGLM)
     case .miniMax:
-        return Brand(solid: Color(hex: 0x7C3AED), iconGradient: [Color(hex: 0x8B5CF6), Color(hex: 0x6D28D9)], track: Color(hex: 0xEDE9FE), planColor: Color(hex: 0x6D28D9))
+        return Brand(accent: .menuBrandMiniMax)
     case .openCode:
-        return Brand(
-            solid: Color(hex: 0x5B6AD8),
-            iconGradient: [Color(hex: 0x6C7BE0), Color(hex: 0x4F5BD0)],
-            track: Color(hex: 0xE8EAFB),
-            planColor: Color(hex: 0x3A47A8)
-        )
+        return Brand(accent: .menuBrandOpenCode)
     case .deepSeek:
-        // DeepSeek 官方蓝 #4D6BFE。余额卡不渲染进度条,Brand 仅图标用。
-        return Brand(
-            solid: Color(hex: 0x4D6BFE),
-            iconGradient: [Color(hex: 0x4D6BFE), Color(hex: 0x3A56D8)],
-            track: Color(hex: 0xE3E8FF),
-            planColor: Color(hex: 0x3A56D8)
-        )
+        return Brand(accent: .menuBrandDeepSeek)
     case .openRouter:
-        return Brand(
-            solid: Color(hex: 0x6C4CF1),
-            iconGradient: [Color(hex: 0x7C5CFC), Color(hex: 0x5536D7)],
-            track: Color(hex: 0xECE8FF),
-            planColor: Color(hex: 0x5536D7)
-        )
+        return Brand(accent: .menuBrandOpenRouter)
     case .grok:
-        return Brand(
-            solid: Color(hex: 0x353535),
-            iconGradient: [Color(hex: 0x3F3F46), Color(hex: 0x111111)],
-            track: Color(hex: 0xE5E5E5),
-            planColor: Color(hex: 0x353535)
-        )
+        return Brand(accent: .menuBrandGrok)
     }
 }
 
 private extension Color {
-    init(hex: UInt, alpha: Double = 1) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xff) / 255,
-            green: Double((hex >> 8) & 0xff) / 255,
-            blue: Double(hex & 0xff) / 255,
-            opacity: alpha
-        )
-    }
+    static let menuBrandCodex = Color("BrandCodex")
+    static let menuBrandClaude = Color("BrandClaude")
+    static let menuBrandCursor = Color("BrandCursor")
+    static let menuBrandKimi = Color("BrandKimi")
+    static let menuBrandGLM = Color("BrandGLM")
+    static let menuBrandMiniMax = Color("BrandMiniMax")
+    static let menuBrandOpenCode = Color("BrandOpenCode")
+    static let menuBrandDeepSeek = Color("BrandDeepSeek")
+    static let menuBrandOpenRouter = Color("BrandOpenRouter")
+    static let menuBrandGrok = Color("BrandGrok")
+
+    static let menuStatusSuccess = Color("StatusSuccess")
+    static let menuStatusWarning = Color("StatusWarning")
+    static let menuStatusDanger = Color("StatusDanger")
+
+    static let menuSeparator = Color(nsColor: .separatorColor)
+    static let menuControlBackground = Color(nsColor: .controlBackgroundColor)
+    static let menuMutedFill = Color(nsColor: .quaternaryLabelColor)
+    static let menuTertiaryText = Color(nsColor: .tertiaryLabelColor)
+    static let menuOnBrand = Color(nsColor: .windowBackgroundColor)
 }
 
 // MARK: - Cursor Team 用量行（仅本机）
@@ -1047,26 +1018,26 @@ private struct CursorTeamUsageRow: View {
     let isStale: Bool
     let ageText: String
 
-    private let color = Color(hex: 0x202124)
+    private let color = Color.menuBrandCursor
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            Rectangle().fill(isStale ? Color(hex: 0xD98C28) : color).frame(width: 3).padding(.vertical, 4)
+            Rectangle().fill(isStale ? Color.menuStatusWarning : color).frame(width: 3).padding(.vertical, 4)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 9) {
                     Text("CT")
                         .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.menuOnBrand)
                         .frame(width: 25, height: 25)
                         .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                     Text(L10n.string("Cursor 团队用量")).font(.system(size: 14, weight: .bold)).tracking(-0.3)
                     Spacer(minLength: 6)
                     if isStale {
                         Text(L10n.string("数据陈旧")).font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(hex: 0xB5731C))
+                            .foregroundColor(Color.menuStatusWarning)
                     } else {
-                        Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
-                        Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                        Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
+                        Text(ageText).font(.system(size: 11)).foregroundColor(Color.menuTertiaryText)
                     }
                 }
                 if usage.hasKnownUsage {
@@ -1076,7 +1047,7 @@ private struct CursorTeamUsageRow: View {
                         }
                         metric(L10n.string("额外付费"), cents: usage.onDemandSpendCents)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(L10n.string("成员")).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+                            Text(L10n.string("成员")).font(.system(size: 10.5)).foregroundColor(Color.secondary)
                             Text("\(usage.totalMembers)").font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
                         }
                     }
@@ -1091,7 +1062,7 @@ private struct CursorTeamUsageRow: View {
 
     private func metric(_ label: String, cents: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color.secondary)
             Text(dollars(cents / 100)).font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
         }
     }
@@ -1121,24 +1092,24 @@ private struct APICostUsageRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            Rectangle().fill(isStale ? Color(hex: 0xD98C28) : color).frame(width: 3).padding(.vertical, 4)
+            Rectangle().fill(isStale ? Color.menuStatusWarning : color).frame(width: 3).padding(.vertical, 4)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 9) {
                     Text(monogram)
                         .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.menuOnBrand)
                         .frame(width: 25, height: 25)
                         .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                     Text(name).font(.system(size: 14, weight: .bold)).tracking(-0.3)
                     Spacer(minLength: 6)
                     if isStale {
                         Text(staleLabel).font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(hex: 0xB5731C))
+                            .foregroundColor(Color.menuStatusWarning)
                             .padding(.horizontal, 8).padding(.vertical, 2)
-                            .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                            .background(Capsule().fill(Color.menuStatusWarning.opacity(0.12)))
                     } else {
-                        Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
-                        Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                        Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
+                        Text(ageText).font(.system(size: 11)).foregroundColor(Color.menuTertiaryText)
                     }
                 }
                 if let warning {
@@ -1146,10 +1117,10 @@ private struct APICostUsageRow: View {
                         Image(systemName: "lock").font(.system(size: 12, weight: .semibold))
                         Text(warning).font(.system(size: 11.5)).fixedSize(horizontal: false, vertical: true)
                     }
-                    .foregroundColor(Color(hex: 0x8A5A12))
+                    .foregroundColor(Color.menuStatusWarning)
                     .padding(.horizontal, 11).padding(.vertical, 9)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: 0xFBF1DF)))
+                    .background(RoundedRectangle(cornerRadius: 9).fill(Color.menuStatusWarning.opacity(0.12)))
                 }
                 if usage.hasKnownUsage {
                     HStack(spacing: 18) {
@@ -1168,7 +1139,7 @@ private struct APICostUsageRow: View {
 
     private func metric(_ label: String, _ value: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color.secondary)
             Text(dollars(value)).font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
         }
     }
@@ -1193,12 +1164,12 @@ private struct OpenRouterUsageRow: View {
     let ageText: String
     let warning: String?
 
-    private let brandColor = Color(hex: 0x6C4CF1)
+    private let brandColor = Color.menuBrandOpenRouter
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Rectangle()
-                .fill(isStale ? Color(hex: 0xD98C28) : brandColor)
+                .fill(isStale ? Color.menuStatusWarning : brandColor)
                 .frame(width: 3)
                 .padding(.vertical, 4)
 
@@ -1212,7 +1183,7 @@ private struct OpenRouterUsageRow: View {
                 } else {
                     Text("—")
                         .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(hex: 0x8E8E93))
+                        .foregroundColor(Color.secondary)
                 }
             }
             .padding(.init(top: 11, leading: 16, bottom: 13, trailing: 16))
@@ -1226,7 +1197,7 @@ private struct OpenRouterUsageRow: View {
             Text("OpenRouter")
                 .font(.system(size: 14, weight: .bold))
                 .tracking(-0.3)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
             if let label = usage.keyLabel, !label.isEmpty {
                 Text(label)
                     .font(.system(size: 10.5, weight: .semibold))
@@ -1237,13 +1208,13 @@ private struct OpenRouterUsageRow: View {
             if isStale {
                 Text(staleLabel)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: 0xB5731C))
+                    .foregroundColor(Color.menuStatusWarning)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                    .background(Capsule().fill(Color.menuStatusWarning.opacity(0.12)))
             } else {
-                Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
-                Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
+                Text(ageText).font(.system(size: 11)).foregroundColor(Color.menuTertiaryText)
             }
         }
     }
@@ -1258,10 +1229,10 @@ private struct OpenRouterUsageRow: View {
 
     private func metric(_ label: String, _ value: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color.secondary)
             Text(dollars(value))
                 .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
         }
     }
 
@@ -1270,20 +1241,20 @@ private struct OpenRouterUsageRow: View {
         if let limit = usage.limit {
             HStack(spacing: 5) {
                 Text(L10n.string("限额剩余"))
-                    .font(.system(size: 11)).foregroundColor(Color(hex: 0x6C6C70))
+                    .font(.system(size: 11)).foregroundColor(Color.secondary)
                 Text(usage.limitRemaining.map(dollars) ?? "—")
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
                     .foregroundColor(brandColor)
                 Text("/ \(dollars(limit))")
-                    .font(.system(size: 11)).foregroundColor(Color(hex: 0x8E8E93))
+                    .font(.system(size: 11)).foregroundColor(Color.secondary)
                 if let reset = resetLabel(usage.limitReset) {
                     Text("· \(reset)")
-                        .font(.system(size: 11)).foregroundColor(Color(hex: 0x8E8E93))
+                        .font(.system(size: 11)).foregroundColor(Color.secondary)
                 }
             }
         } else {
             Text(L10n.string("未设置 key 限额"))
-                .font(.system(size: 11)).foregroundColor(Color(hex: 0x8E8E93))
+                .font(.system(size: 11)).foregroundColor(Color.secondary)
         }
     }
 
@@ -1298,7 +1269,7 @@ private struct OpenRouterUsageRow: View {
             }
         }
         .font(.system(size: 10.5))
-        .foregroundColor(Color(hex: 0x8E8E93))
+        .foregroundColor(Color.secondary)
     }
 
     private func dollars(_ value: Decimal) -> String {
@@ -1325,16 +1296,16 @@ private struct OpenRouterUsageRow: View {
         HStack(spacing: 8) {
             Image(systemName: "lock")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xB5731C))
+                .foregroundColor(Color.menuStatusWarning)
             Text(text)
                 .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x8A5A12))
+                .foregroundColor(Color.menuStatusWarning)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: 0xFBF1DF)))
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color.menuStatusWarning.opacity(0.12)))
     }
 }
 
@@ -1347,12 +1318,12 @@ private struct GrokAPIUsageRow: View {
     let ageText: String
     let warning: String?
 
-    private let brandColor = Color(hex: 0x353535)
+    private let brandColor = Color.menuBrandGrok
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Rectangle()
-                .fill(isStale ? Color(hex: 0xD98C28) : brandColor)
+                .fill(isStale ? Color.menuStatusWarning : brandColor)
                 .frame(width: 3)
                 .padding(.vertical, 4)
 
@@ -1374,11 +1345,11 @@ private struct GrokAPIUsageRow: View {
                         }
                     }
                     .font(.system(size: 10.5))
-                    .foregroundColor(Color(hex: 0x6C6C70))
+                    .foregroundColor(Color.secondary)
                 } else {
                     Text("—")
                         .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(hex: 0x8E8E93))
+                        .foregroundColor(Color.secondary)
                 }
             }
             .padding(.init(top: 11, leading: 16, bottom: 13, trailing: 16))
@@ -1392,28 +1363,28 @@ private struct GrokAPIUsageRow: View {
             Text("xAI API")
                 .font(.system(size: 14, weight: .bold))
                 .tracking(-0.3)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
             Spacer(minLength: 6)
             if isStale {
                 Text(staleLabel)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: 0xB5731C))
+                    .foregroundColor(Color.menuStatusWarning)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                    .background(Capsule().fill(Color.menuStatusWarning.opacity(0.12)))
             } else {
-                Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
-                Text(ageText).font(.system(size: 11)).foregroundColor(Color(hex: 0x9A9AA0))
+                Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
+                Text(ageText).font(.system(size: 11)).foregroundColor(Color.menuTertiaryText)
             }
         }
     }
 
     private func metric(_ label: String, _ value: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 10.5)).foregroundColor(Color(hex: 0x8E8E93))
+            Text(label).font(.system(size: 10.5)).foregroundColor(Color.secondary)
             Text(dollars(value))
                 .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
         }
     }
 
@@ -1435,16 +1406,16 @@ private struct GrokAPIUsageRow: View {
         HStack(spacing: 8) {
             Image(systemName: "lock")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xB5731C))
+                .foregroundColor(Color.menuStatusWarning)
             Text(text)
                 .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x8A5A12))
+                .foregroundColor(Color.menuStatusWarning)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: 0xFBF1DF)))
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color.menuStatusWarning.opacity(0.12)))
     }
 }
 
@@ -1459,7 +1430,7 @@ private struct DeepSeekBalanceRow: View {
     let ageText: String
     let warning: String?
 
-    private let brandColor = Color(hex: 0x4D6BFE)
+    private let brandColor = Color.menuBrandDeepSeek
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -1487,10 +1458,10 @@ private struct DeepSeekBalanceRow: View {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color(hex: 0xC0392B))
+                            .foregroundColor(Color.menuStatusDanger)
                         Text(L10n.string("账户无可用余额"))
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(hex: 0xC0392B))
+                            .foregroundColor(Color.menuStatusDanger)
                     }
                     .padding(.top, 4)
                 }
@@ -1501,8 +1472,8 @@ private struct DeepSeekBalanceRow: View {
     }
 
     private var railColor: Color {
-        if isStale { return Color(hex: 0xD98C28) }
-        if !balance.isAvailable { return Color(hex: 0xC0392B) }
+        if isStale { return Color.menuStatusWarning }
+        if !balance.isAvailable { return Color.menuStatusDanger }
         return brandColor
     }
 
@@ -1513,7 +1484,7 @@ private struct DeepSeekBalanceRow: View {
             Text("DeepSeek")
                 .font(.system(size: 14, weight: .bold))
                 .tracking(-0.3)
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
 
             Text(L10n.string("余额"))
                 .font(.system(size: 11.5, weight: .semibold))
@@ -1524,15 +1495,15 @@ private struct DeepSeekBalanceRow: View {
             if isStale {
                 Text(staleLabel)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: 0xB5731C))
+                    .foregroundColor(Color.menuStatusWarning)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color(hex: 0xFBF1DF)))
+                    .background(Capsule().fill(Color.menuStatusWarning.opacity(0.12)))
             } else {
-                Circle().fill(Color(hex: 0x34C759)).frame(width: 7, height: 7)
+                Circle().fill(Color.menuStatusSuccess).frame(width: 7, height: 7)
                 Text(ageText)
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: 0x9A9AA0))
+                    .foregroundColor(Color.menuTertiaryText)
             }
         }
     }
@@ -1546,10 +1517,10 @@ private struct DeepSeekBalanceRow: View {
                     .foregroundColor(brandColor)
                 Text(balance.totalBalance)
                     .font(.system(size: 22, weight: .heavy, design: .rounded).monospacedDigit())
-                    .foregroundColor(Color(hex: 0x1C1C1E))
+                    .foregroundColor(Color.primary)
                 Text(balance.currency)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color(hex: 0x9A9AA0))
+                    .foregroundColor(Color.menuTertiaryText)
                     .padding(.leading, 2)
             }
 
@@ -1563,7 +1534,7 @@ private struct DeepSeekBalanceRow: View {
     private var unknownBalancePlaceholder: some View {
         Text("—")
             .font(.system(size: 22, weight: .heavy, design: .rounded))
-            .foregroundColor(Color(hex: 0x8E8E93))
+            .foregroundColor(Color.secondary)
             .accessibilityLabel(L10n.string("未取到余额数据"))
     }
 
@@ -1571,10 +1542,10 @@ private struct DeepSeekBalanceRow: View {
         HStack(spacing: 4) {
             Text(label)
                 .font(.system(size: 11))
-                .foregroundColor(Color(hex: 0x6C6C70))
+                .foregroundColor(Color.secondary)
             Text("\(currencySymbol)\(value)")
                 .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
         }
     }
 
@@ -1590,17 +1561,17 @@ private struct DeepSeekBalanceRow: View {
         HStack(spacing: 8) {
             Image(systemName: "lock")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xB5731C))
+                .foregroundColor(Color.menuStatusWarning)
             Text(text)
                 .font(.system(size: 11.5))
-                .foregroundColor(Color(hex: 0x8A5A12))
+                .foregroundColor(Color.menuStatusWarning)
                 .lineSpacing(1.5)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(hex: 0xFBF1DF)))
+        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.menuStatusWarning.opacity(0.12)))
     }
 }
 
@@ -1620,18 +1591,18 @@ private struct LocalDataSourceDisclosureLabel: View {
         HStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 12.5, weight: .semibold))
-                .foregroundColor(Color(hex: 0x1C1C1E))
+                .foregroundColor(Color.primary)
 
             Spacer(minLength: 8)
 
             Text(L10n.string(isConfigured ? "已配置" : "未配置"))
                 .font(.system(size: 10.5, weight: .semibold))
-                .foregroundColor(isConfigured ? Color(hex: 0x1F8F4D) : Color(hex: 0x8E8E93))
+                .foregroundColor(isConfigured ? Color.menuStatusSuccess : Color.secondary)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)
                 .background(
                     Capsule()
-                        .fill(isConfigured ? Color(hex: 0x34C759).opacity(0.1) : Color(hex: 0x787880).opacity(0.1))
+                        .fill(isConfigured ? Color.menuStatusSuccess.opacity(0.1) : Color.menuMutedFill)
                 )
         }
     }
@@ -1654,11 +1625,11 @@ private struct OpenRouterKeySettingsSection: View {
                     .font(.system(size: 12.5, design: .monospaced))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 7)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF2F3F5)))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.06), lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.menuControlBackground))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.menuSeparator, lineWidth: 0.5))
 
                 if let saveError {
-                    Text(saveError).font(.system(size: 11)).foregroundColor(Color(hex: 0xC0392B))
+                    Text(saveError).font(.system(size: 11)).foregroundColor(Color.menuStatusDanger)
                 }
 
                 HStack(spacing: 8) {
@@ -1689,7 +1660,7 @@ private struct OpenRouterKeySettingsSection: View {
                 isConfigured: hasExistingKey
             )
         }
-        .tint(Color(hex: 0x6C6C70))
+        .tint(Color.secondary)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .onAppear { reload() }
@@ -1758,19 +1729,19 @@ private struct GrokKeySettingsSection: View {
                     .font(.system(size: 12.5, design: .monospaced))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 7)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF2F3F5)))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.06), lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.menuControlBackground))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.menuSeparator, lineWidth: 0.5))
 
                 TextField(L10n.string("Team ID"), text: $teamIDInput)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12.5, design: .monospaced))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 7)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xF2F3F5)))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.06), lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.menuControlBackground))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.menuSeparator, lineWidth: 0.5))
 
                 if let saveError {
-                    Text(saveError).font(.system(size: 11)).foregroundColor(Color(hex: 0xC0392B))
+                    Text(saveError).font(.system(size: 11)).foregroundColor(Color.menuStatusDanger)
                 }
 
                 HStack(spacing: 8) {
@@ -1802,7 +1773,7 @@ private struct GrokKeySettingsSection: View {
                 isConfigured: hasExistingCredentials
             )
         }
-        .tint(Color(hex: 0x6C6C70))
+        .tint(Color.secondary)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .onAppear { reload() }
@@ -1875,13 +1846,13 @@ private struct DeepSeekKeySettingsSection: View {
                     .font(.system(size: 12.5, design: .monospaced))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 7)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: 0xF2F3F5)))
-                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.06), lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.menuControlBackground))
+                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.menuSeparator, lineWidth: 0.5))
 
                 if let saveError {
                     Text(saveError)
                         .font(.system(size: 11))
-                        .foregroundColor(Color(hex: 0xC0392B))
+                        .foregroundColor(Color.menuStatusDanger)
                 }
 
                 HStack(spacing: 8) {
@@ -1916,7 +1887,7 @@ private struct DeepSeekKeySettingsSection: View {
                 isConfigured: hasExistingKey
             )
         }
-        .tint(Color(hex: 0x6C6C70))
+        .tint(Color.secondary)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .onAppear { reload() }
