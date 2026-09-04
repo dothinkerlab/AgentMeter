@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_FILE="$REPO_ROOT/project.yml"
 TEAM_ID="${APPLE_TEAM_ID:-KCBS4SALKB}"
 BUNDLE_ID="com.dothinker.app.agentmeter.mac"
+CLOUDKIT_CONTAINER_ID="iCloud.com.dothinker.app.agentmeter"
 
 read_project_value() {
   local key="$1"
@@ -15,6 +16,12 @@ read_project_value() {
     abort("missing #{ARGV[1]} in #{ARGV[0]}") if value.nil?
     puts value
   ' "$PROJECT_FILE" "$key"
+}
+
+read_plist_value() {
+  local plist_path="$1"
+  local key_path="$2"
+  /usr/libexec/PlistBuddy -c "Print :$key_path" "$plist_path" 2>/dev/null || true
 }
 
 VERSION="$(read_project_value MARKETING_VERSION)"
@@ -158,8 +165,10 @@ security list-keychains -d user -s "$KEYCHAIN_PATH"
 security cms -D -i "$DEVELOPER_ID_PROVISIONING_PROFILE_PATH" > "$PROFILE_PLIST"
 PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
 PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
-PROFILE_TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$PROFILE_PLIST")"
-PROFILE_APP_ID="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$PROFILE_PLIST")"
+PROFILE_TEAM_ID="$(read_plist_value "$PROFILE_PLIST" 'TeamIdentifier:0')"
+PROFILE_APP_ID="$(read_plist_value "$PROFILE_PLIST" 'Entitlements:com.apple.application-identifier')"
+PROFILE_CLOUDKIT_ENVIRONMENT="$(read_plist_value "$PROFILE_PLIST" 'Entitlements:com.apple.developer.icloud-container-environment')"
+PROFILE_CLOUDKIT_CONTAINER_ID="$(read_plist_value "$PROFILE_PLIST" 'Entitlements:com.apple.developer.icloud-container-identifiers:0')"
 
 if [[ "$PROFILE_TEAM_ID" != "$TEAM_ID" ]]; then
   echo "Provisioning profile team mismatch: $PROFILE_TEAM_ID" >&2
@@ -167,6 +176,14 @@ if [[ "$PROFILE_TEAM_ID" != "$TEAM_ID" ]]; then
 fi
 if [[ "$PROFILE_APP_ID" != "$TEAM_ID.$BUNDLE_ID" ]]; then
   echo "Provisioning profile app identifier mismatch: $PROFILE_APP_ID" >&2
+  exit 1
+fi
+if [[ "$PROFILE_CLOUDKIT_ENVIRONMENT" != "Production" ]]; then
+  echo "Provisioning profile does not use Production CloudKit: $PROFILE_CLOUDKIT_ENVIRONMENT" >&2
+  exit 1
+fi
+if [[ "$PROFILE_CLOUDKIT_CONTAINER_ID" != "$CLOUDKIT_CONTAINER_ID" ]]; then
+  echo "Provisioning profile CloudKit container mismatch: $PROFILE_CLOUDKIT_CONTAINER_ID" >&2
   exit 1
 fi
 
@@ -250,10 +267,30 @@ if [[ " $ARCHITECTURES " != *" arm64 "* || " $ARCHITECTURES " != *" x86_64 "* ]]
 fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-codesign -d --entitlements :- "$APP_PATH" > "$ENTITLEMENTS_PLIST"
-CLOUDKIT_ENVIRONMENT="$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.icloud-container-environment' "$ENTITLEMENTS_PLIST")"
+codesign -d --entitlements - --xml "$APP_PATH" > "$ENTITLEMENTS_PLIST"
+CODESIGNED_APP_ID="$(read_plist_value "$ENTITLEMENTS_PLIST" 'com.apple.application-identifier')"
+CODESIGNED_TEAM_ID="$(read_plist_value "$ENTITLEMENTS_PLIST" 'com.apple.developer.team-identifier')"
+CLOUDKIT_ENVIRONMENT="$(read_plist_value "$ENTITLEMENTS_PLIST" 'com.apple.developer.icloud-container-environment')"
+CODESIGNED_CLOUDKIT_CONTAINER_ID="$(read_plist_value "$ENTITLEMENTS_PLIST" 'com.apple.developer.icloud-container-identifiers:0')"
+CODESIGNED_CLOUDKIT_SERVICE="$(read_plist_value "$ENTITLEMENTS_PLIST" 'com.apple.developer.icloud-services:0')"
+if [[ "$CODESIGNED_APP_ID" != "$TEAM_ID.$BUNDLE_ID" ]]; then
+  echo "Exported app application identifier mismatch: $CODESIGNED_APP_ID" >&2
+  exit 1
+fi
+if [[ "$CODESIGNED_TEAM_ID" != "$TEAM_ID" ]]; then
+  echo "Exported app team identifier mismatch: $CODESIGNED_TEAM_ID" >&2
+  exit 1
+fi
 if [[ "$CLOUDKIT_ENVIRONMENT" != "Production" ]]; then
   echo "Exported app does not use Production CloudKit: $CLOUDKIT_ENVIRONMENT" >&2
+  exit 1
+fi
+if [[ "$CODESIGNED_CLOUDKIT_CONTAINER_ID" != "$CLOUDKIT_CONTAINER_ID" ]]; then
+  echo "Exported app CloudKit container mismatch: $CODESIGNED_CLOUDKIT_CONTAINER_ID" >&2
+  exit 1
+fi
+if [[ "$CODESIGNED_CLOUDKIT_SERVICE" != "CloudKit" ]]; then
+  echo "Exported app does not enable the CloudKit service: $CODESIGNED_CLOUDKIT_SERVICE" >&2
   exit 1
 fi
 
@@ -262,7 +299,7 @@ if ! grep -q 'Authority=Developer ID Application:' "$WORK_DIR/codesign-details.t
   echo "Exported app is not signed with Developer ID Application" >&2
   exit 1
 fi
-if ! grep -Eq '^flags=.*\(runtime\)' "$WORK_DIR/codesign-details.txt"; then
+if ! grep -Eq 'flags=.*\(runtime\)' "$WORK_DIR/codesign-details.txt"; then
   echo "Exported app does not have Hardened Runtime enabled" >&2
   exit 1
 fi
@@ -330,6 +367,8 @@ if ! cmp -s "$VERSIONED_DMG" "$LATEST_DMG"; then
   echo "Versioned and latest DMG files are not byte-identical" >&2
   exit 1
 fi
+
+"$REPO_ROOT/scripts/verify_mac_release.sh" "$VERSIONED_DMG" "$VERSION" "$BUILD_NUMBER"
 
 (
   cd "$ARTIFACT_DIR"

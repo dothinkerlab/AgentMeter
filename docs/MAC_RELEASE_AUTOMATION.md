@@ -2,7 +2,11 @@
 
 The `Prepare macOS release` workflow builds the version committed in
 `project.yml`, creates signed and notarized DMGs, and uploads them to a Draft
-GitHub Release. It never changes the version or build number.
+GitHub Release. It never changes the version or build number. The packaging
+script rejects artifacts that lack the signed application identifier, team
+identifier, Production CloudKit environment, CloudKit service, or expected
+container. The published-release workflow repeats those checks against the
+downloaded GitHub assets before dispatching a Homebrew update.
 
 ## One-time repository setup
 
@@ -53,3 +57,9 @@ credentials:
 
 Running the complete script locally requires the decoded credential file paths
 and passwords listed by `./scripts/package_mac_release.sh --help`.
+
+An already packaged DMG can be audited without signing credentials:
+
+```sh
+./scripts/verify_mac_release.sh AgentMeter.dmg 1.8.1 20
+```

@@ -12,7 +12,55 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: macos-26
+    timeout-minutes: 15
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: Check out the published tag
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Download published release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'AgentMeter*.dmg' \
+            --pattern 'SHA256SUMS.txt' \
+            --dir "$RUNNER_TEMP/release"
+
+      - name: Verify checksum, signature, and CloudKit entitlements
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS='=' read -r key value; do
+            case "$key" in
+              version) VERSION="$value" ;;
+              build) BUILD="$value" ;;
+              tag) EXPECTED_TAG="$value" ;;
+            esac
+          done < <(./scripts/package_mac_release.sh --print-metadata)
+
+          if [[ "$RELEASE_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "Published tag does not match project metadata: $RELEASE_TAG != $EXPECTED_TAG" >&2
+            exit 1
+          fi
+
+          cd "$RUNNER_TEMP/release"
+          shasum -a 256 -c SHA256SUMS.txt
+          cmp -s "AgentMeter-$VERSION-$BUILD.dmg" AgentMeter.dmg
+          "$GITHUB_WORKSPACE/scripts/verify_mac_release.sh" AgentMeter.dmg "$VERSION" "$BUILD"
+
   dispatch:
+    needs: validate
     if: github.event.release.prerelease == false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
