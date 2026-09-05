@@ -98,6 +98,17 @@ jobs:
         shell: bash
         run: swift test --package-path Packages/AgentMeterCore
 
+      - name: Run macOS app tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          xcodebuild test \
+            -project AgentMeter.xcodeproj \
+            -scheme AgentMeterMac \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Decode release credentials
         id: credentials
         shell: bash

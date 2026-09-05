@@ -182,3 +182,16 @@
 "搜索姓名或邮箱" = "Search name or email";
 "账期开始" = "Billing Cycle Start";
 "额度占用" = "Quota Used";
+"告警" = "Alert";
+"查看当前告警" = "View Current Alerts";
+"当前告警" = "Current Alerts";
+"CloudKit 同步失败，数据可能无法显示在其他设备。" = "CloudKit sync failed. Data may not appear on your other devices.";
+"可用重置额度：%@" = "Available resets: %@";
+"无法读取本机凭据。" = "Unable to read credentials on this Mac.";
+"登录或凭据已失效。" = "The sign-in or credential has expired.";
+"网络刷新失败。" = "Refresh failed because of a network error.";
+"服务暂时不可用。" = "The service is temporarily unavailable.";
+"接口返回发生变化。" = "The service response format has changed.";
+"刷新失败。" = "Refresh failed.";
+"构建类型" = "Build Configuration";
+"CloudKit 环境" = "CloudKit Environment";

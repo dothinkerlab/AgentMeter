@@ -23,8 +23,10 @@ settings:
   configs:
     Debug:
       CLOUDKIT_CONTAINER_ENVIRONMENT: Development
+      AGENTMETER_BUILD_CONFIGURATION: Debug
     Release:
       CLOUDKIT_CONTAINER_ENVIRONMENT: Production
+      AGENTMETER_BUILD_CONFIGURATION: Release
 
 packages:
   AgentMeterCore:
@@ -43,15 +45,40 @@ targets:
       - path: AgentMeterMac
         excludes:
           - "*.entitlements"
+          - Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dothinker.app.agentmeter.mac
         PRODUCT_NAME: AgentMeter
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: AgentMeterMac/AgentMeterMac.entitlements
-        INFOPLIST_KEY_LSUIElement: YES
-        INFOPLIST_KEY_CFBundleDisplayName: AgentMeter
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: AgentMeterMac/Info.plist
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
       - package: AgentMeterCore
         product: AgentMeterCore
+
+  AgentMeterMacTests:
+    type: bundle.unit-test
+    platform: macOS
+    supportedDestinations:
+      - macOS
+    sources:
+      - path: AgentMeterMacTests
+    settings:
+      base:
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/AgentMeter.app/Contents/MacOS/AgentMeter
+        BUNDLE_LOADER: $(TEST_HOST)
+    dependencies:
+      - target: AgentMeterMac
+
+schemes:
+  AgentMeterMac:
+    build:
+      targets:
+        AgentMeterMac: all
+        AgentMeterMacTests: [test]
+    test:
+      targets:
+        - AgentMeterMacTests

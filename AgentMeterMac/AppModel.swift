@@ -820,6 +820,80 @@ final class AppModel: ObservableObject {
 
     var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) + deviceCodingSnapshots }
 
+    var activeHealthIssues: [MacHealthIssue] {
+        var issues: [MacHealthIssue] = []
+
+        for result in results {
+            guard let item = MacDisplayItemID.item(for: result.tool) else { continue }
+            issues.append(contentsOf: MacHealthIssueBuilder.codingIssues(
+                item: item,
+                outcome: result.outcome,
+                snapshot: result.snapshot
+            ))
+        }
+
+        for snapshot in deviceCodingSnapshots {
+            guard let item = MacDisplayItemID.item(for: snapshot.tool) else { continue }
+            let outcome: QuotaCollector.Outcome = snapshot.confidence == .fresh ? .ok : .degraded
+            issues.append(contentsOf: MacHealthIssueBuilder.codingIssues(
+                item: item,
+                outcome: outcome,
+                snapshot: snapshot,
+                cloudSyncPending: deviceCodingCloudSyncPendingTools.contains(snapshot.tool)
+            ))
+        }
+
+        appendLocalHealthIssue(
+            &issues, item: .kimiAPI, provider: .kimiAPI,
+            confidence: kimiAPIBalance?.confidence, staleReason: kimiAPIBalance?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .deepSeek, provider: .deepSeek,
+            confidence: deepSeekBalance?.confidence, staleReason: deepSeekBalance?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .openRouter, provider: .openRouter,
+            confidence: openRouterUsage?.confidence, staleReason: openRouterUsage?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .xAI, provider: .xAI,
+            confidence: grokAPIUsage?.confidence, staleReason: grokAPIUsage?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .openAIAPI, provider: .openAIAPI,
+            confidence: openAIAPIUsage?.confidence, staleReason: openAIAPIUsage?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .anthropicAPI, provider: .anthropicAPI,
+            confidence: anthropicAPIUsage?.confidence, staleReason: anthropicAPIUsage?.staleReason
+        )
+        appendLocalHealthIssue(
+            &issues, item: .cursorTeam, provider: .cursorTeam,
+            confidence: cursorTeamUsage?.confidence, staleReason: cursorTeamUsage?.staleReason
+        )
+
+        return MacHealthIssueBuilder.normalized(issues, displayOrder: displayOrder)
+    }
+
+    private func appendLocalHealthIssue(
+        _ issues: inout [MacHealthIssue],
+        item: MacDisplayItemID,
+        provider: ManualProviderKind,
+        confidence: DataConfidence?,
+        staleReason: QuotaStaleReason?
+    ) {
+        let enabledKey = ManualProviderPreferences.enabledKey(provider)
+        let isEnabled = defaults.object(forKey: enabledKey) == nil || defaults.bool(forKey: enabledKey)
+        guard let confidence,
+              let issue = MacHealthIssueBuilder.localIssue(
+                item: item,
+                isEnabled: isEnabled,
+                confidence: confidence,
+                staleReason: staleReason
+              ) else { return }
+        issues.append(issue)
+    }
+
     var orderedTools: [ToolKind] {
         let savedTools = displayOrder.compactMap(\.toolKind).filter { Self.tools.contains($0) }
         let missingTools = Self.tools.filter { !savedTools.contains($0) }

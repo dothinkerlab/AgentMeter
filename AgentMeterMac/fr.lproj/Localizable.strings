@@ -182,3 +182,16 @@
 "搜索姓名或邮箱" = "Rechercher un nom ou un e-mail";
 "账期开始" = "Début du cycle de facturation";
 "额度占用" = "Quota utilisé";
+"告警" = "Alerte";
+"查看当前告警" = "Afficher les alertes actuelles";
+"当前告警" = "Alertes actuelles";
+"CloudKit 同步失败，数据可能无法显示在其他设备。" = "La synchronisation CloudKit a échoué. Les données peuvent ne pas apparaître sur vos autres appareils.";
+"可用重置额度：%@" = "Réinitialisations disponibles : %@";
+"无法读取本机凭据。" = "Impossible de lire les identifiants sur ce Mac.";
+"登录或凭据已失效。" = "La connexion ou l’identifiant a expiré.";
+"网络刷新失败。" = "L’actualisation a échoué en raison d’une erreur réseau.";
+"服务暂时不可用。" = "Le service est temporairement indisponible.";
+"接口返回发生变化。" = "Le format de réponse du service a changé.";
+"刷新失败。" = "Échec de l’actualisation.";
+"构建类型" = "Configuration de build";
+"CloudKit 环境" = "Environnement CloudKit";

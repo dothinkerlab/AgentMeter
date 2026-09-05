@@ -9,6 +9,7 @@ import AgentMeterCore
 struct MenuBarContentView: View {
     @ObservedObject var model: AppModel
     @State private var expandedLocalDataSource: LocalDataSource?
+    @State private var isShowingHealthIssues = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,12 +24,16 @@ struct MenuBarContentView: View {
             footer
         }
         .frame(width: 320)
+        .onChange(of: model.activeHealthIssues.isEmpty) { isEmpty in
+            if isEmpty { isShowingHealthIssues = false }
+        }
     }
 
     // MARK: - 页眉 / 页脚
 
     private var header: some View {
-        HStack(spacing: 8) {
+        let healthIssues = model.activeHealthIssues
+        return HStack(spacing: 8) {
             Text("AgentMeter")
                 .font(.system(size: 16, weight: .heavy))
                 .tracking(-0.4)
@@ -40,6 +45,31 @@ struct MenuBarContentView: View {
             }
 
             Spacer(minLength: 6)
+
+            if !healthIssues.isEmpty {
+                Button {
+                    isShowingHealthIssues.toggle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.menuStatusDanger)
+                            .frame(width: 6, height: 6)
+                        Text(L10n.string("告警"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(Color.menuStatusDanger)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(Color.menuStatusDanger.opacity(0.1)))
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.string("查看当前告警"))
+                .accessibilityLabel(L10n.string("查看当前告警"))
+                .popover(isPresented: $isShowingHealthIssues, arrowEdge: .top) {
+                    healthIssuePopover(issues: model.activeHealthIssues)
+                }
+            }
 
             Button { Task { await model.collectNow() } } label: {
                 ZStack {
@@ -56,6 +86,64 @@ struct MenuBarContentView: View {
         .padding(.horizontal, 16)
         .padding(.top, 13)
         .padding(.bottom, 11)
+    }
+
+    private func healthIssuePopover(issues: [MacHealthIssue]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L10n.string("当前告警"))
+                .font(.system(size: 13, weight: .semibold))
+                .padding(.bottom, 8)
+
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(issues.enumerated()), id: \.element.id) { index, issue in
+                        if index > 0 {
+                            Divider().padding(.vertical, 8)
+                        }
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: issue.kind == .cloudKit
+                                  ? "icloud.slash.fill" : "exclamationmark.triangle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.menuStatusDanger)
+                                .frame(width: 16)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(issue.item.healthDisplayName)
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text(healthIssueMessage(issue))
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 360)
+        }
+        .padding(12)
+        .frame(width: 280)
+    }
+
+    private func healthIssueMessage(_ issue: MacHealthIssue) -> String {
+        switch issue.kind {
+        case .cloudKit:
+            return L10n.string("CloudKit 同步失败，数据可能无法显示在其他设备。")
+        case .resetCredits:
+            return L10n.format("可用重置额度：%@", collectionFailureMessage(issue.reason))
+        case .collection:
+            return collectionFailureMessage(issue.reason)
+        }
+    }
+
+    private func collectionFailureMessage(_ reason: QuotaStaleReason?) -> String {
+        switch reason {
+        case .credentialReadFailed: return L10n.string("无法读取本机凭据。")
+        case .authExpired: return L10n.string("登录或凭据已失效。")
+        case .networkFailure: return L10n.string("网络刷新失败。")
+        case .endpointFailure: return L10n.string("服务暂时不可用。")
+        case .responseChanged: return L10n.string("接口返回发生变化。")
+        case .unknownFailure, nil: return L10n.string("刷新失败。")
+        }
     }
 
     @ViewBuilder

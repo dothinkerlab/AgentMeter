@@ -58,6 +58,8 @@ APP_EXECUTABLE="$APP_PATH/Contents/MacOS/AgentMeter"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_INFO")"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO")"
 SIGNED_BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_INFO")"
+INFO_BUILD_CONFIGURATION="$(read_plist_value "$APP_INFO" 'AgentMeterBuildConfiguration')"
+INFO_CLOUDKIT_ENVIRONMENT="$(read_plist_value "$APP_INFO" 'AgentMeterCloudKitEnvironment')"
 ARCHITECTURES="$(lipo -archs "$APP_EXECUTABLE")"
 
 if [[ "$VERSION" != "$EXPECTED_VERSION" || "$BUILD" != "$EXPECTED_BUILD" ]]; then
@@ -66,6 +68,14 @@ if [[ "$VERSION" != "$EXPECTED_VERSION" || "$BUILD" != "$EXPECTED_BUILD" ]]; the
 fi
 if [[ "$SIGNED_BUNDLE_ID" != "$BUNDLE_ID" ]]; then
   echo "DMG app bundle identifier mismatch: $SIGNED_BUNDLE_ID" >&2
+  exit 1
+fi
+if [[ "$INFO_BUILD_CONFIGURATION" != "Release" ]]; then
+  echo "DMG app build configuration mismatch: $INFO_BUILD_CONFIGURATION" >&2
+  exit 1
+fi
+if [[ "$INFO_CLOUDKIT_ENVIRONMENT" != "Production" ]]; then
+  echo "DMG app Info.plist does not report Production CloudKit: $INFO_CLOUDKIT_ENVIRONMENT" >&2
   exit 1
 fi
 if [[ " $ARCHITECTURES " != *" arm64 "* || " $ARCHITECTURES " != *" x86_64 "* ]]; then
@@ -93,6 +103,10 @@ if [[ "$SIGNED_TEAM_ID" != "$TEAM_ID" ]]; then
 fi
 if [[ "$CLOUDKIT_ENVIRONMENT" != "Production" ]]; then
   echo "DMG app does not use Production CloudKit: $CLOUDKIT_ENVIRONMENT" >&2
+  exit 1
+fi
+if [[ "$INFO_CLOUDKIT_ENVIRONMENT" != "$CLOUDKIT_ENVIRONMENT" ]]; then
+  echo "DMG app CloudKit environment metadata does not match its entitlement: Info.plist=$INFO_CLOUDKIT_ENVIRONMENT entitlement=$CLOUDKIT_ENVIRONMENT" >&2
   exit 1
 fi
 if [[ "$SIGNED_CLOUDKIT_CONTAINER_ID" != "$CLOUDKIT_CONTAINER_ID" ]]; then

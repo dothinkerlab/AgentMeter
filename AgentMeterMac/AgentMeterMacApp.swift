@@ -31,6 +31,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var screenshotSettingsWindow: NSWindow?
     private var cancellables: Set<AnyCancellable> = []
 
+    private var isRunningUnitTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
         setUpPopover()
@@ -51,7 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 self?.showProviderSettingsScreenshotWindow()
             }
-        } else {
+        } else if !isRunningUnitTests {
+            // Hosted unit tests must not read real credentials, call provider endpoints,
+            // or write to the user's CloudKit container.
             model.start()
         }
     }
