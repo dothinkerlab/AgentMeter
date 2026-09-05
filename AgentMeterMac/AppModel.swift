@@ -872,7 +872,12 @@ final class AppModel: ObservableObject {
             confidence: cursorTeamUsage?.confidence, staleReason: cursorTeamUsage?.staleReason
         )
 
-        return MacHealthIssueBuilder.normalized(issues, displayOrder: displayOrder)
+        let normalized = MacHealthIssueBuilder.normalized(issues, displayOrder: displayOrder)
+        let visibleItems = Set(MacDisplayItemID.allCases.filter(isDisplayItemVisible))
+        return MacHealthIssueBuilder.applyingDisplayVisibility(
+            normalized,
+            visibleItems: visibleItems
+        )
     }
 
     private func appendLocalHealthIssue(

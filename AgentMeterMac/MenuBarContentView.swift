@@ -33,6 +33,9 @@ struct MenuBarContentView: View {
 
     private var header: some View {
         let healthIssues = model.activeHealthIssues
+        let healthTint = healthIssueTint(
+            MacHealthIssueBuilder.highestSeverity(in: healthIssues) ?? .warning
+        )
         return HStack(spacing: 8) {
             Text("AgentMeter")
                 .font(.system(size: 16, weight: .heavy))
@@ -52,16 +55,16 @@ struct MenuBarContentView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(Color.menuStatusDanger)
+                            .fill(healthTint)
                             .frame(width: 6, height: 6)
                         Text(L10n.string("告警"))
                             .font(.system(size: 11, weight: .semibold))
                             .lineLimit(1)
                     }
-                    .foregroundStyle(Color.menuStatusDanger)
+                    .foregroundStyle(healthTint)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(Capsule().fill(Color.menuStatusDanger.opacity(0.1)))
+                    .background(Capsule().fill(healthTint.opacity(0.1)))
                 }
                 .buttonStyle(.borderless)
                 .help(L10n.string("查看当前告警"))
@@ -104,7 +107,7 @@ struct MenuBarContentView: View {
                             Image(systemName: issue.kind == .cloudKit
                                   ? "icloud.slash.fill" : "exclamationmark.triangle.fill")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Color.menuStatusDanger)
+                                .foregroundStyle(healthIssueTint(issue.severity))
                                 .frame(width: 16)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(issue.item.healthDisplayName)
@@ -133,6 +136,10 @@ struct MenuBarContentView: View {
         case .collection:
             return collectionFailureMessage(issue.reason)
         }
+    }
+
+    private func healthIssueTint(_ severity: MacHealthIssue.Severity) -> Color {
+        severity == .error ? Color.menuStatusDanger : Color.menuStatusWarning
     }
 
     private func collectionFailureMessage(_ reason: QuotaStaleReason?) -> String {

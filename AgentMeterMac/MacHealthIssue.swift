@@ -2,6 +2,11 @@ import Foundation
 import AgentMeterCore
 
 struct MacHealthIssue: Hashable, Identifiable {
+    enum Severity: Int, Hashable {
+        case warning = 0
+        case error = 1
+    }
+
     enum Kind: Int, Hashable {
         case cloudKit = 0
         case collection = 1
@@ -11,10 +16,27 @@ struct MacHealthIssue: Hashable, Identifiable {
     let item: MacDisplayItemID
     let kind: Kind
     let reason: QuotaStaleReason?
+    let severity: Severity
+
+    init(
+        item: MacDisplayItemID,
+        kind: Kind,
+        reason: QuotaStaleReason?,
+        severity: Severity = .error
+    ) {
+        self.item = item
+        self.kind = kind
+        self.reason = reason
+        self.severity = severity
+    }
 
     var id: String {
         [item.rawValue, String(kind.rawValue), reason?.rawValue ?? "none"]
             .joined(separator: ":")
+    }
+
+    func withSeverity(_ severity: Severity) -> Self {
+        Self(item: item, kind: kind, reason: reason, severity: severity)
     }
 }
 
@@ -71,6 +93,20 @@ enum MacHealthIssueBuilder {
             if lhs.item.rawValue != rhs.item.rawValue { return lhs.item.rawValue < rhs.item.rawValue }
             return (lhs.reason?.rawValue ?? "") < (rhs.reason?.rawValue ?? "")
         }
+    }
+
+    static func applyingDisplayVisibility(
+        _ issues: [MacHealthIssue],
+        visibleItems: Set<MacDisplayItemID>
+    ) -> [MacHealthIssue] {
+        issues.map { issue in
+            issue.withSeverity(visibleItems.contains(issue.item) ? .error : .warning)
+        }
+    }
+
+    static func highestSeverity(in issues: [MacHealthIssue]) -> MacHealthIssue.Severity? {
+        if issues.contains(where: { $0.severity == .error }) { return .error }
+        return issues.isEmpty ? nil : .warning
     }
 }
 

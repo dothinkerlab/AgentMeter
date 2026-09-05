@@ -128,6 +128,29 @@ final class MacHealthIssueTests: XCTestCase {
         )
     }
 
+    func testHiddenProviderIssuesAreYellowAndVisibleProviderIssuesAreRed() {
+        let visible = MacHealthIssue(item: .codex, kind: .collection, reason: .networkFailure)
+        let hidden = MacHealthIssue(item: .openRouter, kind: .collection, reason: .networkFailure)
+        let issues = MacHealthIssueBuilder.applyingDisplayVisibility(
+            [visible, hidden],
+            visibleItems: [.codex]
+        )
+
+        XCTAssertEqual(issues.map(\.severity), [.error, .warning])
+        XCTAssertEqual(MacHealthIssueBuilder.highestSeverity(in: issues), .error)
+    }
+
+    func testOnlyHiddenProviderIssuesUseYellowTopAlert() {
+        let hidden = MacHealthIssue(item: .openRouter, kind: .collection, reason: .networkFailure)
+        let issues = MacHealthIssueBuilder.applyingDisplayVisibility(
+            [hidden],
+            visibleItems: []
+        )
+
+        XCTAssertEqual(issues.first?.severity, .warning)
+        XCTAssertEqual(MacHealthIssueBuilder.highestSeverity(in: issues), .warning)
+    }
+
     func testDebugHostReportsDevelopmentEnvironment() {
         XCTAssertEqual(MacBuildMetadata.buildConfiguration, "Debug")
         XCTAssertEqual(MacBuildMetadata.cloudKitEnvironment, "Development")
