@@ -809,15 +809,7 @@ private struct MacAboutSettingsView: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent(L10n.string("版本"), value: version)
-                LabeledContent(
-                    L10n.string("构建类型"),
-                    value: MacBuildMetadata.buildConfiguration
-                )
-                LabeledContent(
-                    L10n.string("CloudKit 环境"),
-                    value: MacBuildMetadata.cloudKitEnvironment
-                )
+                LabeledContent(L10n.string("版本"), value: MacBuildMetadata.aboutVersion)
                 Link("GitHub", destination: Self.githubURL)
                 Link(L10n.string("手动升级"), destination: Self.releasesURL)
                 Link(L10n.string("反馈问题"), destination: Self.bugReportURL)
@@ -854,12 +846,6 @@ private struct MacAboutSettingsView: View {
         } message: {
             Text(diagnosticExportError ?? "")
         }
-    }
-
-    private var version: String {
-        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-        return "\(short) (\(build))"
     }
 
     private func exportDiagnostics() {

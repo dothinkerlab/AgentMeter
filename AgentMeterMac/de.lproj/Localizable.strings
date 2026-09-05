@@ -193,5 +193,3 @@
 "服务暂时不可用。" = "Der Dienst ist vorübergehend nicht verfügbar.";
 "接口返回发生变化。" = "Das Antwortformat des Dienstes hat sich geändert.";
 "刷新失败。" = "Aktualisierung fehlgeschlagen.";
-"构建类型" = "Build-Konfiguration";
-"CloudKit 环境" = "CloudKit-Umgebung";

@@ -193,5 +193,3 @@
 "服务暂时不可用。" = "The service is temporarily unavailable.";
 "接口返回发生变化。" = "The service response format has changed.";
 "刷新失败。" = "Refresh failed.";
-"构建类型" = "Build Configuration";
-"CloudKit 环境" = "CloudKit Environment";
