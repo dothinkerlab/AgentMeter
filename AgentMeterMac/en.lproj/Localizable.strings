@@ -209,3 +209,25 @@
 "目录枚举未完成，抽查范围可能不包含最新会话。" = "Directory enumeration was incomplete; the sample may omit the newest sessions.";
 "会话目录不存在或无法读取。" = "The session directory is missing or unreadable.";
 "检测只在此 Mac 运行，不保存或同步对话内容，不会发送“继续”。" = "Checks run only on this Mac. Conversation content is not stored or synced, and no continue message is sent.";
+
+/* Codex incremental monitoring */
+"已达到 500 条本地记录上限，暂不记录新的候选。" = "The 500-record local limit has been reached. New candidates are not being recorded.";
+"Codex 会话监测" = "Codex Session Monitoring";
+"记录新的额度中断" = "Record New Quota Interruptions";
+"本地监测记录无法读取或保存，监测已暂停。请检查磁盘与文件权限后重启 AgentMeter。" = "Local monitoring records could not be read or saved. Monitoring is paused. Check disk space and file permissions, then restart AgentMeter.";
+"上次检查：%@" = "Last checked: %@";
+"部分记录尚未读取或无法识别，将在后续刷新时继续检查。" = "Some records have not been read or recognized. Checks will continue on subsequent refreshes.";
+"立即检查会话" = "Check Sessions Now";
+"尚未记录到符合条件的额度中断；这不代表所有会话均未中断。" = "No qualifying quota interruptions recorded. This does not mean no sessions were interrupted.";
+"未命名项目" = "Unnamed Project";
+"取消此候选" = "Cancel Candidate";
+"仅显示最近 5 条记录。" = "Showing the five most recent records.";
+"待核验账号、额度与原会话，尚未恢复" = "Awaiting account, quota, and session verification; not resumed";
+"已取消" = "Cancelled";
+"已失效：会话已有后续活动或有更新的候选" = "Superseded by session activity or a newer candidate";
+"正在提交" = "Submitting";
+"已提交，等待执行验证" = "Submitted; awaiting execution verification";
+"已恢复" = "Resumed";
+"恢复失败，需要手动检查" = "Resume failed; manual review required";
+"执行结果不明，需要手动检查" = "Execution outcome unknown; manual review required";
+"首次检查建立基线；后续事件仅保存在此 Mac。当前不会自动发送“继续”。" = "After the first check establishes a baseline, new events are stored only on this Mac. No continue messages are sent.";

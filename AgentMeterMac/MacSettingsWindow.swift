@@ -205,6 +205,7 @@ private struct MacAutomaticProviderDetail: View {
             }
 
             if provider == .chatGPT {
+                CodexResumeMonitorView(coordinator: model.codexResumeCoordinator)
                 CodexAutomationDiagnosticView()
             }
 

@@ -149,6 +149,7 @@ final class AppModel: ObservableObject {
     private static let fiveHourResetNotificationsKey = "fiveHourResetNotificationsEnabled"
 
     private let collector: QuotaCollector
+    let codexResumeCoordinator: CodexResumeCoordinator
     private let defaults: UserDefaults
     private let resetNotificationScheduler: FiveHourResetNotificationScheduling
     private let cloudKitDeletionCoordinator: MacPendingCloudKitDeletionCoordinator
@@ -170,6 +171,7 @@ final class AppModel: ObservableObject {
         resetNotificationScheduler: FiveHourResetNotificationScheduling = FiveHourResetNotificationScheduler()
     ) {
         self.defaults = defaults
+        self.codexResumeCoordinator = CodexResumeCoordinator(defaults: defaults)
         self.resetNotificationScheduler = resetNotificationScheduler
         self.cloudKitDeletionCoordinator = MacPendingCloudKitDeletionCoordinator(defaults: defaults)
         let legacyOrder = defaults.string(forKey: Self.toolDisplayOrderKey) ?? ""
@@ -235,6 +237,7 @@ final class AppModel: ObservableObject {
             return
         }
         isCollecting = true
+        async let codexMonitoring: Void = codexResumeCoordinator.poll()
         async let legacyResults = collector.collectAll(tools: Self.legacyTools)
         async let coding: Void = collectCurrentDeviceCodingProviders()
         // 本地旁路与 Claude/Codex、设备 Coding providers 互不依赖，首轮同时启动。
@@ -246,6 +249,7 @@ final class AppModel: ObservableObject {
         async let anthropicAPI: Void = collectAnthropicAPI()
         async let cursorTeam: Void = collectCursorTeam()
         results = await legacyResults
+        await codexMonitoring
         _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam)
         lastCollectedAt = Date()
         isCollecting = false

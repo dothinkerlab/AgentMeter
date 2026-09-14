@@ -56,9 +56,7 @@ struct CodexAutomationDiagnosticView: View {
             else { return nil }
             return app.localizedName ?? bundle.deletingPathExtension().lastPathComponent
         })).sorted()
-        let configuredHome = ProcessInfo.processInfo.environment["CODEX_HOME"]
-        let home = configuredHome.flatMap { $0.hasPrefix("/") ? URL(fileURLWithPath: $0, isDirectory: true) : nil }
-            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex", isDirectory: true)
+        let home = CodexLocalPaths.home
         let socket = home.appendingPathComponent("app-server-control/app-server-control.sock")
         let attributes = try? FileManager.default.attributesOfItem(atPath: socket.path)
         controlSocketExists = attributes?[.type] as? FileAttributeType == .typeSocket
