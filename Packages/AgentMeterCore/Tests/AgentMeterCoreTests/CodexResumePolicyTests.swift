@@ -16,7 +16,7 @@ struct CodexResumePolicyTests {
         let expired = CodexResumeQuota(accountID: "account", limitID: "codex", observedAt: now, windows: [
             .init(id: "short", usedPercent: 100, resetsAt: now.addingTimeInterval(-1)),
             .init(id: "week", usedPercent: 0, resetsAt: now.addingTimeInterval(7200))
-        ])
+        ], blockingState: .windowLimit)
         #expect(CodexResumePolicy.evaluate(candidate(), quota: expired, session: session(), now: now) == .waiting(until: nil))
     }
 
@@ -38,7 +38,7 @@ struct CodexResumePolicyTests {
             [.init(id: "short", usedPercent: 0, resetsAt: now.addingTimeInterval(60)), .init(id: "short", usedPercent: 0, resetsAt: now.addingTimeInterval(60))]
         ]
         for windows in invalid {
-            let q = CodexResumeQuota(accountID: "account", limitID: "codex", observedAt: now, windows: windows)
+            let q = CodexResumeQuota(accountID: "account", limitID: "codex", observedAt: now, windows: windows, blockingState: .clear)
             #expect(CodexResumePolicy.evaluate(candidate(), quota: q, session: session(), now: now) == .needsVerification)
         }
     }
@@ -50,6 +50,14 @@ struct CodexResumePolicyTests {
         queue.insert(local)
         let began = queue.beginAttempt(id: local.id, quota: quota(), session: session(), now: now)
         #expect(!began)
+    }
+
+    @Test func accountRestrictionsAndUnknownStateCannotResume() {
+        for state in [CodexResumeQuota.BlockingState.unknown, .windowLimit, .accountRestriction] {
+            let q = CodexResumeQuota(accountID: "account", limitID: "codex", observedAt: now,
+                                     windows: quota().windows, blockingState: state)
+            #expect(CodexResumePolicy.evaluate(candidate(), quota: q, session: session(), now: now) != .ready)
+        }
     }
 
     @Test func latestOnlyNeverFallsBackToOldSessions() {
@@ -119,7 +127,7 @@ struct CodexResumePolicyTests {
         .init(accountID: account, limitID: limit, observedAt: now.addingTimeInterval(-age), windows: [
             .init(id: "short", usedPercent: short, resetsAt: now.addingTimeInterval(3600)),
             .init(id: "week", usedPercent: weekly, resetsAt: now.addingTimeInterval(7200))
-        ])
+        ], blockingState: .clear)
     }
     private func session(turn: String = "failed", account: String = "account", idle: Bool = true, archived: Bool = false, age: Double = 0) -> CodexResumeSessionEvidence {
         .init(threadID: "thread", latestTurnID: turn, accountID: account, isIdle: idle, isArchived: archived, observedAt: now.addingTimeInterval(-age))

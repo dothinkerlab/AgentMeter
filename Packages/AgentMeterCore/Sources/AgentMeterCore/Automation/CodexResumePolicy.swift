@@ -2,6 +2,7 @@ import Foundation
 
 /// Local automation evidence. Deliberately separate from the display/CloudKit QuotaSnapshot.
 public struct CodexResumeQuota: Sendable {
+    public enum BlockingState: Sendable { case unknown, clear, windowLimit, accountRestriction }
     public struct Window: Sendable {
         public let id: String
         public let usedPercent: Double
@@ -14,9 +15,10 @@ public struct CodexResumeQuota: Sendable {
     public let limitID: String
     public let observedAt: Date
     public let windows: [Window]
-    public init(accountID: String, limitID: String, observedAt: Date, windows: [Window]) {
+    public let blockingState: BlockingState
+    public init(accountID: String, limitID: String, observedAt: Date, windows: [Window], blockingState: BlockingState = .unknown) {
         self.accountID = accountID; self.limitID = limitID
-        self.observedAt = observedAt; self.windows = windows
+        self.observedAt = observedAt; self.windows = windows; self.blockingState = blockingState
     }
 }
 
@@ -62,6 +64,11 @@ public enum CodexResumePolicy {
                   && $0.resetsAt.timeIntervalSince1970.isFinite }) else { return .needsVerification }
 
         let blocking = quota.windows.filter { $0.usedPercent >= 100 }
+        switch quota.blockingState {
+        case .unknown: return .needsVerification
+        case .accountRestriction: return .waiting(until: nil)
+        case .clear, .windowLimit: break
+        }
         if !blocking.isEmpty {
             // A timestamp is a check schedule, never proof that quota has recovered.
             let latestReset = blocking.map(\.resetsAt).max()!
@@ -69,6 +76,7 @@ public enum CodexResumePolicy {
         }
         // A supposedly fresh response with expired windows is not sufficient evidence.
         guard quota.windows.allSatisfy({ $0.resetsAt > now }) else { return .needsVerification }
+        guard quota.blockingState == .clear else { return .waiting(until: nil) }
         return .ready
     }
 }

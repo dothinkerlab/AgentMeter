@@ -1,6 +1,6 @@
 # Codex 自动恢复：P0 验证记录
 
-日期：2026-09-14。状态：只读诊断、P1 增量监测与本地候选队列、P2 纯额度判定/幂等状态机已实现；运行时数据源与控制通道尚未验证，自动发送未开放，P0 端到端验证未通过。
+日期：2026-09-14。状态：只读诊断、P1 增量监测与本地候选队列、P2 纯额度判定/幂等状态机、App Server 只读连接层已实现；原 Desktop 的实时数据源与控制归属尚未验证，自动发送未开放，P0 端到端验证未通过。
 
 ## 目标与阶段
 
@@ -29,6 +29,22 @@
 代码分布：Core/Automation 放策略与队列；Mac/CodexAutomation 放解析、增量扫描、checkpoint、协调器与设置 UI。实际 Desktop 接入和可靠错误样本仍是下一阶段条件；本轮未改动 Codex 的配置、会话或私有 socket。
 
 ## 本机验证结果
+
+### 新增：已有 App Server 的只读连接
+
+设置 → ChatGPT →「Codex 运行连接」提供手动检查。它是连接诊断，不是自动恢复开关。
+
+- 从唯一运行宿主的 bundle 选择内置 CLI，不使用 PATH 中版本可能不同的 CLI。
+- 只接受监测 home 下已存在、属于当前用户的默认控制 socket；缺失时直接报告不可用。不会启动/重启 daemon，不会调整 Codex 配置，不会使用 Desktop 私有工具 socket。
+- 通过 `codex app-server proxy --sock PATH` 连接已有服务。有限协议流程仅允许 `initialize` → `initialized` → `account/rateLimits/read` → 可选的 `thread/read(includeTurns: false)`。没有通用 RPC 发送入口，也不调用 thread/resume、turn/start 或审批接口。
+- 验证 initialize 响应中的 codexHome 与监测目录一致；验证 RPC 响应 ID 和指定线程 ID。拒绝异常响应及服务端操作请求。只忽略通知，不替用户处理审批或凭据刷新请求。
+- 连接检查默认 8 秒超时，支持取消；单条响应上限 1 MiB、stdout/stderr 合计上限 2 MiB。stderr 只排空，不记录内容。结束时只终止本次启动的 proxy 子进程，不停止共享服务。
+- 额度解析保留 accountId、limit ID 与 primary/secondary 窗口。优先使用 rateLimitsByLimitId；显式空 map 不回退到旧单桶。缺少账号、窗口时长/reset 时间、桶标识冲突或非法数值时不能生成有效判定依据。
+- 新增费用/使用限制状态：`spendControlReached` 为 true 或工作区 credits/usage limit 阻塞时，窗口剩余额度不能证明已恢复；字段缺失或未知的新限制类型保持 unknown。Core `CodexResumeQuota` 默认 blockingState 也为 unknown，调用方必须显式提供明确状态。
+- UI 只展示连接结果、额度类别数量和线程状态，不展示账号 ID、标题或预览正文，不保存 probe 响应。
+- 即使只读检查成功，也不能证明服务由当前 Desktop 执行端持有，或最新失败轮次仍然匹配；probe 结果始终不授权自动恢复，不改变候选的 runtimeEvidenceVerified。
+
+本轮 Computer Use 在访问 `com.openai.codex` 时明确拒绝，原因是该应用不允许通过该工具访问。未尝试通过其他 UI 技术绕过限制，辅助功能路径的实机验证仍未完成。App Server 协议与进程测试使用隔离的模拟子进程，不把模拟成功当成真实 Desktop 自动恢复成功。
 
 1. 实际宿主为 `/Applications/ChatGPT.app`，其中包含 Codex Framework 与 `Contents/Resources/codex`。不能硬编码只查找 `Codex.app`。
 2. Homebrew CLI 为 0.146.0；Desktop 内置 CLI 为 0.153.4。适配协议必须与实际宿主匹配，不能默认使用 PATH 中的 CLI。
@@ -86,3 +102,5 @@ P1/P2 基础逻辑：Core 恢复策略/队列 10 项测试、Mac 增量监测/�
 设置预览进程已启动，但 Computer Use 工具在读取界面时超时，未完成设置页面的视觉检查。此项不作为已通过的 UI 验收。
 
 补充本机只读兼容核验：最近 30 个会话头均在 64 KiB 内可读取，均为 Codex Desktop；其中 18 个 `session_id` 与 `id` 不同。30 个头部 `id` 均与文件名及本地只读线程索引中的 id/rollout_path 一致。解析器以 `id` 识别线程，不要求 `session_id` 相等；生产监测不读取该索引数据库。该核验不代表已找到限额错误或已连通原执行端。
+
+只读连接层验证：Mac 三组测试共 32 项通过（连接协议/模拟子进程 9、增量监测 13、原诊断 10），Core 策略 11 项通过，共 43 项。覆盖协议步骤白名单、目录/线程/响应 ID 不一致、服务端额外操作请求、分段输出、超时、取消、进程提前退出、输出上限、缺失 socket、稀疏额度与工作区费用限制。本机默认控制 socket 再次只读检查仍不存在；未启动新的 Codex 服务，未在真实 Desktop 上发送任何消息。中英文资源与补丁检查通过。由于工具禁止访问 Codex UI，辅助功能与视觉检查仍未通过实机验收。

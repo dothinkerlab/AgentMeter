@@ -5,6 +5,7 @@ struct CodexResumeMonitorView: View {
     @ObservedObject var coordinator: CodexResumeCoordinator
 
     var body: some View {
+        CodexRuntimeConnectionView(threadID: coordinator.candidates.first(where: { $0.state == .pending })?.threadID)
         Section(L10n.string("Codex 会话监测")) {
             Toggle(L10n.string("记录新的额度中断"), isOn: Binding(
                 get: { coordinator.enabled }, set: { coordinator.setEnabled($0) }

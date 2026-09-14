@@ -231,3 +231,25 @@
 "恢复失败，需要手动检查" = "Resume failed; manual review required";
 "执行结果不明，需要手动检查" = "Execution outcome unknown; manual review required";
 "首次检查建立基线；后续事件仅保存在此 Mac。当前不会自动发送“继续”。" = "After the first check establishes a baseline, new events are stored only on this Mac. No continue messages are sent.";
+
+/* Codex read-only runtime connection */
+"Codex 运行连接" = "Codex Runtime Connection";
+"检查已有服务能否返回账号额度和候选会话状态。不会启动新服务或发送消息。" = "Check whether an existing service can return account quotas and the candidate session status. No new service is started and no message is sent.";
+"检查运行连接" = "Check Runtime Connection";
+"只读连接成功；尚未验证该服务属于当前 Desktop。" = "Read-only connection succeeded; ownership by the current Desktop is unverified.";
+"返回 %d 个额度类别。" = "Returned %d quota buckets.";
+"服务未返回账号标识，不能用于自动恢复判定。" = "The service did not return an account identifier and cannot support an automatic resume decision.";
+"候选会话状态：%@" = "Candidate session status: %@";
+"此检查不读取完整对话，也不能确认最后一个失败轮次；自动恢复仍未开放。" = "This check does not read full conversations or confirm the last failed turn. Automatic resume is still unavailable.";
+"空闲" = "Idle";
+"运行中" = "Running";
+"未加载" = "Not loaded";
+"服务错误" = "Service error";
+"未知" = "Unknown";
+"未找到可连接的本地控制服务。请等待受支持的 Desktop 接口；程序不会另起服务接管会话。" = "No local control service is available. A supported Desktop interface is required; this app will not start a separate service to take over the session.";
+"未检测到唯一的 Codex 宿主，请保持一个宿主运行后重试。" = "A single Codex host could not be identified. Keep one host running and try again.";
+"服务的数据目录与监测目录不一致，已停止检查。" = "The service data directory does not match the monitored directory. The check was stopped.";
+"连接检查超时，可稍后重试。" = "The connection check timed out. Try again later.";
+"服务要求额外操作，已停止只读检查；未批准任何请求。" = "The service requested an additional operation. The read-only check stopped without approving any request.";
+"服务响应超过诊断上限，已停止检查。" = "The service response exceeded the diagnostic limit. The check was stopped.";
+"服务未返回可验证的响应，请检查版本兼容性后重试。" = "The service did not return a verifiable response. Check version compatibility and try again.";
