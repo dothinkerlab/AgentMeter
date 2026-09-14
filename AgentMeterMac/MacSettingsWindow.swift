@@ -204,6 +204,10 @@ private struct MacAutomaticProviderDetail: View {
                     .foregroundStyle(.secondary)
             }
 
+            if provider == .chatGPT {
+                CodexAutomationDiagnosticView()
+            }
+
             if state != .connected {
                 Section(L10n.string("下一步")) {
                     Text(nextStepDescription)
