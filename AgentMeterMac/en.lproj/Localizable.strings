@@ -253,3 +253,17 @@
 "服务要求额外操作，已停止只读检查；未批准任何请求。" = "The service requested an additional operation. The read-only check stopped without approving any request.";
 "服务响应超过诊断上限，已停止检查。" = "The service response exceeded the diagnostic limit. The check was stopped.";
 "服务未返回可验证的响应，请检查版本兼容性后重试。" = "The service did not return a verifiable response. Check version compatibility and try again.";
+
+/* Manual resume verification */
+"手动恢复验证" = "Manual resume verification";
+"填写测试会话 ID 并选择其 JSONL 文件。开始观察后，请自行在 Codex 原会话发送一次“继续”。这里只验证新增记录，不会操作 Codex。" = "Enter the test thread ID and select its JSONL file. After observation starts, manually send “继续” once in the original Codex thread. This only checks new records and does not control Codex.";
+"测试会话 ID" = "Test thread ID";
+"选择会话文件并开始观察" = "Choose session file and start observing";
+"停止观察" = "Stop observing";
+"已开始观察。请在原会话手动发送一次“继续”，观察窗口为 60 秒。" = "Observation started. Manually send “继续” once in the original thread within 60 seconds.";
+"已观察到“继续”，等待新的助手活动。" = "Observed “继续”; waiting for new assistant activity.";
+"已验证原会话收到“继续”并产生新轮次及助手活动。" = "Verified that the original thread received “继续” and produced a new turn with assistant activity.";
+"记录存在中断或其他活动，结果待确认；请检查原会话，不要重复发送。" = "Interrupted or conflicting activity detected. Check the original thread; do not resend.";
+"观察超时，结果待确认；请检查原会话，不要重复发送。" = "Observation timed out. Check the original thread; do not resend.";
+"已停止观察。" = "Observation stopped.";
+"文件不匹配、发生变化或无法读取，已停止验证。" = "File mismatch, change, or read failure. Verification stopped.";
