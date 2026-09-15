@@ -24,6 +24,42 @@ final class CodexSessionDiagnosticsTests: XCTestCase {
         XCTAssertEqual(report.malformedLines, 0)
     }
 
+    // Mirrors the shape verified against real Desktop rollout files on this machine: the failure is a
+    // nested error on the closing task_complete record, with a snake_case enum value.
+    func testRealDesktopTaskCompleteErrorShapeIsCounted() {
+        let real = #"{"timestamp":"2026-09-14T14:22:48.466Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"01a0a044-f69b-7c72-b69b-60070791df85","duration_ms":1234,"error":{"codex_error_info":"usage_limit_exceeded","message":"withheld"}}}"#
+        let other = real.replacingOccurrences(of: "usage_limit_exceeded", with: "server_overloaded")
+        let notQuota = real.replacingOccurrences(of: "usage_limit_exceeded", with: "other")
+        let noTurn = real.replacingOccurrences(of: #""turn_id":"01a0a044-f69b-7c72-b69b-60070791df85","#, with: "")
+        var report = CodexSessionDiagnostics()
+        CodexSessionDiagnosticScanner.inspect(Data(([real, other, notQuota, noTurn].joined(separator: "\n") + "\n").utf8), report: &report)
+        XCTAssertEqual(report.structuredQuotaErrors, 2)
+        XCTAssertEqual(report.malformedLines, 0)
+    }
+
+    func testQuotedErrorTextAndToolOutputAreNeverCounted() {
+        let records = [
+            #"{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"it reported usage_limit_exceeded"}]}}"#,
+            #"{"type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"c1","output":"codex_error_info usage_limit_exceeded"}}"#,
+            #"{"type":"event_msg","payload":{"type":"task_complete","turn_id":"t","message":"usage_limit_exceeded"}}"#
+        ]
+        var report = CodexSessionDiagnostics()
+        CodexSessionDiagnosticScanner.inspect(Data((records.joined(separator: "\n") + "\n").utf8), report: &report)
+        XCTAssertEqual(report.structuredQuotaErrors, 0)
+        XCTAssertEqual(report.malformedLines, 0)
+    }
+
+    func testUnrelatedNestedErrorsAndAbsentCreditsAreNotCounted() {
+        let records = [
+            #"{"type":"event_msg","payload":{"type":"turn_aborted","turn_id":"t","reason":"interrupted","error":{"codex_error_info":"usage_limit_exceeded"}}}"#,
+            #"{"type":"event_msg","payload":{"type":"token_count","rate_limits":{"credits":{"has_credits":false}}}}"#,
+            #"{"type":"event_msg","payload":{"type":"unknown_event","error":{"codex_error_info":"usage_limit_exceeded"}}}"#
+        ]
+        var report = CodexSessionDiagnostics()
+        CodexSessionDiagnosticScanner.inspect(Data((records.joined(separator: "\n") + "\n").utf8), report: &report)
+        XCTAssertEqual(report.structuredQuotaErrors, 0)
+    }
+
     func testInvalidAndPartialRecordsAreNotErrors() {
         var report = CodexSessionDiagnostics()
         CodexSessionDiagnosticScanner.inspect(Data(("not json\n" + quotaEvent).utf8), report: &report)

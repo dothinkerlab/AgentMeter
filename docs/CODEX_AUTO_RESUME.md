@@ -2,7 +2,11 @@
 
 日期：2026-09-14。状态：只读诊断、P1 增量监测与本地候选队列、P2 纯额度判定/幂等状态机、App Server 只读连接层已实现；原 Desktop 的实时数据源与控制归属尚未验证，自动发送未开放，P0 端到端验证未通过。
 
+> **勘误（2026-09-14 第二轮真实数据核验）**：本文下方“未找到可供脱敏录制的真实结构化额度失败样本”“确认当前兼容的 `event_msg/error` 是否确实写入 Desktop 会话文件”等结论已被实测推翻。要点：(1) 真实样本存在——709 个 rollout 文件（4.00 GB）中有 13 条结构化错误，其中 `usage_limit_exceeded` 8 条，全部来自 `Codex Desktop`；(2) 真实位置是收尾记录 `event_msg/task_complete` 的嵌套字段 `payload.error.codex_error_info`（snake_case），而不是 `event_msg/error`（出现 0 次）；(3) 全量数据中 `method == "turn/completed"` 与 camelCase `codexErrorInfo` 出现 0 次，即 rollout 文件不写运行时 JSON-RPC 信封；(4) 原实现因此无法识别任何真实中断，且会把 `task_complete` 判为“进展”而撤销候选，已修正解析器与诊断分类器。详细证据见 [待验证清单](CODEX_AUTO_RESUME_PENDING_VALIDATION.md)。
+
 ## 目标与阶段
+
+2026-09-15 单次恢复验证：用户指定的原 Desktop 会话在最新轮次以 `usage_limit_exceeded` 失败后，经会话控制工具复核额度（短周期使用 6%，周使用 59%，`spendControlReached=false`），发送一次“继续”。宿主返回新轮次 `inProgress`、线程 `active`，无错误。`credits.hasCredits=false` 在此时仍存在，不能独立视为额度耗尽。此验证通过当前 Codex 任务工具执行，不代表 AgentMeter 已接通独立发送入口，也不代表目标任务已完成。解析器对嵌套错误限定 `payload.type == "task_complete"`，其他事件不触发候选。
 
 在 AgentMeter Mac 内实现：真实额度中断 → 等待对应额度恢复 → 向原会话提交一次“继续” → 验证实际运行。
 
@@ -49,7 +53,7 @@
 1. 实际宿主为 `/Applications/ChatGPT.app`，其中包含 Codex Framework 与 `Contents/Resources/codex`。不能硬编码只查找 `Codex.app`。
 2. Homebrew CLI 为 0.146.0；Desktop 内置 CLI 为 0.153.4。适配协议必须与实际宿主匹配，不能默认使用 PATH 中的 CLI。
 3. `codex app-server daemon version` 无法连接默认 `~/.codex/app-server-control/app-server-control.sock`，原因是路径不存在。Desktop 主进程以 app-server 默认 stdio 方式运行；检查未找到它对外监听的命名 Unix socket。这里只能判定本机默认接入不可用，不能推出所有版本均无接入途径。
-4. 最近 30 个 JSONL 的只读检查均显示来源为 Codex Desktop，观察到 task_started、task_complete、turn_aborted、token_count 等事件，没有 `event_msg/error`。文本中出现限额关键词，但不能作为系统错误证据。未找到可供脱敏录制的真实结构化额度失败样本。
+4. 最近 30 个 JSONL 的只读检查均显示来源为 Codex Desktop，观察到 task_started、task_complete、turn_aborted、token_count 等事件，没有 `event_msg/error`。文本中出现限额关键词，但不能作为系统错误证据。~~未找到可供脱敏录制的真实结构化额度失败样本。~~ **已由第二轮全量核验推翻：`event_msg/error` 确实不存在，但结构化额度失败存在于 `task_complete` 的嵌套 `error` 字段中，共 13 条（8 条为 `usage_limit_exceeded`）。**
 5. 本轮没有发送消息、开启 daemon、改动 Codex 配置或连接其私有工具 socket，也没有请求辅助功能权限。
 
 ## 已实现的诊断
@@ -59,7 +63,7 @@
 - 使用当前进程的绝对 `CODEX_HOME`，未设置时使用 `~/.codex`。GUI 启动通常不继承 shell 环境；该路径仍不等于已验证的 Desktop 账号/存储匹配。
 - 检查默认控制路径是否为 socket，仅报告存在性，不将它视为成功连接。
 - 最多枚举 20,000 个目录条目，选择其中最新的最多 30 个 JSONL，每个最多读取末尾 512 KiB。不跟随枚举到的符号链接；目录截断、文件截断、读取失败和残缺记录均明确报告。
-- 只统计顶层结构化错误：官方 App Server `turn/completed` 中的 failed + `usageLimitExceeded`；另兼容待验证的 rollout `event_msg/error` 字段。后者是诊断兼容分支，不是已经证明存在的 Desktop 数据源。
+- 只统计结构化错误，且从不搜索消息正文与工具输出：**已实测的真实形状**为收尾记录 `event_msg/task_complete` 的嵌套字段 `payload.error.codex_error_info`（值 `usage_limit_exceeded`）；另保留运行时信封 `turn/completed` 中 failed + `codexErrorInfo` 与顶层 `event_msg/error` 两个兼容分支，前者在本机 rollout 文件中出现 0 次，后者为待验证分支。三层都不读文本。
 - 不搜索用户/助手消息或工具输出中的关键词；不保留路径、线程 ID、正文或凭据，只在内存显示汇总计数。无 CloudKit 接入。
 - 所有计数都是历史抽查信息，不是待恢复会话数量；零错误不表示没有中断。
 

@@ -38,8 +38,18 @@ enum CodexSessionEventParser {
         }
         guard object["type"] as? String == "event_msg", let payload = object["payload"] as? [String: Any],
               let kind = payload["type"] as? String else { return nil }
+        // Real Desktop rollouts carry the quota failure as a nested error on the closing task_complete:
+        // payload.error.codex_error_info == "usage_limit_exceeded" with payload.turn_id set. This must be
+        // matched before the progress list below, otherwise the record reporting the interruption would
+        // revoke the candidate it should create (task_complete alone is otherwise treated as progress).
+        if kind == "task_complete", let error = payload["error"] as? [String: Any],
+           isQuotaBlocked(error["codex_error_info"] as? String ?? error["codexErrorInfo"] as? String),
+           let turnID = identifier(payload["turn_id"]) {
+            return .quotaBlocked(candidate(cursor, turnID, at))
+        }
+        // Compatibility branch for a top-level error record; not observed in Desktop rollout files so far.
         if kind == "error", let turnID = identifier(payload["turn_id"]),
-           ["usage_limit_exceeded", "usageLimitExceeded"].contains(payload["codex_error_info"] as? String ?? "") {
+           isQuotaBlocked(payload["codex_error_info"] as? String) {
             return .quotaBlocked(candidate(cursor, turnID, at))
         }
         if ["task_started", "task_complete", "turn_aborted", "user_message"].contains(kind) {
@@ -51,6 +61,10 @@ enum CodexSessionEventParser {
     private static func candidate(_ cursor: CodexMonitorCheckpoint.Cursor, _ turn: String, _ at: Date) -> CodexResumeCandidate {
         // Local files alone cannot attest account, bucket, current runtime state, or control ownership.
         CodexResumeCandidate(threadID: cursor.threadID, failedTurnID: turn, detectedAt: at, projectName: cursor.projectName)
+    }
+    /// Both spellings appear across versions: rollout JSONL uses snake_case, the runtime schema camelCase.
+    private static func isQuotaBlocked(_ value: String?) -> Bool {
+        ["usage_limit_exceeded", "usageLimitExceeded"].contains(value ?? "")
     }
     private static func json(_ data: Data) -> [String: Any]? {
         (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]

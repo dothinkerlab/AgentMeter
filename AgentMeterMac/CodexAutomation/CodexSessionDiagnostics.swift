@@ -118,11 +118,20 @@ struct CodexSessionDiagnosticScanner: Sendable {
            let error = turn["error"] as? [String: Any] {
             return error["codexErrorInfo"] as? String == "usageLimitExceeded"
         }
-        // Diagnostic-only compatibility shape; live Desktop persistence is not yet verified.
+        // Structured rollout events; only task_complete is verified against Desktop persistence.
         guard object["type"] as? String == "event_msg",
-              let payload = object["payload"] as? [String: Any],
-              payload["type"] as? String == "error" else { return false }
-        return payload["codex_error_info"] as? String == "usage_limit_exceeded"
-            || payload["codex_error_info"] as? String == "usageLimitExceeded"
+              let payload = object["payload"] as? [String: Any] else { return false }
+        // Verified on this machine: Desktop rollouts nest the failure on the closing task_complete
+        // record as payload.error.codex_error_info. Text mentions alone never count.
+        if payload["type"] as? String == "task_complete",
+           let error = payload["error"] as? [String: Any],
+           quotaInfo(error["codex_error_info"] ?? error["codexErrorInfo"]) { return true }
+        guard payload["type"] as? String == "error" else { return false }
+        return quotaInfo(payload["codex_error_info"] as? String)
+    }
+
+    private static func quotaInfo(_ value: Any?) -> Bool {
+        guard let value = value as? String else { return false }
+        return value == "usage_limit_exceeded" || value == "usageLimitExceeded"
     }
 }

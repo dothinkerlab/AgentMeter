@@ -209,16 +209,90 @@ final class CodexIncrementalSessionMonitorTests: XCTestCase {
         XCTAssertEqual(try CodexMonitorCheckpointStore(url: file).load()?.queue.candidates.first?.state, .uncertain)
     }
 
+    // Shape observed in real Desktop rollouts: the quota failure is a nested error on the closing
+    // task_complete record, not a standalone event_msg/error record.
+    func testRealDesktopQuotaFailureShapeCreatesSurvivingCandidate() throws {
+        let home = try temporaryHome()
+        let file = try write(header, home: home)
+        let engine = CodexIncrementalSessionMonitor()
+        var state = engine.scan(checkpoint(home), now: now).checkpoint
+        try append(taskComplete(at: now.addingTimeInterval(1), turn: "turn-real",
+                                error: "usage_limit_exceeded"), to: file)
+        state = engine.scan(state, now: now.addingTimeInterval(2)).checkpoint
+        XCTAssertEqual(state.queue.candidates.count, 1)
+        XCTAssertEqual(state.queue.latestPending?.failedTurnID, "turn-real")
+        XCTAssertFalse(state.queue.latestPending?.runtimeEvidenceVerified ?? true)
+        // The record that reports the interruption must not revoke its own candidate.
+        let replay = engine.scan(state, now: now.addingTimeInterval(3)).checkpoint
+        XCTAssertNotNil(replay.queue.latestPending)
+    }
+
+    func testRealDesktopNonQuotaTaskCompletesDoNotCreateCandidates() throws {
+        let home = try temporaryHome()
+        let file = try write(header, home: home)
+        let engine = CodexIncrementalSessionMonitor()
+        var state = engine.scan(checkpoint(home), now: now).checkpoint
+        try append(taskComplete(at: now.addingTimeInterval(1), turn: "t1", error: "other"), to: file)
+        try append(taskComplete(at: now.addingTimeInterval(2), turn: "t2", error: "server_overloaded"), to: file)
+        try append(taskComplete(at: now.addingTimeInterval(3), turn: "t3", error: nil), to: file)
+        state = engine.scan(state, now: now.addingTimeInterval(4)).checkpoint
+        XCTAssertTrue(state.queue.candidates.isEmpty)
+    }
+
+    func testRealDesktopQuotedErrorTextAndToolOutputDoNotCreateCandidates() throws {
+        let home = try temporaryHome()
+        let file = try write(header, home: home)
+        let engine = CodexIncrementalSessionMonitor()
+        var state = engine.scan(checkpoint(home), now: now).checkpoint
+        try append(record(type: "response_item", at: now.addingTimeInterval(1), payload: [
+            "type": "message", "role": "user",
+            "content": [["type": "input_text", "text": "it said usage_limit_exceeded, please fix"]]
+        ]), to: file)
+        try append(record(type: "response_item", at: now.addingTimeInterval(2), payload: [
+            "type": "custom_tool_call_output", "call_id": "c1",
+            "output": "codex_error_info: usage_limit_exceeded"
+        ]), to: file)
+        state = engine.scan(state, now: now.addingTimeInterval(3)).checkpoint
+        XCTAssertTrue(state.queue.candidates.isEmpty)
+    }
+
+    func testUnrelatedEventsAndAbsentCreditsDoNotCreateCandidates() throws {
+        let home = try temporaryHome()
+        let file = try write(header, home: home)
+        let engine = CodexIncrementalSessionMonitor()
+        var state = engine.scan(checkpoint(home), now: now).checkpoint
+        for kind in ["token_count", "turn_aborted", "unknown_event"] {
+            try append(record(type: "event_msg", at: now.addingTimeInterval(1), payload: [
+                "type": kind, "turn_id": "t", "reason": "interrupted",
+                "error": ["codex_error_info": "usage_limit_exceeded"],
+                "rate_limits": ["credits": ["has_credits": false]]
+            ]), to: file)
+        }
+        state = engine.scan(state, now: now.addingTimeInterval(2)).checkpoint
+        XCTAssertTrue(state.queue.candidates.isEmpty)
+    }
+
     private func checkpoint(_ home: URL) -> CodexMonitorCheckpoint {
         .init(homePath: home.path, monitoringSince: now)
     }
     private func error(at: Date, turn: String = "failed") -> String {
         event(type: "error", at: at, extra: ["turn_id": turn, "codex_error_info": "usage_limit_exceeded"])
     }
-    private func event(type: String, at: Date, extra: [String: String] = [:]) -> String {
-        var payload = extra; payload["type"] = type
-        let object: [String: Any] = ["timestamp": ISO8601DateFormatter().string(from: at), "type": "event_msg", "payload": payload]
+    private func taskComplete(at: Date, turn: String, error: String?) -> String {
+        var payload: [String: Any] = ["type": "task_complete", "turn_id": turn]
+        if let error {
+            payload["error"] = ["codex_error_info": error, "message": "withheld"]
+        }
+        return record(type: "event_msg", at: at, payload: payload)
+    }
+    private func record(type: String, at: Date, payload: [String: Any]) -> String {
+        let object: [String: Any] = ["timestamp": ISO8601DateFormatter().string(from: at),
+                                     "type": type, "payload": payload]
         return String(decoding: try! JSONSerialization.data(withJSONObject: object, options: .sortedKeys), as: UTF8.self) + "\n"
+    }
+    private func event(type: String, at: Date, extra: [String: String] = [:]) -> String {
+        var payload: [String: Any] = extra; payload["type"] = type
+        return record(type: "event_msg", at: at, payload: payload)
     }
     private func temporaryHome() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
