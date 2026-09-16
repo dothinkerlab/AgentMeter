@@ -42,6 +42,18 @@
 
 ## 接入计划
 
+### 已接入的手动版本（2026-09-16）
+
+设置 → ChatGPT → “通过 Desktop 队列恢复一次”现提供线程 ID、文件选择及明确的发送按钮。只接受当前 CODEX_HOME/sessions 下、Desktop 来源、匹配线程且最后完整记录仍为 usage_limit_exceeded 的 task_complete；额外尾部记录也会保守拒绝。用户必须先确认实时额度、空闲及未归档状态，本入口不自动提供这些证据。
+
+实现 `CodexDesktopQueueSender` 通过 Process 参数数组调用正在运行宿主的 CLI，先运行 queue --help 检查支持，不改模型/权限。两次文件复核之间先以 O_EXCL 创建 0600 尝试文件并同步，随后才提交；线程与失败轮次的哈希为文件名。尝试文件损坏或为空也阻止重试。存储在 AgentMeter/CodexAutomation/queue-attempts，不清除锁或读取凭据。每轮单独保留记录，不提供自动清理/重试。
+
+回执严格校验消息 UUID 与线程 UUID，消息 ID 单独保存为 queuedMessageID。stdout/stderr 合计 256 KiB 上限、10 秒超时；stderr 只排空不展示。进程异常、超时或保存回执失败保持未知状态，不自动回退。关闭页面不会作为撤回入队的承诺，消息入队后仍可能运行。
+
+提交后观察 60 秒，看到同线程“继续”、新轮次和助手活动只报告观察事实，不标记严格关联成功：真实样本没有找到 queued message ID。状态变更竞态仍存在，因此未开启无人值守自动调度，也未把这个手动入口接入依赖实时运行时证明的 Core 自动执行器。
+
+验证：6 项发送器测试与 5 项既有观察器测试共 11 项通过。覆盖错误回执、重复/损坏记录、文件变化、符号链接、非额度错误、stderr 排空、非零退出、输出限制和超时。实际 CLI 通路见上文成功实测；新增设置按钮尚未完成 UI 实机端到端验收。
+
 1. 新增 `CodexQueueSender`，以 Process 参数数组调用宿主 CLI。先确认版本支持 queue，只传精确 UUID 与固定“继续”，不改模型/权限，不拼接 shell。
 2. 保留最新失败轮次和实时额度复核。queue 不依赖 socket，不代表候选账号与额度绑定已解决；只有匹配账号、bucket、时效的额度证据才允许自动发送。
 3. 发送前持久化 attempting，成功后保存 queued message ID。现有执行器假定立即返回 turnID，必须调整为“已入队、等待轮次”的阶段，不能把 message ID 当作 turnID。

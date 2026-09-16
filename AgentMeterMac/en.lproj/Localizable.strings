@@ -267,3 +267,16 @@
 "观察超时，结果待确认；请检查原会话，不要重复发送。" = "Observation timed out. Check the original thread; do not resend.";
 "已停止观察。" = "Observation stopped.";
 "文件不匹配、发生变化或无法读取，已停止验证。" = "File mismatch, change, or read failure. Verification stopped.";
+
+/* Desktop queue submission */
+"正在检查命令支持并保存发送记录…" = "Checking command support and saving the attempt…";
+"已入队，消息 ID：%@。正在观察原会话。" = "Queued message ID: %@. Observing the original thread.";
+"已入队（%@），并观察到原会话新增“继续”、轮次与助手活动；尚不能通过消息 ID 严格关联。" = "Queued (%@). Observed a new “继续” message, turn and assistant activity in the original thread; strict message-ID correlation is not yet available.";
+"已入队（%@），执行结果待确认。请查看 Codex，不要重复发送。" = "Queued (%@); execution is unconfirmed. Check Codex and do not resend.";
+"此失败轮次已有发送记录，已阻止再次提交。请查看 Codex 原会话。" = "An attempt already exists for this failed turn. Duplicate submission blocked; check the original Codex thread.";
+"文件不匹配或末尾已不是该会话的额度失败，未提交新消息。" = "The file does not match or no longer ends with a quota failure. No new message was submitted.";
+"无法确认提交结果。请查看原会话；已有尝试记录会阻止重复发送。" = "Submission could not be confirmed. Check the original thread; an existing attempt record will prevent duplicate submission.";
+"通过 Desktop 队列恢复一次" = "Resume once through the Desktop queue";
+"手动发送“继续”到指定原会话。请先确认额度已恢复、会话空闲且未归档；当前不自动检查实时额度。选择末尾仍是额度中断的 JSONL 文件，并保持 Codex 运行。" = "Manually send “继续” to the original thread. First confirm quota has recovered and the thread is idle and unarchived; live quota is not checked automatically. Select a JSONL file still ending in a quota failure and keep Codex running.";
+"选择额度中断会话文件" = "Choose a quota-interrupted session file";
+"向此会话入队一次“继续”" = "Queue “继续” once for this thread";

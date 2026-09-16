@@ -5,6 +5,7 @@ struct CodexResumeMonitorView: View {
     @ObservedObject var coordinator: CodexResumeCoordinator
 
     var body: some View {
+        CodexDesktopQueueView()
         CodexManualResumeVerificationView()
         CodexRuntimeConnectionView(threadID: coordinator.candidates.first(where: { $0.state == .pending })?.threadID)
         Section(L10n.string("Codex 会话监测")) {
