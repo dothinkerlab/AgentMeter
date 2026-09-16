@@ -1,4 +1,5 @@
 import XCTest
+import AgentMeterCore
 @testable import AgentMeter
 
 final class CodexDesktopQueueSenderTests: XCTestCase {
@@ -71,6 +72,52 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 1)
         XCTAssertThrowsError(try CodexDesktopQueueSender.run(executable: URL(fileURLWithPath: "/usr/bin/yes"),
             arguments: [], home: home, timeout: 2))
+    }
+
+    func testHistoryPreservesReceiptAndReportsCorruption() throws {
+        let target = try CodexQueueTarget.read(fixture(), threadID: thread)
+        let store = CodexQueueAttemptStore(directory: try directory())
+        let handle = try store.reserve(target)
+        try store.record(handle, target: target, state: "queued", messageID: message)
+        try handle.close()
+        var history = store.recent()
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertEqual(history.records.first?.messageID, message)
+        XCTAssertEqual(history.records.first?.state, "queued")
+        XCTAssertFalse(history.unreadable)
+        try Data("{}".utf8).write(to: store.directory.appendingPathComponent("invalid.json"))
+        history = store.recent()
+        XCTAssertEqual(history.records.count, 1)
+        XCTAssertTrue(history.unreadable)
+        XCTAssertThrowsError(try store.reserve(target))
+    }
+
+    @MainActor
+    func testCandidatePrefillRequiresUniquePendingSourceInsideHome() throws {
+        let home = try directory(), file = home.appendingPathComponent("checkpoint.json")
+        let source = home.appendingPathComponent("sessions/test.jsonl")
+        var state = CodexMonitorCheckpoint(homePath: home.path, monitoringSince: Date())
+        let candidate = CodexResumeCandidate(threadID: thread, failedTurnID: turn, detectedAt: Date())
+        state.queue.insert(candidate)
+        let cursor = CodexMonitorCheckpoint.Cursor(fileID: 1, offset: 0, discardUntilNewline: false, threadID: thread)
+        state.cursors[source.path] = cursor
+        let suite = UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.set(true, forKey: "codexSessionMonitoringEnabled")
+        defer { defaults.removePersistentDomain(forName: suite) }
+        try CodexMonitorCheckpointStore(url: file).save(state)
+        let coordinator = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file)
+        XCTAssertEqual(coordinator.sourceForManualResume(candidateID: candidate.id), source)
+        coordinator.cancel(id: candidate.id)
+        XCTAssertNil(coordinator.sourceForManualResume(candidateID: candidate.id))
+        state.cursors[home.appendingPathComponent("sessions/duplicate.jsonl").path] = cursor
+        try CodexMonitorCheckpointStore(url: file).save(state)
+        let ambiguous = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file)
+        XCTAssertNil(ambiguous.sourceForManualResume(candidateID: candidate.id))
+        state.cursors = [home.appendingPathComponent("outside.jsonl").path: cursor]
+        try CodexMonitorCheckpointStore(url: file).save(state)
+        let outside = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file)
+        XCTAssertNil(outside.sourceForManualResume(candidateID: candidate.id))
     }
 
     private func directory() throws -> URL {

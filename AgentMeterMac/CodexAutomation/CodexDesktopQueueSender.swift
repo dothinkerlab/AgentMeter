@@ -49,11 +49,47 @@ struct CodexQueueTarget {
 /// Exclusive creation makes duplicate submissions fail closed across app instances and restarts.
 /// Even an empty/corrupt attempt file is retained and blocks automatic retry.
 struct CodexQueueAttemptStore {
+    struct Summary: Identifiable {
+        let id: String
+        let threadID: String
+        let state: String
+        let messageID: String?
+        let modifiedAt: Date
+    }
     let directory: URL
     static let standard = Self(directory: CodexLocalPaths.checkpoint.deletingLastPathComponent().appendingPathComponent("queue-attempts"))
     func file(for key: String) -> URL {
         let name = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
         return directory.appendingPathComponent(name + ".json")
+    }
+
+    /// Bounded history for the settings page. Corrupt records are reported, never deleted.
+    func recent() -> (records: [Summary], unreadable: Bool, truncated: Bool) {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return ([], false, false) }
+        guard let enumerator = FileManager.default.enumerator(at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey],
+            options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles]) else { return ([], true, false) }
+        var records: [Summary] = [], unreadable = false, count = 0, truncated = false
+        for case let url as URL in enumerator {
+            count += 1
+            if count > 500 { truncated = true; break }
+            guard url.pathExtension == "json" else { continue }
+            do {
+                let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey])
+                guard values.isRegularFile == true, values.isSymbolicLink != true,
+                      let size = values.fileSize, size <= 8192 else { throw CodexDesktopQueueError.storage }
+                let record = try JSONDecoder().decode([String: String].self, from: Data(contentsOf: url))
+                guard let thread = record["threadID"], UUID(uuidString: thread) != nil,
+                      let turn = record["failedTurnID"], UUID(uuidString: turn) != nil,
+                      file(for: thread + ":" + turn).lastPathComponent == url.lastPathComponent,
+                      let state = record["state"], ["attempting", "queued", "uncertain"].contains(state),
+                      record["queuedMessageID"].map({ UUID(uuidString: $0) != nil }) != false,
+                      state != "queued" || record["queuedMessageID"] != nil else { throw CodexDesktopQueueError.storage }
+                records.append(.init(id: url.lastPathComponent, threadID: thread, state: state,
+                                     messageID: record["queuedMessageID"], modifiedAt: values.contentModificationDate ?? .distantPast))
+            } catch { unreadable = true }
+        }
+        return (Array(records.sorted { $0.modifiedAt > $1.modifiedAt }.prefix(5)), unreadable, truncated)
     }
     func reserve(_ target: CodexQueueTarget) throws -> FileHandle {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

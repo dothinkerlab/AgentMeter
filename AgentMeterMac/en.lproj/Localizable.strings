@@ -280,3 +280,11 @@
 "手动发送“继续”到指定原会话。请先确认额度已恢复、会话空闲且未归档；当前不自动检查实时额度。选择末尾仍是额度中断的 JSONL 文件，并保持 Codex 运行。" = "Manually send “继续” to the original thread. First confirm quota has recovered and the thread is idle and unarchived; live quota is not checked automatically. Select a JSONL file still ending in a quota failure and keep Codex running.";
 "选择额度中断会话文件" = "Choose a quota-interrupted session file";
 "向此会话入队一次“继续”" = "Queue “继续” once for this thread";
+
+/* Queue attempt history */
+"填入最新监测候选" = "Fill in the latest monitored candidate";
+"最近入队记录（不代表已执行）" = "Recent queued attempts (not proof of execution)";
+"已入队；执行状态请查看原会话" = "Queued; check the original thread for execution status";
+"尝试结果待确认；不会自动重发" = "Attempt outcome unconfirmed; no automatic resend";
+"部分尝试记录不可读或超出读取上限；原记录仍保留以阻止重复发送。" = "Some attempt records are unreadable or exceed the read limit. Records remain in place to prevent duplicate sends.";
+"刷新入队记录" = "Refresh queued attempts";

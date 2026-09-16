@@ -71,6 +71,19 @@ final class CodexResumeCoordinator: ObservableObject {
         _ = persist(next)
     }
 
+    /// Use a single monitored source only; the sender still revalidates the actual file before enqueue.
+    func sourceForManualResume(candidateID: String) -> URL? {
+        guard enabled, !storageFailed,
+              let candidate = checkpoint.queue.latestPending, candidate.id == candidateID else { return nil }
+        let paths = checkpoint.cursors.filter { $0.value.threadID == candidate.threadID }.map(\.key)
+        guard paths.count == 1, let path = paths.first else { return nil }
+        let root = URL(fileURLWithPath: checkpoint.homePath).appendingPathComponent("sessions")
+            .standardizedFileURL.resolvingSymlinksInPath().path + "/"
+        let source = URL(fileURLWithPath: path).standardizedFileURL
+        guard source.resolvingSymlinksInPath().path.hasPrefix(root) else { return nil }
+        return source
+    }
+
     func poll(now: Date = Date()) async {
         guard enabled, !storageFailed, !isScanning else { return }
         isScanning = true

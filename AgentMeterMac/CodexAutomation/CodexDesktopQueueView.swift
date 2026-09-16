@@ -66,16 +66,27 @@ final class CodexDesktopQueueController: ObservableObject {
 }
 
 struct CodexDesktopQueueView: View {
+    @ObservedObject var coordinator: CodexResumeCoordinator
     @StateObject private var controller = CodexDesktopQueueController()
     @State private var threadID = ""
     @State private var source: URL?
     @State private var selecting = false
+    @State private var history: [CodexQueueAttemptStore.Summary] = []
+    @State private var historyWarning = false
 
     var body: some View {
         Section(L10n.string("通过 Desktop 队列恢复一次")) {
             Text(L10n.string("手动发送“继续”到指定原会话。请先确认额度已恢复、会话空闲且未归档；当前不自动检查实时额度。选择末尾仍是额度中断的 JSONL 文件，并保持 Codex 运行。"))
                 .foregroundStyle(.secondary)
             TextField(L10n.string("测试会话 ID"), text: $threadID).disabled(controller.busy)
+            if let candidate = coordinator.candidates.first(where: { $0.state == .pending }),
+               let source = coordinator.sourceForManualResume(candidateID: candidate.id) {
+                Button(L10n.string("填入最新监测候选")) {
+                    threadID = candidate.threadID
+                    self.source = source
+                }.disabled(controller.busy)
+                Text(candidate.projectName ?? L10n.string("未命名项目")).font(.caption)
+            }
             Button(L10n.string("选择额度中断会话文件")) { selecting = true }.disabled(controller.busy)
             if let source { Text(source.lastPathComponent).font(.caption).textSelection(.enabled) }
             Button(L10n.string("向此会话入队一次“继续”")) {
@@ -85,9 +96,30 @@ struct CodexDesktopQueueView: View {
             .disabled(controller.busy || source == nil || UUID(uuidString: threadID) == nil)
             if controller.busy { ProgressView().controlSize(.small) }
             if !controller.message.isEmpty { Text(controller.message).textSelection(.enabled) }
+            if !history.isEmpty {
+                Text(L10n.string("最近入队记录（不代表已执行）"))
+                ForEach(history) { record in
+                    VStack(alignment: .leading) {
+                        Text(record.threadID).font(.caption).textSelection(.enabled)
+                        Text(record.state == "queued" ? L10n.string("已入队；执行状态请查看原会话") : L10n.string("尝试结果待确认；不会自动重发"))
+                        if let id = record.messageID { Text(id).font(.caption).textSelection(.enabled) }
+                        Text(record.modifiedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption)
+                    }
+                }
+            }
+            if historyWarning { Text(L10n.string("部分尝试记录不可读或超出读取上限；原记录仍保留以阻止重复发送。")) }
+            Button(L10n.string("刷新入队记录")) { Task { await refreshHistory() } }.disabled(controller.busy)
         }
         .fileImporter(isPresented: $selecting, allowedContentTypes: [.data]) { result in
             if case .success(let url) = result { source = url }
         }
+        .task(id: controller.busy) { if !controller.busy { await refreshHistory() } }
+    }
+
+    private func refreshHistory() async {
+        let result = await Task.detached(priority: .utility) { CodexQueueAttemptStore.standard.recent() }.value
+        guard !Task.isCancelled else { return }
+        history = result.records
+        historyWarning = result.unreadable || result.truncated
     }
 }
