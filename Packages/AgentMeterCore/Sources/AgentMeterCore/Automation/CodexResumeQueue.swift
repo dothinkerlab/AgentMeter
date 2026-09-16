@@ -107,4 +107,18 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
             candidates[index].state = .uncertain
         }
     }
+
+    /// A transport may have submitted even when its response was lost. Never retry this state.
+    public mutating func recordUncertain(id: String) {
+        guard let index = candidates.firstIndex(where: {
+            $0.id == id && [.attempting, .submitted].contains($0.state)
+        }) else { return }
+        candidates[index].state = .uncertain
+    }
+
+    /// Only for cancellation before the transport was invoked, or an explicit no-send receipt.
+    public mutating func recordNotSent(id: String) {
+        guard let index = candidates.firstIndex(where: { $0.id == id && $0.state == .attempting }) else { return }
+        candidates[index].state = .failed
+    }
 }
