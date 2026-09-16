@@ -1,5 +1,7 @@
 # Codex 自动恢复：P0 验证记录
 
+> 2026-09-16 新进展：公开 `codex queue --thread … --message …` 已在 Desktop 保持运行时向原线程排队一条无工具测试消息，并观察到新轮次、助手回复和正常完成。默认控制 socket 缺失不再阻塞这条发送路径。详见 [queue 调研与实测](CODEX_DESKTOP_QUEUE_RESEARCH.md)。生产发送器尚未接入，真实额度恢复整体验收仍未完成。下方记录保留各阶段当时的结论。
+
 日期：2026-09-14。状态：只读诊断、P1 增量监测与本地候选队列、P2 纯额度判定/幂等状态机、App Server 只读连接层已实现；原 Desktop 的实时数据源与控制归属尚未验证，自动发送未开放，P0 端到端验证未通过。
 
 > **勘误（2026-09-14 第二轮真实数据核验）**：本文下方“未找到可供脱敏录制的真实结构化额度失败样本”“确认当前兼容的 `event_msg/error` 是否确实写入 Desktop 会话文件”等结论已被实测推翻。要点：(1) 真实样本存在——709 个 rollout 文件（4.00 GB）中有 13 条结构化错误，其中 `usage_limit_exceeded` 8 条，全部来自 `Codex Desktop`；(2) 真实位置是收尾记录 `event_msg/task_complete` 的嵌套字段 `payload.error.codex_error_info`（snake_case），而不是 `event_msg/error`（出现 0 次）；(3) 全量数据中 `method == "turn/completed"` 与 camelCase `codexErrorInfo` 出现 0 次，即 rollout 文件不写运行时 JSON-RPC 信封；(4) 原实现因此无法识别任何真实中断，且会把 `task_complete` 判为“进展”而撤销候选，已修正解析器与诊断分类器。详细证据见 [待验证清单](CODEX_AUTO_RESUME_PENDING_VALIDATION.md)。
