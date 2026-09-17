@@ -24,7 +24,6 @@
 "排序第一项会作为菜单栏 5 小时剩余额度来源。" = "Le premier service sert de source du quota 5 h restant dans la barre.";
 "关于 AgentMeter" = "À propos d’AgentMeter";
 "版本" = "Version";
-"手动升级" = "Mise à niveau manuelle";
 "打开 GitHub Releases 下载最新 DMG" = "Ouvrir GitHub Releases pour télécharger le dernier DMG";
 "隐藏 48 小时未更新服务" = "Masquer les services inactifs 48 h";
 "关闭后仍显示长期未刷新的历史数据。" = "Désactivé, les anciennes données obsolètes restent visibles.";
@@ -193,3 +192,18 @@
 "服务暂时不可用。" = "Le service est temporairement indisponible.";
 "接口返回发生变化。" = "Le format de réponse du service a changé.";
 "刷新失败。" = "Échec de l’actualisation.";
+"检测更新" = "Rechercher des mises à jour";
+"正在检测更新…" = "Recherche de mises à jour…";
+"当前已是最新版本" = "La version est à jour";
+"正在下载安装包…" = "Téléchargement du programme d’installation…";
+"正在校验安装包…" = "Vérification du programme d’installation…";
+"安装包已保存到下载文件夹" = "Programme d’installation enregistré dans Téléchargements";
+"在 Finder 中显示" = "Afficher dans le Finder";
+"打开安装包" = "Ouvrir le programme d’installation";
+"更新失败" = "Échec de la mise à jour";
+"无法读取更新版本信息。" = "Impossible de lire les informations de version.";
+"新版本缺少安装包或校验文件。" = "Le programme d’installation ou le fichier de contrôle est absent de la nouvelle version.";
+"更新服务器响应异常，请稍后重试。" = "Réponse inattendue du serveur. Réessayez plus tard.";
+"更新请求受限，请稍后重试。" = "Trop de demandes de mise à jour. Réessayez plus tard.";
+"安装包校验失败，请重新下载。" = "La vérification a échoué. Téléchargez à nouveau le programme d’installation.";
+"无法保存安装包到下载文件夹，请检查空间和权限。" = "Impossible d’enregistrer dans Téléchargements. Vérifiez l’espace et les autorisations.";

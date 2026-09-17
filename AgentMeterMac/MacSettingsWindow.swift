@@ -800,7 +800,6 @@ private struct MacAppStoreDownloadSection: View {
 
 private struct MacAboutSettingsView: View {
     private static let githubURL = URL(string: "https://github.com/dothinkerlab/AgentMeter")!
-    private static let releasesURL = URL(string: "https://github.com/dothinkerlab/AgentMeter/releases")!
     private static let bugReportURL = URL(
         string: "https://github.com/dothinkerlab/AgentMeter/issues/new?template=bug_report.yml"
     )!
@@ -815,7 +814,7 @@ private struct MacAboutSettingsView: View {
             Section {
                 LabeledContent(L10n.string("版本"), value: MacBuildMetadata.aboutVersion)
                 Link("GitHub", destination: Self.githubURL)
-                Link(L10n.string("手动升级"), destination: Self.releasesURL)
+                MacUpdateSettingsRow(updater: model.appUpdater)
                 Link(L10n.string("反馈问题"), destination: Self.bugReportURL)
                 Button(action: exportDiagnostics) {
                     Label(L10n.string("导出脱敏诊断"), systemImage: "square.and.arrow.up")
@@ -1112,5 +1111,44 @@ private extension ProviderConnectionState {
     }
     var needsRetry: Bool {
         switch self { case .pendingVerification, .invalidCredential: true; default: false }
+    }
+}
+
+private struct MacUpdateSettingsRow: View {
+    @ObservedObject var updater: MacAppUpdater
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(L10n.string("检测更新")) { updater.checkForUpdates() }
+                .disabled(updater.isBusy)
+            switch updater.state {
+            case .idle: EmptyView()
+            case .checking:
+                Label(L10n.string("正在检测更新…"), systemImage: "arrow.triangle.2.circlepath")
+            case .upToDate:
+                Text(L10n.string("当前已是最新版本"))
+            case .downloading(let progress):
+                Text(L10n.string("正在下载安装包…"))
+                if let progress {
+                    ProgressView(value: progress)
+                    Text(progress, format: .percent.precision(.fractionLength(0)))
+                } else { ProgressView().controlSize(.small) }
+            case .verifying:
+                Text(L10n.string("正在校验安装包…"))
+            case .completed(let url):
+                Text(L10n.string("安装包已保存到下载文件夹"))
+                Text(url.lastPathComponent).font(.caption).textSelection(.enabled)
+                HStack {
+                    Button(L10n.string("在 Finder 中显示")) {
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    }
+                    Button(L10n.string("打开安装包")) { NSWorkspace.shared.open(url) }
+                }
+            case .failed(let message):
+                Text(L10n.string("更新失败") + "：" + message)
+                    .foregroundStyle(.red)
+            }
+        }
+        .font(.callout)
     }
 }

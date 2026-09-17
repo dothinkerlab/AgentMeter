@@ -86,6 +86,7 @@ struct DeviceCodingCollectionState: Sendable {
 /// 菜单栏 app 的运行时大脑:启动即采、每 2 分钟采(额度 < 10% 时 1 分钟)、唤醒补采;登录项开关;状态供 UI/菜单栏 label 用。
 @MainActor
 final class AppModel: ObservableObject {
+    let appUpdater = MacAppUpdater()
 
     @Published private(set) var results: [QuotaCollector.Result] = []
     @Published private(set) var lastCollectedAt: Date?

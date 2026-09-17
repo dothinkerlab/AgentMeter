@@ -24,7 +24,6 @@
 "排序第一项会作为菜单栏 5 小时剩余额度来源。" = "Der erste Dienst dient als Quelle für das verbleibende 5h-Kontingent der Menüleiste.";
 "关于 AgentMeter" = "Über AgentMeter";
 "版本" = "Version";
-"手动升级" = "Manuelles Upgrade";
 "打开 GitHub Releases 下载最新 DMG" = "GitHub Releases öffnen, um das neueste DMG zu laden";
 "隐藏 48 小时未更新服务" = "48 Std. inaktive Dienste ausblenden";
 "关闭后仍显示长期未刷新的历史数据。" = "Wenn deaktiviert, bleiben lange veraltete Verlaufsdaten sichtbar.";
@@ -193,3 +192,18 @@
 "服务暂时不可用。" = "Der Dienst ist vorübergehend nicht verfügbar.";
 "接口返回发生变化。" = "Das Antwortformat des Dienstes hat sich geändert.";
 "刷新失败。" = "Aktualisierung fehlgeschlagen.";
+"检测更新" = "Nach Updates suchen";
+"正在检测更新…" = "Suche nach Updates…";
+"当前已是最新版本" = "Die Version ist aktuell";
+"正在下载安装包…" = "Installationsdatei wird geladen…";
+"正在校验安装包…" = "Installationsdatei wird geprüft…";
+"安装包已保存到下载文件夹" = "Installationsdatei unter Downloads gespeichert";
+"在 Finder 中显示" = "Im Finder anzeigen";
+"打开安装包" = "Installationsdatei öffnen";
+"更新失败" = "Update fehlgeschlagen";
+"无法读取更新版本信息。" = "Versionsinformationen konnten nicht gelesen werden.";
+"新版本缺少安装包或校验文件。" = "Der neuen Version fehlt die Installationsdatei oder Prüfsummendatei.";
+"更新服务器响应异常，请稍后重试。" = "Unerwartete Serverantwort. Bitte später erneut versuchen.";
+"更新请求受限，请稍后重试。" = "Zu viele Update-Anfragen. Bitte später erneut versuchen.";
+"安装包校验失败，请重新下载。" = "Prüfung fehlgeschlagen. Bitte erneut herunterladen.";
+"无法保存安装包到下载文件夹，请检查空间和权限。" = "Speichern unter Downloads fehlgeschlagen. Speicherplatz und Berechtigungen prüfen.";
