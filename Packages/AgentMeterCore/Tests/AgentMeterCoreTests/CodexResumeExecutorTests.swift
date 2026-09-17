@@ -122,6 +122,26 @@ struct CodexResumeExecutorTests {
         #expect(transport.operations.count == 1)
     }
 
+    @Test func queuedReceiptWithoutCorrelationRemainsUncertain() async {
+        let transport = MockTransport(evidence: evidence())
+        transport.receipt = .queued(threadID: "thread", messageID: "message")
+        let executor = executor { _ in }
+        #expect(await executor.executeLatest(using: transport) == .uncertain)
+        #expect(executor.queue.candidates[0].queuedMessageID == "message")
+        #expect(executor.queue.candidates[0].submittedTurnID == nil)
+        #expect(await executor.executeLatest(using: transport) == .noCandidate)
+    }
+
+    @Test func queuedReceiptWithStrictCorrelationConfirmsSeparateTurn() async {
+        let transport = MockTransport(evidence: evidence())
+        transport.receipt = .queued(threadID: "thread", messageID: "message")
+        transport.queuedObservation = .init(threadID: "thread", turnID: "new-turn", status: .ran)
+        let executor = executor { _ in }
+        #expect(await executor.executeLatest(using: transport) == .resumed)
+        #expect(executor.queue.candidates[0].queuedMessageID == "message")
+        #expect(executor.queue.candidates[0].submittedTurnID == "new-turn")
+    }
+
     private func executor(save: @escaping (CodexResumeQueue) throws -> Void) -> CodexResumeExecutor {
         CodexResumeExecutor(queue: queue(), now: { now }, save: save)
     }
@@ -143,6 +163,7 @@ struct CodexResumeExecutorTests {
 @MainActor
 private final class MockTransport: CodexResumeTransport {
     let evidence: CodexResumePreflight
+    var queuedObservation: CodexResumeExecution?
     var operations: [String] = []
     var observations = 0
     var beforePreflight: () -> Void = {}
@@ -160,6 +181,9 @@ private final class MockTransport: CodexResumeTransport {
         operations.append(operationID); beforeSubmit()
         if throwOnSubmit { throw CodexResumeExecutorTests.Failure.simulated }
         return receipt
+    }
+    func observeQueuedMessage(threadID: String, messageID: String) async throws -> CodexResumeExecution? {
+        queuedObservation
     }
     func observeExecution(threadID: String, turnID: String) async throws -> CodexResumeExecution {
         observations += 1; beforeObserve(); return observation

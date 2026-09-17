@@ -159,7 +159,7 @@ final class CodexIncrementalSessionMonitorTests: XCTestCase {
         let suite = UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(true, forKey: "codexSessionMonitoringEnabled")
+        defaults.set(true, forKey: "codexAutomaticResumeEnabled")
         let coordinator = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file, now: now)
         XCTAssertTrue(coordinator.storageFailed)
         XCTAssertFalse(coordinator.enabled)
@@ -180,13 +180,13 @@ final class CodexIncrementalSessionMonitorTests: XCTestCase {
         let suite = UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(true, forKey: "codexSessionMonitoringEnabled")
+        defaults.set(true, forKey: "codexAutomaticResumeEnabled")
         let coordinator = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file, now: now)
         coordinator.cancel(id: candidate.id)
         XCTAssertEqual(coordinator.candidates.first?.state, .cancelled)
         XCTAssertEqual(try store.load()?.queue.candidates.first?.state, .cancelled)
         coordinator.setEnabled(false)
-        XCTAssertFalse(defaults.bool(forKey: "codexSessionMonitoringEnabled"))
+        XCTAssertFalse(defaults.bool(forKey: "codexAutomaticResumeEnabled"))
     }
 
     @MainActor
@@ -202,7 +202,7 @@ final class CodexIncrementalSessionMonitorTests: XCTestCase {
         let suite = UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(true, forKey: "codexSessionMonitoringEnabled")
+        defaults.set(true, forKey: "codexAutomaticResumeEnabled")
         let coordinator = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file, now: now)
         XCTAssertEqual(coordinator.candidates.first?.state, .uncertain)
         await coordinator.poll(now: now)

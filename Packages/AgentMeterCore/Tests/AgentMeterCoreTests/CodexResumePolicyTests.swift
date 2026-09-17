@@ -60,7 +60,7 @@ struct CodexResumePolicyTests {
         }
     }
 
-    @Test func latestOnlyNeverFallsBackToOldSessions() {
+    @Test func sameThreadNeverFallsBackToOlderFailure() {
         var queue = CodexResumeQueue()
         let old = candidate(turn: "old", age: 180)
         let newest = candidate()
@@ -117,6 +117,36 @@ struct CodexResumePolicyTests {
         #expect(queue.candidates.first?.state == .submitted)
         queue.recordExecution(id: item.id, turnID: "new", didRun: true)
         #expect(queue.candidates.first?.state == .resumed)
+    }
+
+    @Test func independentThreadsRemainPendingInChronologicalOrder() throws {
+        var queue = CodexResumeQueue()
+        let first = CodexResumeCandidate(threadID: "one", failedTurnID: "old", detectedAt: now.addingTimeInterval(-100))
+        let second = CodexResumeCandidate(threadID: "two", failedTurnID: "new", detectedAt: now)
+        queue.insert(second)
+        queue.insert(first)
+        #expect(queue.pendingInOrder.map(\.id) == [first.id, second.id])
+        queue.cancel(id: first.id)
+        #expect(queue.pendingInOrder.map(\.id) == [second.id])
+        let restored = try JSONDecoder().decode(CodexResumeQueue.self, from: JSONEncoder().encode(queue))
+        #expect(restored.pendingInOrder.map(\.id) == [second.id])
+    }
+
+    @Test func queuedMessageDoesNotBecomeTurnIDAndObservationIsNotConfirmation() {
+        var queue = CodexResumeQueue()
+        let item = candidate()
+        queue.insert(item)
+        let began = queue.beginManualAttempt(id: item.id)
+        #expect(began)
+        queue.recordQueued(id: item.id, messageID: "message")
+        #expect(queue.candidates[0].queuedMessageID == "message")
+        #expect(queue.candidates[0].submittedTurnID == nil)
+        queue.recordExecution(id: item.id, turnID: "message", didRun: true)
+        #expect(queue.candidates[0].state == .submitted)
+        queue.recordObserved(id: item.id)
+        #expect(queue.candidates[0].state == .observed)
+        let repeated = queue.beginManualAttempt(id: item.id)
+        #expect(!repeated)
     }
 
     private func candidate(turn: String = "failed", age: Double = 120) -> CodexResumeCandidate {

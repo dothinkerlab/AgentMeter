@@ -202,13 +202,17 @@ final class AppModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+        codexResumeCoordinator.start()
         Task { [weak self] in
             await self?.resumePendingCloudKitDeletions()
         }
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { await self?.collectNow() }
+            Task {
+                await self?.codexResumeCoordinator.recheck()
+                await self?.collectNow()
+            }
         }
         loopTask = Task { [weak self] in
             while !Task.isCancelled {

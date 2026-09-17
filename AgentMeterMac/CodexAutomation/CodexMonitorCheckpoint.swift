@@ -18,6 +18,7 @@ struct CodexMonitorCheckpoint: Codable, Sendable, Equatable {
     var baselineComplete = false
     var cursors: [String: Cursor] = [:]
     var queue = CodexResumeQueue()
+    var notifications: CodexResumeNotificationLedger?
 }
 
 /// One atomic file commits candidates and read offsets together. No transcript/partial-line data.

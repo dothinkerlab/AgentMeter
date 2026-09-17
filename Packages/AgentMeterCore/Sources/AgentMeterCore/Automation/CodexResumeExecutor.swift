@@ -9,7 +9,12 @@ public protocol CodexResumeTransport {
     /// quota or original runtime ownership changed. Do not turn a read/start race into a guarantee.
     /// Always submit exactly "继续", without changing model, permissions or other thread settings.
     func submitContinue(candidate: CodexResumeCandidate, operationID: String) async throws -> CodexResumeSubmission
+    func observeQueuedMessage(threadID: String, messageID: String) async throws -> CodexResumeExecution?
     func observeExecution(threadID: String, turnID: String) async throws -> CodexResumeExecution
+}
+
+public extension CodexResumeTransport {
+    func observeQueuedMessage(threadID: String, messageID: String) async throws -> CodexResumeExecution? { nil }
 }
 
 public struct CodexResumePreflight: Sendable {
@@ -25,6 +30,7 @@ public enum CodexResumeSubmission: Sendable {
     /// Explicit rejection before any message was sent. Timeouts must throw instead.
     case notSent
     case submitted(threadID: String, turnID: String)
+    case queued(threadID: String, messageID: String)
 }
 
 public struct CodexResumeExecution: Sendable {
@@ -61,11 +67,16 @@ public final class CodexResumeExecutor {
     public func cancel() { cancelled = true }
 
     public func executeLatest(using transport: any CodexResumeTransport) async -> Result {
+        await execute(candidateID: queue.latestPending?.id, using: transport)
+    }
+
+    public func execute(candidateID: String?, using transport: any CodexResumeTransport) async -> Result {
         guard !isExecuting else { return .busy }
         guard !storageFailed else { return .storageFailed }
-        guard let candidate = queue.latestPending else { return .noCandidate }
+        guard let candidate = queue.candidates.first(where: { $0.id == candidateID && $0.state == .pending }) else { return .noCandidate }
         // Fail closed before contacting a transport when another attempt is unresolved.
-        guard !queue.candidates.contains(where: { [.attempting, .submitted, .uncertain].contains($0.state) }) else {
+        guard !queue.candidates.contains(where: { [.attempting, .submitted].contains($0.state) ||
+            ($0.threadID == candidate.threadID && $0.state == .uncertain) }) else {
             return .uncertain
         }
         isExecuting = true; cancelled = false
@@ -92,6 +103,24 @@ public final class CodexResumeExecutor {
             let receipt = try await transport.submitContinue(candidate: candidate, operationID: candidate.id)
             switch receipt {
             case .notSent: return finish(candidate.id, uncertain: false)
+            case .queued(let threadID, let messageID):
+                guard threadID == candidate.threadID, !messageID.isEmpty else {
+                    return finish(candidate.id, uncertain: true)
+                }
+                next = queue
+                next.recordQueued(id: candidate.id, messageID: messageID)
+                guard commit(next) else { return .storageFailed }
+                guard !stopped,
+                      let execution = try await transport.observeQueuedMessage(threadID: threadID, messageID: messageID),
+                      !stopped, execution.threadID == threadID, !execution.turnID.isEmpty,
+                      execution.turnID != candidate.failedTurnID, execution.status != .unknown else {
+                    return finish(candidate.id, uncertain: true)
+                }
+                // Only a transport with strict message-to-turn evidence may return an execution.
+                next = queue
+                next.bindQueuedTurn(id: candidate.id, turnID: execution.turnID)
+                next.recordExecution(id: candidate.id, turnID: execution.turnID, didRun: execution.status == .ran)
+                return commit(next) ? (execution.status == .ran ? .resumed : .failed) : .storageFailed
             case .submitted(let threadID, let turnID):
                 guard threadID == candidate.threadID, !turnID.isEmpty, turnID != candidate.failedTurnID else {
                     return finish(candidate.id, uncertain: true)

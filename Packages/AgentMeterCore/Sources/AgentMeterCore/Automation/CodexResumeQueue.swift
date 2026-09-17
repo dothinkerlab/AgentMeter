@@ -2,7 +2,7 @@ import Foundation
 
 public struct CodexResumeCandidate: Codable, Equatable, Sendable, Identifiable {
     public enum State: String, Codable, Sendable {
-        case pending, cancelled, superseded, attempting, submitted, resumed, failed, uncertain
+        case pending, cancelled, superseded, attempting, submitted, observed, resumed, failed, uncertain
     }
     public let threadID: String
     public let failedTurnID: String
@@ -14,6 +14,7 @@ public struct CodexResumeCandidate: Codable, Equatable, Sendable, Identifiable {
     public let runtimeEvidenceVerified: Bool
     public fileprivate(set) var state: State = .pending
     public fileprivate(set) var submittedTurnID: String?
+    public fileprivate(set) var queuedMessageID: String?
     /// Length prefixes prevent delimiter collisions. No reset timestamp in identity.
     public var id: String { "\(threadID.utf8.count):\(threadID)\(failedTurnID.utf8.count):\(failedTurnID)" }
 
@@ -37,19 +38,27 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
         }
     }
 
+    public var pendingInOrder: [CodexResumeCandidate] {
+        candidates.filter { $0.state == .pending }.sorted {
+            $0.detectedAt == $1.detectedAt ? $0.id < $1.id : $0.detectedAt < $1.detectedAt
+        }
+    }
+
     public mutating func insert(_ candidate: CodexResumeCandidate) {
         guard !candidate.threadID.isEmpty, !candidate.failedTurnID.isEmpty,
               lastActivityByThread[candidate.threadID].map({ candidate.detectedAt <= $0 }) != true,
               !candidates.contains(where: { $0.id == candidate.id }) else { return }
         var incoming = candidate
         let newerExists = candidates.contains {
-            $0.detectedAt > candidate.detectedAt || ($0.detectedAt == candidate.detectedAt && $0.id > candidate.id)
+            $0.threadID == candidate.threadID &&
+                ($0.detectedAt > candidate.detectedAt || ($0.detectedAt == candidate.detectedAt && $0.id > candidate.id))
         }
         if newerExists {
             incoming.state = .superseded
         } else {
-            // Latest-only means older sessions never become automatic fallback work.
-            for index in candidates.indices where candidates[index].state == .pending {
+            // Only a newer failure in the same thread supersedes its pending predecessor.
+            for index in candidates.indices where candidates[index].state == .pending
+                && candidates[index].threadID == candidate.threadID {
                 candidates[index].state = .superseded
             }
         }
@@ -80,12 +89,40 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
     @discardableResult
     public mutating func beginAttempt(id: String, quota: CodexResumeQuota?,
                                       session: CodexResumeSessionEvidence?, now: Date) -> Bool {
-        guard let candidate = latestPending, candidate.id == id,
-              !candidates.contains(where: { [.attempting, .submitted, .uncertain].contains($0.state) }),
+        guard let candidate = candidates.first(where: { $0.id == id && $0.state == .pending }),
+              !candidates.contains(where: { [.attempting, .submitted].contains($0.state) ||
+                  ($0.threadID == candidate.threadID && $0.state == .uncertain) }),
               CodexResumePolicy.evaluate(candidate, quota: quota, session: session, now: now) == .ready,
               let index = candidates.firstIndex(where: { $0.id == id }) else { return false }
         candidates[index].state = .attempting
         return true
+    }
+
+    /// Explicit user-triggered recovery still shares the same durable lifecycle and sender lock.
+    public mutating func beginManualAttempt(id: String) -> Bool {
+        guard let index = candidates.firstIndex(where: { $0.id == id && $0.state == .pending }),
+              !candidates.contains(where: { [.attempting, .submitted].contains($0.state) }) else { return false }
+        candidates[index].state = .attempting
+        return true
+    }
+
+    public mutating func recordQueued(id: String, messageID: String) {
+        guard !messageID.isEmpty,
+              let index = candidates.firstIndex(where: { $0.id == id && $0.state == .attempting }) else { return }
+        candidates[index].queuedMessageID = messageID
+        candidates[index].state = .submitted
+    }
+
+    public mutating func bindQueuedTurn(id: String, turnID: String) {
+        guard !turnID.isEmpty, let index = candidates.firstIndex(where: {
+            $0.id == id && $0.state == .submitted && $0.queuedMessageID != nil && $0.failedTurnID != turnID
+        }) else { return }
+        candidates[index].submittedTurnID = turnID
+    }
+
+    public mutating func recordObserved(id: String) {
+        guard let index = candidates.firstIndex(where: { $0.id == id && $0.state == .submitted }) else { return }
+        candidates[index].state = .observed
     }
 
     public mutating func recordSubmission(id: String, turnID: String) {

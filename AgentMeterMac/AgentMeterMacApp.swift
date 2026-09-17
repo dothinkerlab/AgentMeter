@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import UserNotifications
 import AgentMeterCore
 
 /// Mac 菜单栏 app:既采集(读 Keychain → 调端点 → 写 CloudKit 给手表)又显示。
@@ -37,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
         setUpStatusItem()
         setUpPopover()
 
@@ -135,5 +137,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+}
+
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let isResume = response.notification.request.content.userInfo["codexResume"] as? Bool == true
+        Task { @MainActor in
+            if isResume {
+                let host = NSHostingController(rootView: MacSettingsView(model: self.model, initialSelection: .automatic(.chatGPT)))
+                if let window = self.screenshotSettingsWindow {
+                    window.contentViewController = host
+                    window.makeKeyAndOrderFront(nil)
+                } else {
+                    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 680),
+                        styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+                    window.title = L10n.string("Codex 自动恢复")
+                    window.contentViewController = host
+                    window.isReleasedWhenClosed = false
+                    window.center()
+                    self.screenshotSettingsWindow = window
+                    window.makeKeyAndOrderFront(nil)
+                }
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            completionHandler()
+        }
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
     }
 }

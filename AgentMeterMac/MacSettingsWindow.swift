@@ -16,12 +16,12 @@ struct MacSettingsView: View {
     @State private var selection: MacSettingsRoute?
     @State private var searchText = ""
 
-    init(model: AppModel) {
+    init(model: AppModel, initialSelection: MacSettingsRoute? = nil) {
         self.model = model
         let isProviderScreenshot = ProcessInfo.processInfo.arguments.contains(
             "--agentmeter-screenshot-provider-settings"
         )
-        _selection = State(initialValue: isProviderScreenshot ? .manual(.openRouter) : .general)
+        _selection = State(initialValue: initialSelection ?? (isProviderScreenshot ? .manual(.openRouter) : .general))
     }
 
     var body: some View {
@@ -206,7 +206,6 @@ private struct MacAutomaticProviderDetail: View {
 
             if provider == .chatGPT {
                 CodexResumeMonitorView(coordinator: model.codexResumeCoordinator)
-                CodexAutomationDiagnosticView()
             }
 
             if state != .connected {
