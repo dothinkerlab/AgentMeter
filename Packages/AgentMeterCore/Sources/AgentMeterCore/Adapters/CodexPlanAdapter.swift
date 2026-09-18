@@ -83,6 +83,17 @@ public struct CodexPlanAdapter: Sendable {
         session: URLSession = .shared,
         now: Date = Date()
     ) async throws -> QuotaSnapshot {
+        let data = try await fetchData(accessToken: accessToken, accountID: accountID, session: session)
+        return try parse(data: data, plan: plan, now: now)
+    }
+
+    public func fetchResumeUsage(accessToken: String, accountID: String,
+                                 session: URLSession = .shared) async throws -> CodexResumeUsage {
+        let data = try await fetchData(accessToken: accessToken, accountID: accountID, session: session)
+        return try CodexResumeUsage.parse(data, accountID: accountID, now: Date())
+    }
+
+    private func fetchData(accessToken: String, accountID: String?, session: URLSession) async throws -> Data {
         var request = URLRequest(url: usageURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 15  // 一次性进程,别被挂死连接拖住。
@@ -113,7 +124,7 @@ public struct CodexPlanAdapter: Sendable {
             throw FetchError.httpStatus(http.statusCode)
         }
 
-        return try parse(data: data, plan: plan, now: now)
+        return data
     }
 
     static func usedPercent(fromRemaining remaining: Double) -> Double {

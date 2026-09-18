@@ -353,3 +353,27 @@
 "更新请求受限，请稍后重试。" = "Update requests are rate limited. Please try again later.";
 "安装包校验失败，请重新下载。" = "Installer verification failed. Please download again.";
 "无法保存安装包到下载文件夹，请检查空间和权限。" = "Unable to save the installer to Downloads. Check available space and permissions.";
+
+"Codex 登录已失效或无法读取，请在 Codex 重新登录后检查。" = "Codex login has expired or cannot be read. Sign in to Codex again, then recheck.";
+
+"账号当前存在用量或消费限制，请在 Codex 中处理后重新检查。" = "This account has a usage or spending restriction. Resolve it in Codex, then recheck.";
+
+"无法读取当前版本的会话索引，请更新 AgentMeter 或使用手动恢复。" = "The session index cannot be read. Update AgentMeter or resume manually.";
+
+"原会话已归档，不会自动恢复。请先在 Codex 取消归档。" = "The original session is archived. Unarchive it in Codex before resuming.";
+
+"尚未关联此中断的登录账号。确认它使用当前 Codex 账号后，可加入自动恢复。" = "This interruption has no associated account. Confirm it uses the current Codex account to enable automatic resumption.";
+
+"关联当前账号…" = "Associate Current Account…";
+
+"此会话使用当前 Codex 账号？" = "Does this session use the current Codex account?";
+
+"确认账号并继续核验" = "Confirm Account and Recheck";
+
+"旧版记录没有保存账号关联。仅在确认原会话使用当前登录账号时关联；随后会重新查询额度并检查原会话，条件满足后自动发送一次“继续”。" = "Older records have no account association. Associate only if the original session uses the currently signed-in account. Quota and session checks will run again before automatically sending one “continue” message.";
+
+"检查本机连接条件和近期会话记录。自动恢复状态请查看待恢复会话。" = "Check local connectivity and recent session records. See pending sessions for automatic resume status.";
+
+"此项仅诊断可选的运行连接；自动恢复通过 Desktop 队列发送，不依赖此连接。" = "This only diagnoses an optional runtime connection. Automatic resume sends through the Desktop queue and does not depend on this connection.";
+
+"发送前条件已变化，已保留等待会话，未发送消息。" = "Conditions changed before sending. The session remains pending; no message was sent.";

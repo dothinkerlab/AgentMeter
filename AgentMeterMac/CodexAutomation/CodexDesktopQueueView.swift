@@ -7,9 +7,20 @@ final class CodexDesktopQueueController: ObservableObject {
     @Published private(set) var busy = false
     @Published private(set) var message = ""
 
-    enum Outcome { case observed, uncertain, notSent }
+    enum Outcome { case observed, uncertain, notSent, deferred }
+    private let resolveExecutable: @MainActor () throws -> URL
+    private let runProcess: @Sendable (URL, [String], URL) throws -> Data
+
+    init(resolveExecutable: @escaping @MainActor () throws -> URL = { try CodexRuntimeReadProbe.runningHostExecutable() },
+         runProcess: @escaping @Sendable (URL, [String], URL) throws -> Data = {
+             try CodexDesktopQueueSender.run(executable: $0, arguments: $1, home: $2)
+         }) {
+        self.resolveExecutable = resolveExecutable; self.runProcess = runProcess
+    }
 
     func send(source: URL, threadID: String, home: URL = CodexLocalPaths.home, store: CodexQueueAttemptStore = .standard,
+              expectedTarget: CodexQueueTarget? = nil,
+              authorize: @escaping @MainActor () throws -> Void = {},
               onQueued: @MainActor (String) -> Void) async -> Outcome {
         guard !busy else { return .notSent }
         var attempted = false
@@ -20,24 +31,35 @@ final class CodexDesktopQueueController: ObservableObject {
         do {
             let root = home.appendingPathComponent("sessions").resolvingSymlinksInPath().path + "/"
             guard source.resolvingSymlinksInPath().path.hasPrefix(root) else { throw CodexDesktopQueueError.invalidSource }
-            let executable = try CodexRuntimeReadProbe.runningHostExecutable()
-            let target = try CodexQueueTarget.read(source, threadID: threadID)
+            let executable = try resolveExecutable()
+            let target = try expectedTarget ?? CodexQueueTarget.read(source, threadID: threadID)
+            guard target.threadID == threadID, target.source == source else { throw CodexDesktopQueueError.invalidSource }
+            try target.revalidate()
             var verification = try CodexManualResumeVerification(url: source, expectedThreadID: threadID)
             defer { verification.close() }
             message = L10n.string("正在检查命令支持并保存发送记录…")
+            let run = runProcess
+            let help = try await Task.detached(priority: .userInitiated) {
+                try run(executable, ["queue", "--help"], home)
+            }.value
+            guard let text = String(data: help, encoding: .utf8), text.contains("--thread"), text.contains("--message") else {
+                throw CodexDesktopQueueError.process
+            }
+            // Recheck after the asynchronous help process; cancellation here has not reserved or sent anything.
+            do { try authorize() }
+            catch {
+                message = (error as? CodexDesktopAutoResume.Blocked)?.reason.message
+                    ?? L10n.string("发送前条件已变化，已保留等待会话，未发送消息。")
+                return .deferred
+            }
             attempted = true
             let messageID = try await Task.detached(priority: .userInitiated) {
-                let help = try CodexDesktopQueueSender.run(executable: executable, arguments: ["queue", "--help"], home: home)
-                guard let text = String(data: help, encoding: .utf8), text.contains("--thread"), text.contains("--message") else {
-                    throw CodexDesktopQueueError.process
-                }
                 try target.revalidate()
                 let attempt = try store.reserve(target)
                 defer { try? attempt.close() }
                 do {
                     try target.revalidate()
-                    let output = try CodexDesktopQueueSender.run(executable: executable,
-                        arguments: CodexDesktopQueueSender.arguments(threadID: threadID), home: home)
+                    let output = try run(executable, CodexDesktopQueueSender.arguments(threadID: threadID), home)
                     let id = try CodexDesktopQueueSender.receipt(output, threadID: threadID)
                     try store.record(attempt, target: target, state: "queued", messageID: id)
                     return id

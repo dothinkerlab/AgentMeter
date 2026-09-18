@@ -99,11 +99,21 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
     }
 
     /// Explicit user-triggered recovery still shares the same durable lifecycle and sender lock.
-    public mutating func beginManualAttempt(id: String) -> Bool {
+    public mutating func beginManualAttempt(id: String) -> Bool { beginLocalAttempt(id: id) }
+
+    /// Caller must validate fresh endpoint quota, account binding and local session evidence first.
+    /// This does not label local evidence as an authenticated runtime preflight.
+    public mutating func beginLocalAttempt(id: String) -> Bool {
         guard let index = candidates.firstIndex(where: { $0.id == id && $0.state == .pending }),
               !candidates.contains(where: { [.attempting, .submitted].contains($0.state) }) else { return false }
         candidates[index].state = .attempting
         return true
+    }
+
+    /// Only before the sender has reserved an attempt file or invoked the queue command.
+    public mutating func deferUnsentAttempt(id: String) {
+        guard let index = candidates.firstIndex(where: { $0.id == id && $0.state == .attempting }) else { return }
+        candidates[index].state = .pending
     }
 
     public mutating func recordQueued(id: String, messageID: String) {

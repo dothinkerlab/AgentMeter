@@ -6,6 +6,7 @@ struct CodexResumeMonitorView: View {
     @ObservedObject var coordinator: CodexResumeCoordinator
     @State private var showingIntroduction = false
     @State private var manualCandidate: CodexResumeCandidate?
+    @State private var accountCandidate: CodexResumeCandidate?
 
     var body: some View {
         Section(L10n.string("Codex 自动恢复")) {
@@ -21,10 +22,6 @@ struct CodexResumeMonitorView: View {
                 .font(.headline)
             Text(L10n.string("额度恢复且核验通过后，逐个向中断会话发送“继续”。不会使用额度重置次数。"))
                 .foregroundStyle(.secondary)
-            if !coordinator.automaticConnectionAvailable {
-                Text(L10n.string("当前 Codex 连接尚不能完成自动核验。可监测中断，并从列表手动恢复。"))
-                    .font(.callout).foregroundStyle(.secondary)
-            }
             if !coordinator.enabled {
                 Text(L10n.string("等待列表已保留。重新开启后会再次核验；已入队消息不能撤回。"))
                     .font(.caption).foregroundStyle(.secondary)
@@ -82,6 +79,10 @@ struct CodexResumeMonitorView: View {
                             Label(L10n.string("需要处理"), systemImage: "exclamationmark.circle")
                                 .foregroundStyle(.orange)
                             Text(reason.message).font(.callout).foregroundStyle(.secondary)
+                            if reason == .accountUnknown {
+                                Button(L10n.string("关联当前账号…")) { accountCandidate = candidate }
+                                    .disabled(coordinator.isBusy)
+                            }
                         case .waiting:
                             Label(L10n.string("等待额度"), systemImage: "clock")
                         default:
@@ -106,6 +107,14 @@ struct CodexResumeMonitorView: View {
                 Text(L10n.string("已达到 500 条本地记录上限，暂不记录新的候选。"))
             }
             if let error = coordinator.manualError { Text(error).foregroundStyle(.orange) }
+        }
+        .alert(L10n.string("此会话使用当前 Codex 账号？"), isPresented: Binding(
+            get: { accountCandidate != nil }, set: { if !$0 { accountCandidate = nil } }
+        ), presenting: accountCandidate) { candidate in
+            Button(L10n.string("确认账号并继续核验")) { coordinator.associateCurrentAccount(candidateID: candidate.id) }
+            Button(L10n.string("取消"), role: .cancel) {}
+        } message: { _ in
+            Text(L10n.string("旧版记录没有保存账号关联。仅在确认原会话使用当前登录账号时关联；随后会重新查询额度并检查原会话，条件满足后自动发送一次“继续”。"))
         }
         .alert(L10n.string("向原会话发送“继续”？"), isPresented: Binding(
             get: { manualCandidate != nil }, set: { if !$0 { manualCandidate = nil } }

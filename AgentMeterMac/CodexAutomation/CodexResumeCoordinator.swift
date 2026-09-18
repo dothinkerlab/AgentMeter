@@ -24,7 +24,7 @@ final class CodexResumeCoordinator: ObservableObject {
         return recentAttempts.filter { !known.contains($0.id) }
     }
 
-    let sender = CodexDesktopQueueController()
+    let sender: CodexDesktopQueueController
     private let defaults: UserDefaults
     private let store: CodexMonitorCheckpointStore
     private var checkpoint: CodexMonitorCheckpoint
@@ -38,10 +38,10 @@ final class CodexResumeCoordinator: ObservableObject {
     private var flushingNotifications = false
     private let notifications = CodexResumeNotifications()
     private let notificationsEnabled: Bool
-    // Intentionally absent in production until the host offers verifiable original-runtime evidence.
+    // Optional authenticated-runtime transport; production uses the socket-free Desktop adapter below.
     private let transport: (any CodexResumeTransport)?
     private let attemptStore: CodexQueueAttemptStore
-    var automaticConnectionAvailable: Bool { transport != nil }
+    private let desktop: CodexDesktopAutoResume
     static let enabledKey = "codexAutomaticResumeEnabled"
 
     var isBusy: Bool { isScanning || isSending }
@@ -67,10 +67,13 @@ final class CodexResumeCoordinator: ObservableObject {
 
     init(defaults: UserDefaults = .standard, home: URL = CodexLocalPaths.home,
          storeURL: URL = CodexLocalPaths.checkpoint, now: Date = Date(),
-         transport: (any CodexResumeTransport)? = nil, notificationsEnabled: Bool = true) {
+         transport: (any CodexResumeTransport)? = nil, notificationsEnabled: Bool = true,
+         desktop: CodexDesktopAutoResume? = nil, sender: CodexDesktopQueueController? = nil) {
         self.defaults = defaults
         self.notificationsEnabled = notificationsEnabled
         self.transport = transport
+        self.desktop = desktop ?? CodexDesktopAutoResume(home: home)
+        self.sender = sender ?? CodexDesktopQueueController()
         attemptStore = CodexQueueAttemptStore(directory: storeURL.deletingLastPathComponent().appendingPathComponent("queue-attempts"))
         store = CodexMonitorCheckpointStore(url: storeURL)
         enabled = defaults.bool(forKey: Self.enabledKey)
@@ -88,7 +91,7 @@ final class CodexResumeCoordinator: ObservableObject {
             enabled = false
             defaults.set(false, forKey: Self.enabledKey)
         }
-        senderChanges = sender.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        senderChanges = self.sender.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     /// App lifecycle owns the timer, so closing Settings never cancels an enqueued message.
@@ -143,6 +146,7 @@ final class CodexResumeCoordinator: ObservableObject {
             next.monitoringSince = now
             next.baselineComplete = false
             next.cursors = [:]
+            next.observedAccount = try? desktop.currentAccount(now: now)
         }
         guard persist(next) else { return }
         enabled = value
@@ -191,6 +195,7 @@ final class CodexResumeCoordinator: ObservableObject {
         guard enabled, !storageFailed, !isBusy else { return }
         isScanning = true
         let requestedGeneration = generation
+        let accountBeforeScan = try? desktop.currentAccount(now: now)
         let input = checkpoint
         let task = Task.detached(priority: .utility) { CodexIncrementalSessionMonitor().scan(input, now: now) }
         worker = task
@@ -199,6 +204,20 @@ final class CodexResumeCoordinator: ObservableObject {
         guard !Task.isCancelled, enabled, generation == requestedGeneration else { return }
         // A notification flush may have committed while the detached scan was reading.
         result.checkpoint.notifications = checkpoint.notifications
+        let accountAfterScan = try? desktop.currentAccount()
+        if let before = accountBeforeScan, let after = accountAfterScan, before.accountID == after.accountID,
+           before.fileModifiedAt == after.fileModifiedAt {
+            var bindings = checkpoint.accountBindings ?? [:]
+            if let previous = checkpoint.observedAccount, previous.accountID == after.accountID {
+                for candidate in result.checkpoint.queue.pendingInOrder where bindings[candidate.id] == nil {
+                    if previous.observedAt <= candidate.detectedAt && after.fileModifiedAt <= candidate.detectedAt {
+                        bindings[candidate.id] = after.accountID
+                    }
+                }
+            }
+            result.checkpoint.accountBindings = bindings
+            result.checkpoint.observedAccount = after
+        } else { result.checkpoint.observedAccount = nil }
         guard persist(result.checkpoint) else { return }
         lastCheckedAt = now
         scanIncomplete = result.incomplete
@@ -260,7 +279,14 @@ final class CodexResumeCoordinator: ObservableObject {
                             }
                         }
                     } else {
-                        check = await productionCheck(candidate)
+                        switch await desktop.prepare(candidate: candidate, source: source, accountID: checkpoint.accountBindings?[candidate.id]) {
+                        case .blocked(let reason): check = .blocked(reason)
+                        case .waiting(let date): check = .waiting(date)
+                        case .ready(let prepared):
+                            guard enabled, generation == requestedGeneration, !storageFailed, !Task.isCancelled else { return }
+                            await sendAutomatically(candidate: candidate, prepared: prepared, generation: requestedGeneration)
+                            continue
+                        }
                     }
                 } catch { check = .blocked(.sessionChanged) }
             } else { check = .blocked(.sourceUnavailable) }
@@ -272,19 +298,59 @@ final class CodexResumeCoordinator: ObservableObject {
         }
     }
 
-    private func productionCheck(_ candidate: CodexResumeCandidate) async -> CodexResumeCheck {
+    /// Existing unbound candidates require explicit account association, never an inferred upgrade grant.
+    func associateCurrentAccount(candidateID: String) {
+        guard !isBusy, !storageFailed, pending.contains(where: { $0.id == candidateID }) else { return }
         do {
-            let executable = try CodexRuntimeReadProbe.runningHostExecutable()
-            let result = try await CodexRuntimeReadProbe.read(executable: executable,
-                home: URL(fileURLWithPath: checkpoint.homePath), threadID: candidate.threadID)
-            guard let account = result.quota.accountId, !account.isEmpty, candidate.accountID != nil else {
-                return .blocked(.accountUnknown)
-            }
-            guard account == candidate.accountID else { return .blocked(.accountMismatch) }
-            // The current protocol cannot attest ownership/failed turn/archival. No unsafe fallback.
-            return .blocked(.runtimeUnverified)
-        } catch CodexRuntimeProbeError.unsupportedHost { return .blocked(.hostUnavailable) }
-        catch { return .blocked(.connectionUnavailable) }
+            let account = try desktop.currentAccount()
+            var next = checkpoint
+            var bindings = next.accountBindings ?? [:]
+            bindings[candidateID] = account.accountID
+            next.accountBindings = bindings
+            guard persist(next) else { return }
+            nextChecks[candidateID] = nil
+            Task { await checkPending() }
+        } catch { checks[candidateID] = .blocked(.authenticationRequired) }
+    }
+
+    private func sendAutomatically(candidate: CodexResumeCandidate, prepared: CodexDesktopAutoResume.Prepared,
+                                   generation expectedGeneration: UInt64) async {
+        var next = checkpoint
+        guard next.queue.beginLocalAttempt(id: candidate.id), persist(next) else { return }
+        isSending = true
+        defer { isSending = false }
+        let result = await sender.send(source: prepared.target.source, threadID: candidate.threadID,
+            home: URL(fileURLWithPath: checkpoint.homePath), store: attemptStore, expectedTarget: prepared.target,
+            authorize: { [self] in
+                guard enabled, generation == expectedGeneration, !storageFailed, !Task.isCancelled else {
+                    throw CancellationError()
+                }
+                guard prepared.usage.decision == .ready else { throw CodexDesktopAutoResume.Blocked(reason: .quotaUnknown) }
+                try desktop.validate(prepared)
+            }, onQueued: { [self] messageID in
+                var next = checkpoint
+                next.queue.recordQueued(id: candidate.id, messageID: messageID)
+                _ = persist(next)
+            })
+        finishSend(candidateID: candidate.id, outcome: result)
+        await refreshHistory()
+    }
+
+    private func finishSend(candidateID: String, outcome: CodexDesktopQueueController.Outcome) {
+        var next = checkpoint
+        switch outcome {
+        case .observed: next.queue.recordObserved(id: candidateID)
+        case .uncertain: next.queue.recordUncertain(id: candidateID)
+        case .notSent: next.queue.recordNotSent(id: candidateID)
+        case .deferred: next.queue.deferUnsentAttempt(id: candidateID)
+        }
+        guard persist(next) else { return }
+        checks[candidateID] = nil; nextChecks[candidateID] = nil
+        if outcome == .deferred {
+            nextChecks[candidateID] = Date().addingTimeInterval(60)
+        } else {
+            enqueue(candidateID, kind: outcome == .observed ? "observed" : "attention")
+        }
     }
 
     func sendManually(candidate: CodexResumeCandidate) async {
@@ -324,15 +390,7 @@ final class CodexResumeCoordinator: ObservableObject {
                 _ = persist(next)
             }
         if outcome != .observed { manualError = sender.message }
-        next = checkpoint
-        switch outcome {
-        case .observed: next.queue.recordObserved(id: candidate.id)
-        case .uncertain: next.queue.recordUncertain(id: candidate.id)
-        case .notSent: next.queue.recordNotSent(id: candidate.id)
-        }
-        guard persist(next) else { return }
-        checks[candidate.id] = nil; nextChecks[candidate.id] = nil
-        enqueue(candidate.id, kind: outcome == .observed ? "observed" : "attention")
+        finishSend(candidateID: candidate.id, outcome: outcome)
         await refreshHistory()
     }
 

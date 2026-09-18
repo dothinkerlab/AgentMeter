@@ -22,7 +22,7 @@ struct CodexRuntimeConnectionView: View {
                 if let thread = result.thread {
                     Text(L10n.format("候选会话状态：%@", threadStatus(thread.status.type)))
                 }
-                Text(L10n.string("此检查不读取完整对话，也不能确认最后一个失败轮次；自动恢复仍未开放。"))
+                Text(L10n.string("此项仅诊断可选的运行连接；自动恢复通过 Desktop 队列发送，不依赖此连接。"))
                     .foregroundStyle(.secondary)
             }
             if let failure { Text(message(failure)) }

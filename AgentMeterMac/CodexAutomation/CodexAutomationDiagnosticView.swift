@@ -11,7 +11,7 @@ struct CodexAutomationDiagnosticView: View {
 
     var body: some View {
         Section(L10n.string("Codex 自动恢复 · 实验性检测")) {
-            Text(L10n.string("检查本机连接条件和近期会话记录。自动恢复尚未开放。"))
+            Text(L10n.string("检查本机连接条件和近期会话记录。自动恢复状态请查看待恢复会话。"))
             Button {
                 scan()
             } label: {
