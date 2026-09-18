@@ -60,7 +60,7 @@ struct CodexResumeMonitorView: View {
             Button(L10n.string("开启自动恢复")) { coordinator.setEnabled(true) }
             Button(L10n.string("取消"), role: .cancel) {}
         } message: {
-            Text(L10n.string("仅处理开启后新检测到的额度中断。请保持 AgentMeter 和 Codex 运行；检测到中断、恢复结果及需要操作时通知，多会话合并提示。核验不足时不会自动发送。"))
+            Text(L10n.string("仅处理开启后新检测到的额度中断。请保持 AgentMeter 和 Codex 运行；检测到中断及恢复结果时通知，多会话合并提示。核验不足时不会自动发送。"))
         }
 
         Section(L10n.string("待恢复会话")) {

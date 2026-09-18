@@ -126,6 +126,41 @@ final class CodexResumeCoordinatorTests: XCTestCase {
         XCTAssertEqual(transport.submitted.count, 1) // Another thread is still eligible.
     }
 
+    func testAttentionNotificationsAreNotEnqueued() {
+        var ledger = CodexResumeNotificationLedger()
+        let now = Date()
+        ledger.enqueue(candidateID: "one", kind: "detected", now: now)
+        ledger.enqueue(candidateID: "one", kind: "attention", now: now)
+        XCTAssertEqual(ledger.events.map(\.kind), ["detected"])
+    }
+
+    func testLegacyAttentionNotificationsAreSuppressedAndConsumed() throws {
+        let now = Date()
+        var ledger = CodexResumeNotificationLedger()
+        ledger.events = [.init(key: "one:attention", kind: "attention", createdAt: now)]
+        var restored = try JSONDecoder().decode(CodexResumeNotificationLedger.self, from: JSONEncoder().encode(ledger))
+        let batch = try XCTUnwrap(restored.due(at: now.addingTimeInterval(10))["attention"])
+        XCTAssertNil(CodexResumeNotifications.title(for: "attention"))
+        restored.markDelivered(batch)
+        XCTAssertTrue(restored.events.isEmpty)
+        XCTAssertTrue(restored.due(at: now.addingTimeInterval(20)).isEmpty)
+    }
+
+    func testSupportedNotificationsRetainTitlesAndBatching() throws {
+        var ledger = CodexResumeNotificationLedger()
+        let now = Date()
+        for kind in ["detected", "resumed", "observed"] {
+            XCTAssertNotNil(CodexResumeNotifications.title(for: kind))
+            ledger.enqueue(candidateID: "one", kind: kind, now: now)
+            ledger.enqueue(candidateID: "one", kind: kind, now: now)
+            ledger.enqueue(candidateID: "two", kind: kind, now: now)
+        }
+        XCTAssertTrue(ledger.due(at: now.addingTimeInterval(9)).isEmpty)
+        let batches = ledger.due(at: now.addingTimeInterval(10))
+        XCTAssertEqual(batches.count, 3)
+        for batch in batches.values { XCTAssertEqual(batch.count, 2) }
+    }
+
     func testNotificationsBatchAfterTenSecondsAndSurviveRestartWithoutReplay() throws {
         var ledger = CodexResumeNotificationLedger()
         let now = Date()

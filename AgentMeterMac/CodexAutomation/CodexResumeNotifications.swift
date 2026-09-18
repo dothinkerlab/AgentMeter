@@ -13,6 +13,7 @@ struct CodexResumeNotificationLedger: Codable, Equatable {
     var delivered: Set<String> = []
 
     mutating func enqueue(candidateID: String, kind: String, now: Date) {
+        guard kind != "attention" else { return }
         let key = candidateID + ":" + kind
         guard !delivered.contains(key), !events.contains(where: { $0.key == key }) else { return }
         events.append(.init(key: key, kind: kind, createdAt: now))
@@ -44,17 +45,23 @@ final class CodexResumeNotifications {
         permissionDenied = await center.notificationSettings().authorizationStatus == .denied
     }
 
+    static func title(for kind: String) -> String? {
+        switch kind {
+        case "detected": return L10n.string("检测到 Codex 额度中断")
+        case "resumed": return L10n.string("Codex 恢复已确认")
+        case "observed": return L10n.string("已观察到 Codex 继续运行")
+        default: return nil
+        }
+    }
+
     func deliver(kind: String, events: [CodexResumeNotificationLedger.Event]) async throws {
+        // Silently consume legacy attention events so the coordinator can checkpoint them.
+        guard let title = Self.title(for: kind) else { return }
         let settings = await center.notificationSettings()
         permissionDenied = settings.authorizationStatus == .denied
         guard [.authorized, .provisional].contains(settings.authorizationStatus) else { return }
         let content = UNMutableNotificationContent()
-        switch kind {
-        case "detected": content.title = L10n.string("检测到 Codex 额度中断")
-        case "resumed": content.title = L10n.string("Codex 恢复已确认")
-        case "observed": content.title = L10n.string("已观察到 Codex 继续运行")
-        default: content.title = L10n.string("Codex 恢复需要处理")
-        }
+        content.title = title
         content.body = L10n.format("%d 个会话有更新，点击查看恢复列表。", events.count)
         content.sound = .default
         content.userInfo = ["codexResume": true]

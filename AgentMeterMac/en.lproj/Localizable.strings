@@ -303,7 +303,7 @@
 "系统通知设置" = "System notification settings";
 "开启 Codex 自动恢复？" = "Enable Codex auto resume?";
 "开启自动恢复" = "Enable auto resume";
-"仅处理开启后新检测到的额度中断。请保持 AgentMeter 和 Codex 运行；检测到中断、恢复结果及需要操作时通知，多会话合并提示。核验不足时不会自动发送。" = "Only newly detected quota interruptions are included. Keep AgentMeter and Codex running. Notifications cover interruptions, resume results, and required actions, grouped across sessions. Nothing is sent automatically without sufficient verification.";
+"仅处理开启后新检测到的额度中断。请保持 AgentMeter 和 Codex 运行；检测到中断及恢复结果时通知，多会话合并提示。核验不足时不会自动发送。" = "Only newly detected quota interruptions are included. Keep AgentMeter and Codex running. Notifications cover interruptions and resume results, grouped across sessions. Nothing is sent automatically without sufficient verification.";
 "待恢复会话" = "Waiting sessions";
 "暂无待恢复会话。开启后会在此显示新检测到的额度中断。" = "No sessions waiting. New quota interruptions appear here while auto resume is enabled.";
 "等待核验" = "Waiting for verification";
@@ -336,7 +336,6 @@
 "检测到 Codex 额度中断" = "Codex quota interruption detected";
 "Codex 恢复已确认" = "Codex resume confirmed";
 "已观察到 Codex 继续运行" = "Continued Codex activity observed";
-"Codex 恢复需要处理" = "Codex resume needs attention";
 "%d 个会话有更新，点击查看恢复列表。" = "%d sessions have updates. Click to view the resume list.";
 "检测更新" = "Check for Updates";
 "正在检测更新…" = "Checking for updates…";
