@@ -57,6 +57,18 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 <img src="app-store-qr.png" alt="在 App Store 下载 AgentMeter" width="160">
 
+#### 🎁 Agent Meter 专属优惠
+
+领取 **AgentMeter** 的 App Store 专属优惠。
+
+**优惠码：** `AGENTMETER202609`
+
+[👉 前往 App Store 兑换](https://apps.apple.com/redeem?ctx=offercodes&id=6781480047&code=AGENTMETER202609)
+
+优惠通过 Apple 官方 App Store 安全兑换。
+
+> 优惠是否可用及兑换资格，以 Apple App Store 规则和本次优惠条款为准。
+
 ### 2. 配置服务商
 
 从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex 或 Cursor** 时，先在 Mac 上登录对应工具，AgentMeter 会读取已有的本机凭据。其他编程套餐和 API 账单服务可在设置中配置，只需配置你使用的服务。
