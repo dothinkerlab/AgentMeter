@@ -12,53 +12,8 @@
 
 </div>
 
----
 
-你离开键盘后，后台的 coding agent 可能还在消耗额度。**AgentMeter** 把编程套餐额度窗口、重置时间和 API 账单状态放到 Apple Watch、iPhone 与 Mac 菜单栏，让你不用回到终端也能随时查看。
-
-它支持 Claude Code、Codex、Cursor、Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 额度，并提供 Cursor Team、DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API 与 Anthropic API 的设备本地账单数据。AgentMeter 会展示短时滚动窗口、每周限额、月度账期及其他特定周期。
-
-## 下载 AgentMeter
-
-| 平台 | 下载 |
-| --- | --- |
-| macOS 伴侣 app | [下载已公证的 DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg) |
-| 通过 Homebrew 安装 macOS 版 | `brew install --cask dothinkerlab/tap/agentmeter` |
-| iPhone + Apple Watch | [在 App Store 下载](https://apps.apple.com/app/id6781480047) |
-
-Mac app 已使用 Developer ID 签名，并通过 Apple 公证。把 **AgentMeter.app** 拖进「应用程序」即可；它会读取本机已有的 Claude Code 与 Codex 凭据，并以只读方式检测 Cursor 登录。历史版本见 [Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。
-
-Homebrew 用户可以安装或升级同一份已公证构建：
-
-```sh
-brew install --cask dothinkerlab/tap/agentmeter
-```
-
-iPhone 和 Apple Watch app 通过 App Store 发布：
-
-<img src="app-store-qr.png" alt="App Store 二维码" width="160">
-
-> Mac 伴侣 app 需要读取本机 Keychain 中的 Claude Code 和 Codex 凭据，这与 App Store 沙盒限制不兼容，因此仅通过已公证的 DMG 分发。
-
-全部功能免费。
-
-## 功能概览
-
-- **随时查看额度**：支持 Apple Watch 表盘组件与 app 视图、iPhone 状态页和 Mac 菜单栏伴侣。
-- **适配不同服务商周期**：按各编程套餐实际返回的周期展示剩余额度、重置时间、Codex reset credits 及到期提醒。
-- **本地 API 账单**：在服务商 API 支持时展示余额、限额或日/周/月成本。
-- **完整的 Mac 管理能力**：可搜索服务商，管理凭据与地区、暂停或恢复采集，并在本机调整服务显示与顺序。
-- **可信的数据状态**：刷新失败时明确标记陈旧数据；fresh 数据显示 5 小时窗口耗尽时可选择接收重置提醒。
-- **保护隐私的问题反馈**：导出脱敏诊断并提交结构化 Bug Report，无需分享凭据或原始日志。
-
-## 支持的服务
-
-| 数据类型 | 服务商 | 配置与采集 | 展示与同步 |
-| --- | --- | --- | --- |
-| 编程套餐额度 | Claude Code、Codex、Cursor、Kimi Code、GLM Coding Plan、MiniMax Token Plan | Claude Code、Codex 与 Cursor 使用 Mac 上已有的登录；其他套餐可分别在 Mac 或 iPhone 配置。 | 清洗后的额度快照可通过你的私有 CloudKit 数据库同步到 iPhone 与 Apple Watch。 |
-| 本地 API 余额与账单 | Cursor Team、DeepSeek、OpenRouter、xAI API、Kimi API、OpenAI API、Anthropic API | 凭据留在本机 Keychain；Cursor Team 需要 Admin API key。 | 账单记录不会进入 CloudKit；Cursor Team 成员身份与金额仅留在 Mac。 |
-
-OpenAI API 和 Anthropic API 展示的是组织级开发者 API 成本，不是 ChatGPT 或 Claude 网页/App 订阅用量。xAI API 账单需要 Management Key 与 Team ID。
+**AgentMeter** 让你在 Mac 菜单栏、iPhone 和 Apple Watch 上随时查看 AI 编程额度、重置时间与 API 账单，离开键盘也能掌握用量。全部功能免费。
 
 ## 截图
 
@@ -75,66 +30,96 @@ OpenAI API 和 Anthropic API 展示的是组织级开发者 API 成本，不是 
   </tr>
 </table>
 
-## 工作原理
+## 安装与快速开始
 
-1. **Mac 菜单栏伴侣 app** 在本机读取已有的 Claude Code、Codex 与 Cursor 登录；Cursor 数据库以只读方式打开，AgentMeter 不刷新 token、也不修改 Cursor 数据。Kimi Code、GLM Coding Plan 和 MiniMax Token Plan 可分别在 Mac 与 iPhone 配置。
-2. 每台设备只使用本机凭据查询对应服务商。
-3. 编程套餐采集器只把**清洗后的额度快照**写入你的私有 iCloud 数据库，包括工具和订阅档位、百分比窗口及类型、重置时间、Codex reset credit 的可用数量和授予/到期时间，以及 confidence、stale reason、采集设备、source 和更新时间。
-4. 你的 **Apple Watch** 和 **iPhone** 从 iCloud 读取这些快照，并展示给你。
+### 1. 安装 AgentMeter
 
-本地 API 账单采用独立的数据路径：凭据与账单记录不会写入 CloudKit。Apple Watch 不会拿到服务商 token，也不会直连任何服务商。iPhone 只会连接你在该设备上明确配置的服务商，并使用始终留在本机 Keychain 中的凭据。
+Mac 版需要 **macOS 13 或更高版本**，已使用 Developer ID 签名并通过 Apple 公证。
 
-## 隐私
+| 平台 | 下载 |
+| --- | --- |
+| Mac | [下载已公证的 DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)，将 **AgentMeter.app** 拖入「应用程序」 |
+| iPhone 和 Apple Watch | [在 App Store 下载](https://apps.apple.com/app/id6781480047) |
 
-AgentMeter 采用“本机 token + 私有 iCloud 同步”的设计：
+也可以通过 Homebrew 安装 Mac 版：
 
-- OAuth token 只保存在你的 **Mac Keychain**。
-- token 只由 Mac 伴侣 app 在你的 Mac 本机用于刷新额度。
-- token **绝不发送给我们**，也**绝不写入 iCloud**。
-- 手动输入的编程套餐与账单凭据只存在本机 Keychain，并明确关闭 iCloud Keychain 同步和加密备份迁移。
-- Cursor Team 的成员身份与金额只留在持有 Admin API key 的 Mac；其他账单记录只留在本机，不会进入 CloudKit 额度快照。
-- CloudKit 同步记录只包含清洗后的编程套餐状态：工具和订阅档位；百分比窗口、类型与重置时间；Codex reset credit 的可用数量和授予/到期时间；confidence、stale reason、采集设备、source 与更新时间。绝不包含服务商凭据或上游 reset credit ID。
-- 如果数据无法刷新，AgentMeter 会明确标记为**陈旧**。
-- 脱敏诊断只会在你主动导出时生成，采用明确的字段白名单，不包含 Token、API Key、Keychain 内容、设备名称、原始日志、服务商原始响应或账单金额。
+```sh
+brew install --cask dothinkerlab/tap/agentmeter
+```
+
+升级已通过 Homebrew 安装的版本：
+
+```sh
+brew upgrade --cask dothinkerlab/tap/agentmeter
+```
+
+历史版本见 [Mac Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。Mac 伴侣应用需要访问编程工具已有的本机凭据，因此在 App Store 之外分发。
+
+<img src="app-store-qr.png" alt="在 App Store 下载 AgentMeter" width="160">
+
+### 2. 配置服务商
+
+从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex 或 Cursor** 时，先在 Mac 上登录对应工具，AgentMeter 会读取已有的本机凭据。其他编程套餐和 API 账单服务可在设置中配置，只需配置你使用的服务。
+
+手动输入的凭据仅保存在当前设备。如果在 Mac 和 iPhone 上都配置了某个服务，需要在各设备分别输入凭据。特殊凭据要求见[支持的服务](#支持的服务)。
+
+### 3. 查看额度
+
+在 Mac 菜单栏查看剩余额度与重置时间。如果需要在 iPhone 和 Apple Watch 上查看编程套餐额度，请在这些设备上使用**同一个 Apple ID** 并开启 iCloud。iCloud 用于跨设备同步额度；API 账单保留在采集数据的设备上。
+
+## 功能概览
+
+- **随时查看额度**：支持 Mac 菜单栏、iPhone 状态页和 Apple Watch 表盘组件。
+- **适配服务商周期**：展示滚动窗口、每周限额和月度周期，以及 Codex 重置额度（reset credits）可用数量与到期提醒。
+- **本地 API 账单**：根据服务商支持情况，展示余额、限额和日、周、月成本。
+- **Mac 管理功能**：搜索服务商，管理凭据与地区，暂停采集，自定义服务显示与排序。
+- **明确的数据状态**：刷新失败时标记数据已过期；最新数据表明 5 小时窗口耗尽时，可选择接收重置提醒。
+
+## 支持的服务
+
+| 数据类型 | 服务商 | 配置方式 |
+| --- | --- | --- |
+| 编程套餐额度 | Claude Code、Codex、Cursor | 使用 Mac 上已有的登录 |
+| 编程套餐额度 | Kimi Code、GLM Coding Plan、MiniMax Token Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
+| 本地 API 余额与账单 | DeepSeek、OpenRouter、Kimi API | 在各设备配置服务商凭据 |
+| 本地 API 成本 | OpenAI API、Anthropic API | 使用有权查看组织级成本的凭据 |
+| 本地 API 账单 | xAI API | Management Key 和 Team ID |
+| 仅限 Mac 的团队账单 | Cursor Team | Team/Enterprise Admin API key |
+
+可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单记录不会进入 CloudKit**，Cursor Team 成员身份与金额仅保留在 Mac 上。
+
+## 隐私与同步
+
+每台采集设备使用自己的本机凭据查询服务商。AgentMeter 不会将这些凭据发送给我们，也不会写入 iCloud。
+
+- **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 的本地状态数据库以只读方式打开，不刷新其令牌，也不修改 Cursor 数据。
+- **手动输入的凭据**：存入本机 Keychain，关闭 iCloud Keychain 同步及通过备份迁移至其他设备的能力。
+- **私有额度同步**：仅将经过清理的编程套餐状态写入你的私有 CloudKit 数据库，例如额度窗口、重置时间、订阅档位、重置额度可用数量与数据更新状态；不包含服务商凭据或上游重置额度 ID。
+- **本地账单**：账单记录保留在采集设备上。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
+- **设备访问范围**：Apple Watch 读取已同步的额度，不接收服务商令牌，也不直连服务商；iPhone 只查询你在该设备上明确配置的服务商。
+
+刷新失败时，应用会标记数据已过期。脱敏诊断仅在你主动导出时生成。
 
 ## 故障排查与问题反馈
 
-如果 Mac、iPhone 与 Apple Watch 显示不一致，请先比较各受影响设备上的**更新时间**。
+如果各设备显示的额度不一致，请先比较**更新时间**，并检查是否使用同一个 Apple ID 开启了 iCloud。
 
-1. 在 Mac 打开**设置 → 关于 AgentMeter → 导出脱敏诊断**，或在 iPhone 打开**设置 → App 信息**导出脱敏诊断。
-2. 打开结构化 [Bug Report 表单](https://github.com/dothinkerlab/AgentMeter/issues/new?template=bug_report.yml)。
-3. 填写复现步骤和各设备的更新时间，并附上导出的诊断文件。
+1. 在 Mac 打开**设置 → 关于 AgentMeter → 导出脱敏诊断**，或在 iPhone 打开**设置 → App 信息**导出诊断。
+2. 打开 [Bug Report 表单](https://github.com/dothinkerlab/AgentMeter/issues/new?template=bug_report.yml)。
+3. 填写复现步骤、各受影响设备的更新时间，并附上诊断文件。
 
-诊断报告包含 app 版本与构建号、系统版本、编程套餐窗口与重置状态、更新时间、本地账单服务状态和待写入 CloudKit 的项目；**不包含**凭据、Keychain 内容、设备名称、原始日志、服务商原始响应或账单金额。提交前仍请检查你添加的截图和文字。
-
-## 系统要求
-
-- Mac 伴侣 app 需要 macOS 13 或更高版本。
-- iPhone / Apple Watch app 需从 [App Store](https://apps.apple.com/app/id6781480047) 安装。
-- Mac、iPhone 和 Apple Watch 需使用同一个 Apple ID 开启 iCloud。
-- Mac 上已登录 Claude Code、Codex 或 Cursor；Cursor Team 需要 Team/Enterprise 管理员创建的 Admin API key，其他账单来源需在各设备单独输入凭据。
-
----
-
-<div align="center">
-
-让 AI 编程额度在 Mac、iPhone 与 Apple Watch 上始终可见。
-
-© 2026 dothinker lab · [Releases](https://github.com/dothinkerlab/AgentMeter/releases)
-
-</div>
-
----
+诊断包含应用与系统版本、额度与重置状态、更新时间、本地账单服务状态和待写入 CloudKit 的项目；不包含凭据、Keychain 内容、设备名称、原始日志、服务商原始响应或账单金额。提交前请检查你额外添加的截图和文字。
 
 ## 从源码构建
 
-本仓库包含 macOS 伴侣 app（`AgentMeterMac`）和共享核心包（`AgentMeterCore`）的源码。iPhone 和 Apple Watch app 通过 App Store 分发，不包含在本仓库中。
+本仓库包含 **macOS 伴侣应用**（`AgentMeterMac`）和**共享核心包**（`AgentMeterCore`）。iPhone 与 Apple Watch 应用通过 App Store 分发，其源码不包含在本仓库中。
+
+前置条件：包含 **Swift 6 工具链**的 Xcode，以及用于生成 Xcode 工程的 **XcodeGen**。以下命令均从仓库根目录执行。
 
 运行核心测试：
 
 ```sh
-cd Packages/AgentMeterCore
-swift test
+swift test --package-path Packages/AgentMeterCore
 ```
 
 生成并打开 Xcode 工程：
@@ -144,19 +129,17 @@ xcodegen generate
 open AgentMeter.xcodeproj
 ```
 
-仓库里的 `DEVELOPMENT_TEAM` 和 iCloud 容器 ID 是维护者本人的。如果你 fork，请在 [`project.yml`](project.yml) 和 [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements) 里改成你自己的 Apple Developer Team 和 CloudKit 容器。
+选择 **AgentMeterMac** scheme，构建并运行 Mac 应用。
+
+仓库中的签名团队与 iCloud 容器属于维护者。构建自己的版本时，请先在 [`project.yml`](project.yml) 中设置自己的 Apple Developer Team，在 [`AgentMeterMac/AgentMeterMac.entitlements`](AgentMeterMac/AgentMeterMac.entitlements) 中设置自己的 CloudKit 容器，再生成工程。你自己的容器与 App Store 应用使用的容器相互独立。
 
 ## 维护者发布验收
 
-每次公开发布 Mac 新版，都必须与通过 TestFlight 安装的实际 iPhone 构建完成端到端
-验收。请执行强制的 [Mac + iPhone 联合发布检查清单](docs/RELEASE_CHECKLIST.zh-CN.md)，
-其中包括 CloudKit Production Schema 检查，以及从最终下载 DMG 安装后的真包测试。
+每次公开发布 Mac 新版，都必须与通过 TestFlight 安装的实际 iPhone 构建完成 [Mac + iPhone 联合发布检查清单](docs/RELEASE_CHECKLIST.zh-CN.md)，包括 CloudKit Production Schema 检查，以及从最终下载 DMG 安装后的真包测试。
 
 ## 许可证
 
 [MIT](LICENSE.md) © 2026 dothinker lab。
-
----
 
 ## 免责声明
 
