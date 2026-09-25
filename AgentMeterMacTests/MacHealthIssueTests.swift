@@ -154,7 +154,7 @@ final class MacHealthIssueTests: XCTestCase {
     func testDebugHostReportsDevelopmentEnvironment() {
         XCTAssertEqual(MacBuildMetadata.buildConfiguration, "Debug")
         XCTAssertEqual(MacBuildMetadata.cloudKitEnvironment, "Development")
-        XCTAssertEqual(MacBuildMetadata.aboutVersion, "2.0 (22 · Debug · Development)")
+        XCTAssertEqual(MacBuildMetadata.aboutVersion, "2.0.1 (23 · Debug · Development)")
     }
 
     func testAboutVersionUsesUnknownPlaceholderForEveryMissingField() {
