@@ -93,14 +93,18 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
     }
 
     @MainActor
-    func testCandidatePrefillRequiresUniquePendingSourceInsideHome() throws {
+    func testCandidatePrefillSelectsMatchingFailureAcrossMultipleSources() throws {
         let home = try directory(), file = home.appendingPathComponent("checkpoint.json")
         let source = home.appendingPathComponent("sessions/test.jsonl")
+        let older = home.appendingPathComponent("sessions/older.jsonl")
+        try writeFixture(to: source, turnID: turn)
+        try writeFixture(to: older, turnID: message)
         var state = CodexMonitorCheckpoint(homePath: home.path, monitoringSince: Date())
         let candidate = CodexResumeCandidate(threadID: thread, failedTurnID: turn, detectedAt: Date())
         state.queue.insert(candidate)
         let cursor = CodexMonitorCheckpoint.Cursor(fileID: 1, offset: 0, discardUntilNewline: false, threadID: thread)
         state.cursors[source.path] = cursor
+        state.cursors[older.path] = cursor
         let suite = UUID().uuidString
         let defaults = UserDefaults(suiteName: suite)!
         defaults.set(true, forKey: "codexSessionMonitoringEnabled")
@@ -110,11 +114,15 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         XCTAssertEqual(coordinator.sourceForManualResume(candidateID: candidate.id), source)
         coordinator.cancel(id: candidate.id)
         XCTAssertNil(coordinator.sourceForManualResume(candidateID: candidate.id))
-        state.cursors[home.appendingPathComponent("sessions/duplicate.jsonl").path] = cursor
+        let duplicate = home.appendingPathComponent("sessions/duplicate.jsonl")
+        try writeFixture(to: duplicate, turnID: turn)
+        state.cursors[duplicate.path] = cursor
         try CodexMonitorCheckpointStore(url: file).save(state)
         let ambiguous = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file)
         XCTAssertNil(ambiguous.sourceForManualResume(candidateID: candidate.id))
-        state.cursors = [home.appendingPathComponent("outside.jsonl").path: cursor]
+        let outsideSource = home.appendingPathComponent("outside.jsonl")
+        try writeFixture(to: outsideSource, turnID: turn)
+        state.cursors = [outsideSource.path: cursor]
         try CodexMonitorCheckpointStore(url: file).save(state)
         let outside = CodexResumeCoordinator(defaults: defaults, home: home, storeURL: file)
         XCTAssertNil(outside.sourceForManualResume(candidateID: candidate.id))
@@ -128,14 +136,19 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
     }
     private func fixture(error: String = "usage_limit_exceeded") throws -> URL {
         let url = try directory().appendingPathComponent("rollout.jsonl")
+        try writeFixture(to: url, turnID: turn, error: error)
+        return url
+    }
+    private func writeFixture(to url: URL, turnID: String,
+                              error: String = "usage_limit_exceeded") throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let records: [[String: Any]] = [
             ["type": "session_meta", "payload": ["id": thread, "originator": "Codex Desktop"]],
-            ["type": "event_msg", "payload": ["type": "task_complete", "turn_id": turn,
+            ["type": "event_msg", "payload": ["type": "task_complete", "turn_id": turnID,
               "error": ["codex_error_info": error]]]
         ]
         var data = Data()
         for record in records { data.append(try JSONSerialization.data(withJSONObject: record)); data.append(10) }
         try data.write(to: url)
-        return url
     }
 }

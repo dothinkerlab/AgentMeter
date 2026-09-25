@@ -56,8 +56,10 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
         if newerExists {
             incoming.state = .superseded
         } else {
-            // Only a newer failure in the same thread supersedes its pending predecessor.
-            for index in candidates.indices where candidates[index].state == .pending
+            // A newer failed turn proves that the thread progressed beyond any earlier
+            // unconfirmed submission. Keep deduplication scoped to one failed turn instead
+            // of letting an old uncertain attempt block the thread forever.
+            for index in candidates.indices where [.pending, .uncertain].contains(candidates[index].state)
                 && candidates[index].threadID == candidate.threadID {
                 candidates[index].state = .superseded
             }
@@ -79,7 +81,8 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
     public mutating func invalidate(threadID: String, at: Date) {
         lastActivityByThread[threadID] = max(lastActivityByThread[threadID] ?? .distantPast, at)
         for index in candidates.indices where candidates[index].threadID == threadID
-            && candidates[index].detectedAt <= at && candidates[index].state == .pending {
+            && candidates[index].detectedAt <= at
+            && [.pending, .uncertain].contains(candidates[index].state) {
             candidates[index].state = .superseded
         }
     }
@@ -90,8 +93,7 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
     public mutating func beginAttempt(id: String, quota: CodexResumeQuota?,
                                       session: CodexResumeSessionEvidence?, now: Date) -> Bool {
         guard let candidate = candidates.first(where: { $0.id == id && $0.state == .pending }),
-              !candidates.contains(where: { [.attempting, .submitted].contains($0.state) ||
-                  ($0.threadID == candidate.threadID && $0.state == .uncertain) }),
+              !candidates.contains(where: { [.attempting, .submitted].contains($0.state) }),
               CodexResumePolicy.evaluate(candidate, quota: quota, session: session, now: now) == .ready,
               let index = candidates.firstIndex(where: { $0.id == id }) else { return false }
         candidates[index].state = .attempting
@@ -152,6 +154,23 @@ public struct CodexResumeQueue: Codable, Equatable, Sendable {
     public mutating func recoverAfterRestart() {
         for index in candidates.indices where [.attempting, .submitted].contains(candidates[index].state) {
             candidates[index].state = .uncertain
+        }
+        // Older releases could persist an uncertain attempt beside a newer pending
+        // failure for the same thread. The newer failure is evidence of subsequent
+        // activity, so migrate the older active record out of the way on load.
+        let threads = Set(candidates.map(\.threadID))
+        for threadID in threads {
+            let active = candidates.indices.filter {
+                candidates[$0].threadID == threadID
+                    && [.pending, .uncertain].contains(candidates[$0].state)
+            }
+            guard let newest = active.max(by: {
+                let lhs = candidates[$0], rhs = candidates[$1]
+                return lhs.detectedAt == rhs.detectedAt ? lhs.id < rhs.id : lhs.detectedAt < rhs.detectedAt
+            }) else { continue }
+            for index in active where index != newest {
+                candidates[index].state = .superseded
+            }
         }
     }
 

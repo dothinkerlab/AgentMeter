@@ -177,13 +177,20 @@ final class CodexResumeCoordinator: ObservableObject {
     func sourceForManualResume(candidateID: String) -> URL? {
         guard !storageFailed,
               let candidate = candidates.first(where: { $0.id == candidateID && $0.state == .pending }) else { return nil }
-        let paths = checkpoint.cursors.filter { $0.value.threadID == candidate.threadID }.map(\.key)
-        guard paths.count == 1, let path = paths.first else { return nil }
         let root = URL(fileURLWithPath: checkpoint.homePath).appendingPathComponent("sessions")
             .standardizedFileURL.resolvingSymlinksInPath().path + "/"
-        let source = URL(fileURLWithPath: path).standardizedFileURL
-        guard source.resolvingSymlinksInPath().path.hasPrefix(root) else { return nil }
-        return source
+        let matches = checkpoint.cursors.compactMap { path, cursor -> URL? in
+            guard cursor.threadID == candidate.threadID else { return nil }
+            let source = URL(fileURLWithPath: path).standardizedFileURL
+            guard source.resolvingSymlinksInPath().path.hasPrefix(root),
+                  let target = try? CodexQueueTarget.read(source, threadID: candidate.threadID),
+                  target.failedTurnID == candidate.failedTurnID else { return nil }
+            return source
+        }
+        // Multiple rollout files for one thread are normal. Ambiguity matters only
+        // when more than one file claims to end at the exact failed turn.
+        guard matches.count == 1 else { return nil }
+        return matches[0]
     }
 
     func recheck() async {
@@ -239,11 +246,7 @@ final class CodexResumeCoordinator: ObservableObject {
             if let next = nextChecks[candidate.id], next > now { continue }
             checks[candidate.id] = .checking
             let check: CodexResumeCheck
-            if candidates.contains(where: {
-                $0.threadID == candidate.threadID && $0.state == .uncertain
-            }) {
-                check = .blocked(.previousAttempt)
-            } else if let source = sourceForManualResume(candidateID: candidate.id) {
+            if let source = sourceForManualResume(candidateID: candidate.id) {
                 do {
                     let target = try CodexQueueTarget.read(source, threadID: candidate.threadID)
                     guard target.failedTurnID == candidate.failedTurnID else {

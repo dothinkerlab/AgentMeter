@@ -82,6 +82,58 @@ struct CodexResumePolicyTests {
         #expect(queue.latestPending == nil)
     }
 
+    @Test func newerFailureSupersedesOlderUncertainAttempt() {
+        var queue = CodexResumeQueue()
+        let old = candidate(turn: "old", age: 240)
+        let newest = candidate(turn: "new", age: 120)
+        queue.insert(old)
+        let began = queue.beginManualAttempt(id: old.id)
+        #expect(began)
+        queue.recordUncertain(id: old.id)
+
+        queue.insert(newest)
+
+        #expect(queue.candidates.first(where: { $0.id == old.id })?.state == .superseded)
+        #expect(queue.latestPending?.id == newest.id)
+    }
+
+    @Test func laterActivitySupersedesUncertainAttempt() {
+        var queue = CodexResumeQueue()
+        let item = candidate()
+        queue.insert(item)
+        let began = queue.beginManualAttempt(id: item.id)
+        #expect(began)
+        queue.recordUncertain(id: item.id)
+
+        queue.invalidate(threadID: item.threadID, at: now)
+
+        #expect(queue.candidates.first?.state == .superseded)
+    }
+
+    @Test func restartMigratesLegacyUncertainRecordBehindNewFailure() throws {
+        let old = candidate(turn: "old", age: 240)
+        let newest = candidate(turn: "new", age: 120)
+        var oldQueue = CodexResumeQueue()
+        oldQueue.insert(old)
+        let began = oldQueue.beginManualAttempt(id: old.id)
+        #expect(began)
+        oldQueue.recordUncertain(id: old.id)
+        var newQueue = CodexResumeQueue()
+        newQueue.insert(newest)
+
+        var legacy = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(oldQueue)) as? [String: Any])
+        let newObject = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(newQueue)) as? [String: Any])
+        legacy["candidates"] = (legacy["candidates"] as? [[String: Any]] ?? [])
+            + (newObject["candidates"] as? [[String: Any]] ?? [])
+        var restored = try JSONDecoder().decode(CodexResumeQueue.self,
+            from: JSONSerialization.data(withJSONObject: legacy))
+
+        restored.recoverAfterRestart()
+
+        #expect(restored.candidates.first(where: { $0.id == old.id })?.state == .superseded)
+        #expect(restored.latestPending?.id == newest.id)
+    }
+
     @Test func activityObservedBeforeAnOlderFilePreventsStaleCandidate() throws {
         var queue = CodexResumeQueue()
         queue.invalidate(threadID: "thread", at: now)
