@@ -19,3 +19,6 @@ AgentMeter.xcodeproj/
 
 # 杂项
 *.log
+
+# 本机发布过程记录（可能包含机器路径、签名信息和临时诊断）
+.local-release/

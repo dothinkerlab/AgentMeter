@@ -23,6 +23,26 @@ final class MacAppUpdaterTests: XCTestCase {
         XCTAssertNil(try MacUpdateCandidate.select(release("2.0", build: 20), currentVersion: "2.0", currentBuild: "21"))
     }
 
+    func testVersion201ReleaseRequiresChecksumForVersion200Clients() throws {
+        let complete = release("2.0.1", build: 23)
+        let incomplete = MacUpdateRelease(
+            tag_name: complete.tag_name, draft: false, prerelease: false,
+            assets: [complete.assets[0], .init(name: "AgentMeter.dmg", browser_download_url: complete.assets[0].browser_download_url)]
+        )
+        for currentVersion in ["2.0", "2.0.0"] {
+            XCTAssertThrowsError(try MacUpdateCandidate.select(incomplete, currentVersion: currentVersion, currentBuild: "22")) {
+                guard case MacUpdateError.missingAsset = $0 else {
+                    return XCTFail("Expected missing checksum error, got \($0)")
+                }
+            }
+            let candidate = try XCTUnwrap(MacUpdateCandidate.select(complete, currentVersion: currentVersion, currentBuild: "22"))
+            XCTAssertEqual(candidate.version, "2.0.1")
+            XCTAssertEqual(candidate.build, 23)
+            XCTAssertEqual(candidate.installer.name, "AgentMeter-2.0.1-23.dmg")
+            XCTAssertEqual(candidate.checksums.name, "SHA256SUMS.txt")
+        }
+    }
+
     func testIgnoresUnpublishedAndPrerelease() throws {
         XCTAssertNil(try MacUpdateCandidate.select(release("2.0", draft: true), currentVersion: "1.9", currentBuild: "21"))
         XCTAssertNil(try MacUpdateCandidate.select(release("2.0", prerelease: true), currentVersion: "1.9", currentBuild: "21"))
