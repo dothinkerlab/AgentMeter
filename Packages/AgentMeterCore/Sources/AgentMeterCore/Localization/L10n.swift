@@ -43,6 +43,13 @@ public enum QuotaWindowLabel {
         case .sevenDayOpus: return L10n.string("每周 (Opus)")
         case .sevenDaySonnet: return L10n.string("每周 (Sonnet)")
         case .monthly: return L10n.string("每月窗口")
+        case .daily: return L10n.string("每日窗口")
+        case .weekly: return L10n.string("每周窗口")
+        case .premiumInteractions: return L10n.string("高级请求")
+        case .chat: return L10n.string("聊天")
+        case .editPredictions: return L10n.string("编辑预测")
+        case .messages: return L10n.string("消息")
+        case .flowActions: return L10n.string("Flow 操作")
         }
     }
 
@@ -53,6 +60,13 @@ public enum QuotaWindowLabel {
         case .sevenDayOpus: return L10n.string("周 Opus")
         case .sevenDaySonnet: return L10n.string("周 Sonnet")
         case .monthly: return L10n.string("每月")
+        case .daily: return L10n.string("每日")
+        case .weekly: return L10n.string("每周")
+        case .premiumInteractions: return L10n.string("高级请求")
+        case .chat: return L10n.string("聊天")
+        case .editPredictions: return L10n.string("编辑预测")
+        case .messages: return L10n.string("消息")
+        case .flowActions: return L10n.string("Flow 操作")
         }
     }
 
@@ -63,6 +77,13 @@ public enum QuotaWindowLabel {
         case .sevenDayOpus: return "7d-O"
         case .sevenDaySonnet: return "7d-S"
         case .monthly: return "mo"
+        case .daily: return "1d"
+        case .weekly: return "1w"
+        case .premiumInteractions: return "Pro"
+        case .chat: return "Chat"
+        case .editPredictions: return "Edit"
+        case .messages: return "Msg"
+        case .flowActions: return "Flow"
         }
     }
 }

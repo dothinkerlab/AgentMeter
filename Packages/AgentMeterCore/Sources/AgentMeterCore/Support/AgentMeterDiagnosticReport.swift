@@ -87,7 +87,7 @@ public struct AgentMeterDiagnosticReport: Sendable, Equatable {
                     for window in snapshot.windows.sorted(by: { $0.kind.rawValue < $1.kind.rawValue }) {
                         lines.append(
                             "  \(window.kind.rawValue): used=\(Self.percent(window.usedPercent))%, " +
-                            "resetsAt=\(Self.date(window.resetsAt))"
+                            "resetsAt=\(window.resetsAt.map(Self.date) ?? "none")"
                         )
                     }
                 }

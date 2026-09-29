@@ -13,6 +13,7 @@ public enum ProviderCredentialStore {
         case openAIAdmin = "OpenAIAdmin-credentials"
         case anthropicAdmin = "AnthropicAdmin-credentials"
         case cursorAdmin = "CursorAdmin-credentials"
+        case copilot = "Copilot-credentials"
     }
 
     public enum KeyError: Error, Equatable {

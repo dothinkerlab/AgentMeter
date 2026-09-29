@@ -15,6 +15,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     case openAIAPI
     case anthropicAPI
     case cursorTeam
+    case copilot
 
     public enum Category: Sendable {
         case codingPlan
@@ -28,7 +29,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
 
     public var category: Category {
         switch self {
-        case .kimiCode, .glmCoding, .miniMax: .codingPlan
+        case .kimiCode, .glmCoding, .miniMax, .copilot: .codingPlan
         case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam: .billing
         }
     }
@@ -49,6 +50,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .copilot: .copilot
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
@@ -125,7 +127,7 @@ public actor ManualProviderOperationGate {
 public enum ManualProviderPreferences {
     public static func enabledKey(_ provider: ManualProviderKind) -> String {
         switch provider {
-        case .kimiCode, .glmCoding, .miniMax:
+        case .kimiCode, .glmCoding, .miniMax, .copilot:
             return "codingProvider.\(provider.rawValue).enabled"
         case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam:
             return "manualProvider.\(provider.rawValue).enabled"

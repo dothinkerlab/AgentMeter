@@ -40,7 +40,7 @@ struct ClaudeCodeAdapterTests {
         comps.hour = 20; comps.minute = 59; comps.second = 59
         comps.timeZone = TimeZone(identifier: "UTC")
         let expected = Calendar(identifier: .gregorian).date(from: comps)!
-        #expect(abs(fiveHour.resetsAt.timeIntervalSince(expected)) < 1)
+        #expect(abs(try #require(fiveHour.resetsAt).timeIntervalSince(expected)) < 1)
     }
 
     @Test func tightestWindowPicksHighestUsedAmongPrimaryWindows() throws {

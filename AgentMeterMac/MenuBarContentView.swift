@@ -250,7 +250,8 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private func displayRow(for item: MacDisplayItemID) -> some View {
         switch item {
-        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax:
+        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax,
+             .copilot, .windsurf, .jetBrainsAI, .zed:
             if let snapshot = model.snapshot(for: item) {
                 ToolRow(
                     name: displayName(for: snapshot.tool),
@@ -619,15 +620,25 @@ struct MenuBarContentView: View {
         case .sevenDayOpus: return 2
         case .sevenDaySonnet: return 3
         case .monthly: return 4
+        case .daily: return 0
+        case .weekly: return 1
+        case .premiumInteractions: return 0
+        case .chat: return 1
+        case .editPredictions: return 0
+        case .messages: return 0
+        case .flowActions: return 1
         }
     }
 
     /// 行底部合并的重置说明:「5 小时 4h59m · 每周 2d0h 后重置」。全部已重置则「均已重置」。
     private func resetSummary(_ windows: [QuotaWindow]) -> String {
         let ordered = orderedWindows(windows)
-        let future = ordered.filter { $0.resetsAt.timeIntervalSinceNow > 0 }
-        if future.isEmpty { return L10n.string("两个窗口均已重置") }
-        let parts = future.map { "\(shortLabel($0.kind)) \(shortDuration($0.resetsAt))" }
+        let future = ordered.compactMap { window -> (WindowKind, Date)? in
+            guard let reset = window.resetsAt, reset.timeIntervalSinceNow > 0 else { return nil }
+            return (window.kind, reset)
+        }
+        if future.isEmpty { return "" }
+        let parts = future.map { "\(shortLabel($0.0)) \(shortDuration($0.1))" }
         return L10n.format("%@ 后重置", parts.joined(separator: " · "))
     }
 
@@ -643,6 +654,10 @@ struct MenuBarContentView: View {
         case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
         case .grok: return "xAI API"
+        case .copilot: return "GitHub Copilot"
+        case .windsurf: return "Windsurf"
+        case .jetBrainsAI: return "JetBrains AI"
+        case .zed: return "Zed"
         }
     }
 
@@ -1033,6 +1048,14 @@ private struct BrandMark: View {
                 .font(.system(size: 8.5, weight: .bold, design: .monospaced))
                 .tracking(-0.6)
                 .foregroundColor(Color.menuOnBrand)
+        case .copilot:
+            Text("GH").font(.system(size: 9, weight: .bold)).foregroundColor(Color.menuOnBrand)
+        case .windsurf:
+            Text("W").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
+        case .jetBrainsAI:
+            Text("JB").font(.system(size: 9, weight: .bold)).foregroundColor(Color.menuOnBrand)
+        case .zed:
+            Text("Z").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
         }
     }
 }
@@ -1072,6 +1095,14 @@ private func brand(for tool: ToolKind) -> Brand {
         return Brand(accent: .menuBrandGLM)
     case .miniMax:
         return Brand(accent: .menuBrandMiniMax)
+    case .copilot:
+        return Brand(accent: Color(red: 0.24, green: 0.24, blue: 0.28))
+    case .windsurf:
+        return Brand(accent: Color(red: 0.10, green: 0.55, blue: 0.72))
+    case .jetBrainsAI:
+        return Brand(accent: Color(red: 0.64, green: 0.20, blue: 0.78))
+    case .zed:
+        return Brand(accent: Color(red: 0.28, green: 0.46, blue: 0.31))
     case .openCode:
         return Brand(accent: .menuBrandOpenCode)
     case .deepSeek:

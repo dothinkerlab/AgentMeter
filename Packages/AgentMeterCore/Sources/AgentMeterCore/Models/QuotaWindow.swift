@@ -9,11 +9,11 @@ public struct QuotaWindow: Codable, Sendable, Equatable {
     /// 已用百分比,0–100。
     public let usedPercent: Double
     /// 该窗口的重置时刻。Claude 的 5 小时是滚动窗口,这个值会变,倒计时要实时算。
-    public let resetsAt: Date
+    public let resetsAt: Date?
     public let kind: WindowKind
 
-    public init(usedPercent: Double, resetsAt: Date, kind: WindowKind) {
-        self.usedPercent = usedPercent
+    public init(usedPercent: Double, resetsAt: Date?, kind: WindowKind) {
+        self.usedPercent = max(0, min(100, usedPercent))
         self.resetsAt = resetsAt
         self.kind = kind
     }

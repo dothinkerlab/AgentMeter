@@ -9,6 +9,10 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
     case kimiCode
     case glmCoding
     case miniMax
+    case copilot
+    case windsurf
+    case jetBrainsAI
+    case zed
 
     public enum CollectionMode: Sendable, Equatable {
         /// The Mac collector reads an existing CLI login. iPhone only consumes
@@ -26,12 +30,17 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .copilot: .copilot
+        case .windsurf: .windsurf
+        case .jetBrainsAI: .jetBrainsAI
+        case .zed: .zed
         }
     }
 
     public var manualProvider: ManualProviderKind? {
         switch self {
-        case .chatGPT, .claude, .cursor: nil
+        case .chatGPT, .claude, .cursor, .windsurf, .jetBrainsAI, .zed: nil
+        case .copilot: .copilot
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
@@ -39,7 +48,10 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
     }
 
     public var collectionMode: CollectionMode {
-        manualProvider == nil ? .macAutomatic : .deviceConfigured
+        switch self {
+        case .copilot: .macAutomatic
+        default: manualProvider == nil ? .macAutomatic : .deviceConfigured
+        }
     }
 }
 

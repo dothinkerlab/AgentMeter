@@ -71,7 +71,7 @@ The offer is redeemed securely through the official Apple App Store.
 
 ### 2. Configure your providers
 
-Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, and Cursor**, sign in to the corresponding tool on your Mac; AgentMeter reads its existing local credentials. For other coding plans and API billing services, configure the provider in Settings. You only need to configure the services you use.
+Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, Cursor, Windsurf, JetBrains AI, and Zed**, sign in to or use the corresponding tool on your Mac; AgentMeter reads its existing local credentials or quota cache only after you enable that provider. GitHub Copilot uses a GitHub token that you paste into Settings. Other coding plans and API billing services are also configured in Settings. You only need to enable the services you use.
 
 Manually entered credentials are device-local. If you configure a provider on both Mac and iPhone, enter its credentials separately on each device. See [Supported services](#supported-services) for special credential requirements.
 
@@ -92,6 +92,8 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 | Data | Providers | Setup |
 | --- | --- | --- |
 | Coding-plan quota | Claude Code, Codex, Cursor | Existing sign-in on your Mac |
+| Coding-plan quota | GitHub Copilot | GitHub token stored in the local Keychain |
+| Coding-plan quota | Windsurf, JetBrains AI, Zed | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | Kimi Code, GLM Coding Plan, MiniMax Token Plan | Provider settings on Mac or iPhone |
 | Local API balance and billing | DeepSeek, OpenRouter, Kimi API | Provider credentials on each device |
 | Local API costs | OpenAI API, Anthropic API | Credentials with access to organization-level costs |
@@ -104,7 +106,7 @@ Available metrics depend on the provider. OpenAI API and Anthropic API costs ref
 
 Each collecting device queries providers using its own local credentials. AgentMeter does not send those credentials to us or write them to iCloud.
 
-- **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Cursor's local state database is opened read-only; AgentMeter neither refreshes its token nor modifies Cursor data.
+- **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Cursor and Windsurf databases and JetBrains AI quota files are opened read-only. Zed credentials are read from the matching local Keychain item and are never refreshed or modified by AgentMeter.
 - **Manually entered credentials:** stored in the local Keychain, with iCloud Keychain synchronization and backup migration to another device disabled.
 - **Private quota sync:** only cleaned coding-plan status—such as quota windows, reset times, subscription tier, reset-credit availability, and freshness information—is written to your private CloudKit database. Provider credentials and upstream reset-credit IDs are excluded.
 - **Local billing:** billing records remain on the collecting device. Cursor Team member identities and amounts remain on the Mac holding the Admin API key.
@@ -155,6 +157,6 @@ Every public Mac release must pass the [Mac + iPhone release checklist](docs/REL
 
 ## Disclaimer
 
-AgentMeter reads quota data from **unofficial, undocumented** Claude Code, Codex, and [Cursor dashboard endpoints](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md). These endpoints may change or stop working at any time. Cursor Team uses Cursor's [official Admin API](https://docs.cursor.com/en/account/teams/admin-api) and requires an administrator-created key. Other integrations use their providers' APIs, which may also change. Using these services may be subject to each provider's terms of service. Use AgentMeter at your own risk.
+AgentMeter reads quota data from **unofficial, undocumented** Claude Code, Codex, GitHub Copilot, and [Cursor dashboard endpoints](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md), as well as Windsurf and JetBrains AI local cache formats and Zed's client API. These interfaces may change or stop working at any time. Copilot currently requires a manually supplied token and does not support GitHub Enterprise. Cursor Team uses Cursor's [official Admin API](https://docs.cursor.com/en/account/teams/admin-api) and requires an administrator-created key. Other integrations use their providers' APIs, which may also change. Using these services may be subject to each provider's terms of service. Use AgentMeter at your own risk.
 
 AgentMeter is an independent project and is **not affiliated with, endorsed by, or sponsored by** any listed provider. Provider and product names are trademarks of their respective owners.

@@ -15,6 +15,7 @@ public enum MacCodingCredentialResolver {
             case .kimiCode: kind = .kimiCode
             case .glmCoding: kind = .glmCoding
             case .miniMax: kind = .miniMax
+            case .copilot: kind = .copilot
             default: return nil
             }
             guard let key = try ProviderCredentialStore.read(kind: kind), !key.isEmpty else { return nil }
@@ -50,6 +51,8 @@ public enum MacCodingCredentialResolver {
             let regionRaw = recursiveString(root, keys: ["region"])?.lowercased()
             let region: ProviderRegion = regionRaw == "cn" || regionRaw == "china" ? .china : .global
             return CodingProviderCredential(secret: key, region: region, source: .miniMaxCLI)
+        case .copilot:
+            return nil
         default:
             return nil
         }

@@ -17,6 +17,10 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case openRouter
     case xAI
     case cursorTeam
+    case copilot
+    case windsurf
+    case jetBrainsAI
+    case zed
 
     var id: String { rawValue }
 
@@ -31,6 +35,10 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
+        case .copilot: .copilot
+        case .windsurf: .windsurf
+        case .jetBrainsAI: .jetBrainsAI
+        case .zed: .zed
         case .openAIAPI, .anthropicAPI, .kimiAPI, .cursorTeam: nil
         }
     }
@@ -47,7 +55,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .openRouter: .openRouter
         case .xAI: .xAI
         case .cursorTeam: .cursorTeam
-        case .codex, .claudeCode, .cursor: nil
+        case .copilot: .copilot
+        case .codex, .claudeCode, .cursor, .windsurf, .jetBrainsAI, .zed: nil
         }
     }
 
@@ -62,6 +71,10 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .grok: .xAI
+        case .copilot: .copilot
+        case .windsurf: .windsurf
+        case .jetBrainsAI: .jetBrainsAI
+        case .zed: .zed
         default: nil
         }
     }
@@ -105,6 +118,32 @@ enum MacDisplayPreferences {
 
     private static func missing(from input: [MacDisplayItemID]) -> [MacDisplayItemID] {
         MacDisplayItemID.allCases.filter { !input.contains($0) }
+    }
+}
+
+enum MacExtendedProviderPreferences {
+    static let tools: [ToolKind] = [.copilot, .windsurf, .jetBrainsAI, .zed]
+
+    static func enabledKey(_ tool: ToolKind) -> String {
+        "extendedProvider.\(tool.rawValue).enabled"
+    }
+
+    static func isEnabled(_ tool: ToolKind, defaults: UserDefaults = .standard) -> Bool {
+        if tool == .copilot {
+            let hasCredential: Bool
+            do { hasCredential = try ProviderCredentialStore.read(kind: .copilot)?.isEmpty == false }
+            catch { hasCredential = false }
+            return ManualProviderPreferences.isEnabled(.copilot, credentialExists: hasCredential, defaults: defaults)
+        }
+        return defaults.bool(forKey: enabledKey(tool))
+    }
+
+    static func setEnabled(_ enabled: Bool, for tool: ToolKind, defaults: UserDefaults = .standard) {
+        if tool == .copilot {
+            ManualProviderPreferences.setEnabled(enabled, for: .copilot, defaults: defaults)
+        } else {
+            defaults.set(enabled, forKey: enabledKey(tool))
+        }
     }
 }
 
@@ -157,7 +196,11 @@ actor MacPendingCloudKitDeletionCoordinator {
     init(
         defaults: UserDefaults,
         deleteOperation: @escaping DeleteOperation = { tool in
-            try await DeviceCodingQuotaCollector(device: .mac).disable(tool: tool)
+            if tool.supportsDeviceScopedSnapshots {
+                try await DeviceCodingQuotaCollector(device: .mac).disable(tool: tool)
+            } else {
+                try await CloudKitSync().delete(tool: tool)
+            }
         },
         sleepOperation: @escaping SleepOperation = { nanoseconds in
             try await Task.sleep(nanoseconds: nanoseconds)

@@ -17,8 +17,12 @@ func formatSnapshot(_ s: QuotaSnapshot) -> String {
         lines.append("  (无窗口数据)")
     }
     for w in s.windows {
-        let resetIn = w.resetsAt.timeIntervalSinceNow
-        let resetStr = resetIn > 0 ? "resets in \(formatDuration(resetIn))" : "reset overdue"
+        let resetStr: String
+        if let resetIn = w.resetsAt?.timeIntervalSinceNow {
+            resetStr = resetIn > 0 ? "resets in \(formatDuration(resetIn))" : "reset overdue"
+        } else {
+            resetStr = "reset unknown"
+        }
         let bar = progressBar(remaining: w.remainingPercent)
         lines.append(String(
             format: "  %-15@ %@ %5.1f%% left   %@",
@@ -76,7 +80,8 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             accessToken: credentials.accessToken,
             fallbackPlan: credentials.subscriptionType
         )
-    case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok:
+    case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
+         .copilot, .windsurf, .jetBrainsAI, .zed:
         throw ProbeError.unsupportedTool(tool.rawValue)
     }
 }

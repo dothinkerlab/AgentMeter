@@ -71,7 +71,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ### 2. 配置服务商
 
-从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex 或 Cursor** 时，先在 Mac 上登录对应工具，AgentMeter 会读取已有的本机凭据。其他编程套餐和 API 账单服务可在设置中配置，只需配置你使用的服务。
+从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex、Cursor、Windsurf、JetBrains AI 或 Zed** 时，先在 Mac 上登录或使用对应工具；只有在你显式启用服务商后，AgentMeter 才会读取已有的本机凭据或额度缓存。GitHub Copilot 需要在设置中粘贴 GitHub Token。其他编程套餐和 API 账单服务也可在设置中配置，只需启用你使用的服务。
 
 手动输入的凭据仅保存在当前设备。如果在 Mac 和 iPhone 上都配置了某个服务，需要在各设备分别输入凭据。特殊凭据要求见[支持的服务](#支持的服务)。
 
@@ -92,6 +92,8 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 | 数据类型 | 服务商 | 配置方式 |
 | --- | --- | --- |
 | 编程套餐额度 | Claude Code、Codex、Cursor | 使用 Mac 上已有的登录 |
+| 编程套餐额度 | GitHub Copilot | GitHub Token，保存在本机 Keychain |
+| 编程套餐额度 | Windsurf、JetBrains AI、Zed | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | Kimi Code、GLM Coding Plan、MiniMax Token Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
 | 本地 API 余额与账单 | DeepSeek、OpenRouter、Kimi API | 在各设备配置服务商凭据 |
 | 本地 API 成本 | OpenAI API、Anthropic API | 使用有权查看组织级成本的凭据 |
@@ -104,7 +106,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 每台采集设备使用自己的本机凭据查询服务商。AgentMeter 不会将这些凭据发送给我们，也不会写入 iCloud。
 
-- **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 的本地状态数据库以只读方式打开，不刷新其令牌，也不修改 Cursor 数据。
+- **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 与 Windsurf 数据库和 JetBrains AI 额度文件均以只读方式打开；Zed 凭据只从同源的本机 Keychain 项目读取，AgentMeter 不刷新或修改这些凭据。
 - **手动输入的凭据**：存入本机 Keychain，关闭 iCloud Keychain 同步及通过备份迁移至其他设备的能力。
 - **私有额度同步**：仅将经过清理的编程套餐状态写入你的私有 CloudKit 数据库，例如额度窗口、重置时间、订阅档位、重置额度可用数量与数据更新状态；不包含服务商凭据或上游重置额度 ID。
 - **本地账单**：账单记录保留在采集设备上。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
@@ -155,6 +157,6 @@ open AgentMeter.xcodeproj
 
 ## 免责声明
 
-AgentMeter 从 Claude Code、Codex 与 [Cursor Dashboard](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md) 的**非官方、未公开**端点读取额度数据，这些端点可能随时变动或失效；Cursor Team 使用 Cursor [官方 Admin API](https://docs.cursor.com/en/account/teams/admin-api)，并要求管理员创建 key。其他集成使用各服务商 API，也可能发生变化。使用这些服务可能受各自服务商的服务条款约束，请自行承担风险。
+AgentMeter 从 Claude Code、Codex、GitHub Copilot 与 [Cursor Dashboard](https://github.com/Noisemaker111/openusage-opencode/blob/main/docs/providers/cursor.md) 的**非官方、未公开**端点，以及 Windsurf、JetBrains AI 的本地缓存格式和 Zed 客户端 API 读取额度数据，这些接口可能随时变动或失效。Copilot 当前要求手工提供 Token，不支持 GitHub Enterprise；Cursor Team 使用 Cursor [官方 Admin API](https://docs.cursor.com/en/account/teams/admin-api)，并要求管理员创建 key。其他集成使用各服务商 API，也可能发生变化。使用这些服务可能受各自服务商的服务条款约束，请自行承担风险。
 
 AgentMeter 为独立项目，**与文中列出的任何服务商均无隶属、背书或赞助关系**。所有服务商与产品名称均为各自权利人的商标。

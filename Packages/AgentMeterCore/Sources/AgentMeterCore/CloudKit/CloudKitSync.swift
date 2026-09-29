@@ -128,6 +128,18 @@ public struct CloudKitSync: Sendable {
         }
     }
 
+    /// Deletes the unscoped record used by Mac-owned automatic providers.
+    public func delete(tool: ToolKind) async throws {
+        let id = RecordMapping.recordID(for: tool)
+        do {
+            _ = try await privateDatabase.deleteRecord(withID: id)
+        } catch let error as CKError where error.code == .unknownItem {
+            return
+        } catch let error as CKError {
+            throw mapCKError(error)
+        }
+    }
+
     private func fetch(recordID id: CKRecord.ID) async throws -> QuotaSnapshot? {
         let db = privateDatabase
 

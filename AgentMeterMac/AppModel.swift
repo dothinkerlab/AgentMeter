@@ -104,6 +104,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var anthropicAPIUsage: APICostUsage?
     @Published private(set) var cursorTeamUsage: CursorTeamUsage?
     @Published private(set) var deviceCodingSnapshots: [QuotaSnapshot] = []
+    @Published private(set) var extendedResults: [QuotaCollector.Result] = []
     @Published private(set) var deviceCodingCloudSyncPendingTools: Set<ToolKind> = []
     @Published private(set) var displayOrder: [MacDisplayItemID]
     @Published private(set) var hiddenDisplayItems: Set<MacDisplayItemID>
@@ -143,7 +144,7 @@ final class AppModel: ObservableObject {
     static let staleThreshold: TimeInterval = 15 * 60
     static let cursorTeamInterval: TimeInterval = 10 * 60
     static let legacyTools: [ToolKind] = AgentToolSelection.defaultTools
-    static let tools: [ToolKind] = legacyTools + MacCodingProviderPreferences.tools
+    static let tools: [ToolKind] = legacyTools + MacCodingProviderPreferences.tools + MacExtendedProviderPreferences.tools
     private static let toolDisplayOrderKey = "toolDisplayOrder"
     private static let showsStatusPercentageKey = "macShowsStatusPercentage"
     private static let hidesInactiveToolsKey = "hideInactiveTools"
@@ -166,6 +167,8 @@ final class AppModel: ObservableObject {
     private var cursorTeamLastAttemptAt: Date?
     private var deviceCodingRequestGate = DeviceCodingRequestGate()
     private var deviceCodingPublishGenerations: [ToolKind: UInt64] = [:]
+    private var extendedRequestGenerations: [ToolKind: UInt64] = [:]
+    private var extendedRemoteLastAttempt: [ToolKind: Date] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -238,7 +241,8 @@ final class AppModel: ObservableObject {
             async let openAIAPI: Void = collectOpenAIAPI()
             async let anthropicAPI: Void = collectAnthropicAPI()
             async let cursorTeam: Void = collectCursorTeam()
-            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam)
+            async let extended: Void = collectCurrentExtendedProviders()
+            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam, extended)
             return
         }
         isCollecting = true
@@ -253,9 +257,10 @@ final class AppModel: ObservableObject {
         async let openAIAPI: Void = collectOpenAIAPI()
         async let anthropicAPI: Void = collectAnthropicAPI()
         async let cursorTeam: Void = collectCursorTeam()
+        async let extended: Void = collectCurrentExtendedProviders()
         results = await legacyResults
         await codexMonitoring
-        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam)
+        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, cursorTeam, extended)
         lastCollectedAt = Date()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
@@ -425,6 +430,141 @@ final class AppModel: ObservableObject {
         )
         deviceCodingSnapshots = merged.snapshots
         deviceCodingCloudSyncPendingTools = merged.cloudSyncPendingTools
+    }
+
+    private func collectCurrentExtendedProviders() async {
+        for tool in MacExtendedProviderPreferences.tools
+        where MacExtendedProviderPreferences.isEnabled(tool, defaults: defaults) {
+            await collectExtendedProvider(tool)
+        }
+    }
+
+    func isExtendedProviderEnabled(_ tool: ToolKind) -> Bool {
+        MacExtendedProviderPreferences.isEnabled(tool, defaults: defaults)
+    }
+
+    @discardableResult
+    func setExtendedProviderEnabled(_ tool: ToolKind, enabled: Bool) async -> Bool {
+        precondition(MacExtendedProviderPreferences.tools.contains(tool) && tool != .copilot)
+        MacExtendedProviderPreferences.setEnabled(enabled, for: tool, defaults: defaults)
+        if enabled {
+            await cloudKitDeletionCoordinator.prepareForEnable(tool)
+            await collectExtendedProvider(tool, force: true)
+            return true
+        }
+        extendedRequestGenerations[tool, default: 0] &+= 1
+        extendedResults.removeAll { $0.tool == tool }
+        return await cloudKitDeletionCoordinator.disable(tool)
+    }
+
+    func refreshAutomaticProvider(_ provider: PlanProviderKind) async {
+        guard MacExtendedProviderPreferences.tools.contains(provider.toolKind) else {
+            await collectNow()
+            return
+        }
+        await collectExtendedProvider(provider.toolKind, force: true)
+    }
+
+    private func collectExtendedProvider(_ tool: ToolKind, force: Bool = false) async {
+        guard MacExtendedProviderPreferences.isEnabled(tool, defaults: defaults) else {
+            extendedResults.removeAll { $0.tool == tool }
+            return
+        }
+        if !force, (tool == .copilot || tool == .zed),
+           let last = extendedRemoteLastAttempt[tool], Date().timeIntervalSince(last) < 5 * 60 {
+            return
+        }
+        if tool == .copilot || tool == .zed { extendedRemoteLastAttempt[tool] = Date() }
+        extendedRequestGenerations[tool, default: 0] &+= 1
+        let generation = extendedRequestGenerations[tool]!
+        await cloudKitDeletionCoordinator.prepareForEnable(tool)
+
+        do {
+            let snapshot = try await fetchExtendedProvider(tool)
+            guard extendedRequestGenerations[tool] == generation else { return }
+            let result: QuotaCollector.Result
+            do {
+                try await CloudKitSync().save(snapshot)
+                result = .init(tool: tool, outcome: .ok, snapshot: snapshot)
+            } catch {
+                result = .init(tool: tool, outcome: .writeFailed, snapshot: snapshot)
+            }
+            publishExtendedResult(result)
+        } catch {
+            guard extendedRequestGenerations[tool] == generation else { return }
+            if Self.extendedProviderUnavailable(error) {
+                publishExtendedResult(.init(tool: tool, outcome: .skipped, snapshot: nil))
+                return
+            }
+            let reason = Self.extendedStaleReason(error)
+            let existing = (try? await CloudKitSync().fetch(tool: tool)) ?? nil
+            let degraded = existing?.markedStale(reason: reason)
+                ?? .unknown(tool: tool, source: Self.extendedSource(tool), reason: reason)
+            do {
+                try await CloudKitSync().save(degraded)
+                publishExtendedResult(.init(tool: tool, outcome: .degraded, snapshot: degraded))
+            } catch {
+                publishExtendedResult(.init(tool: tool, outcome: .writeFailed, snapshot: degraded))
+            }
+        }
+    }
+
+    private func publishExtendedResult(_ result: QuotaCollector.Result) {
+        extendedResults.removeAll { $0.tool == result.tool }
+        extendedResults.append(result)
+    }
+
+    private func fetchExtendedProvider(_ tool: ToolKind) async throws -> QuotaSnapshot {
+        switch tool {
+        case .copilot:
+            guard let token = try ProviderCredentialStore.read(kind: .copilot), !token.isEmpty else {
+                throw CopilotUsageAdapter.FetchError.unauthorized
+            }
+            return try await CopilotUsageAdapter().fetch(token: token)
+        case .windsurf:
+            return try WindsurfLocalAdapter().fetch()
+        case .jetBrainsAI:
+            return try JetBrainsAILocalAdapter().fetch()
+        case .zed:
+            let adapter = ZedUsageAdapter()
+            return try await adapter.fetch(credentials: adapter.resolveCredentials())
+        default:
+            throw ExtendedProviderError.unsupported
+        }
+    }
+
+    private enum ExtendedProviderError: Error { case unsupported }
+
+    private static func extendedProviderUnavailable(_ error: Error) -> Bool {
+        switch error {
+        case WindsurfLocalAdapter.FetchError.notFound,
+             JetBrainsAILocalAdapter.FetchError.notFound,
+             ZedUsageAdapter.FetchError.notFound:
+            true
+        default: false
+        }
+    }
+
+    private static func extendedStaleReason(_ error: Error) -> QuotaStaleReason {
+        switch error {
+        case is CopilotUsageAdapter.FetchError: CopilotUsageAdapter.staleReason(for: error)
+        case is ZedUsageAdapter.FetchError: ZedUsageAdapter.staleReason(for: error)
+        case WindsurfLocalAdapter.FetchError.database: .credentialReadFailed
+        case WindsurfLocalAdapter.FetchError.decode: .responseChanged
+        case JetBrainsAILocalAdapter.FetchError.unreadable: .credentialReadFailed
+        case JetBrainsAILocalAdapter.FetchError.decode: .responseChanged
+        default: .unknownFailure
+        }
+    }
+
+    private static func extendedSource(_ tool: ToolKind) -> String {
+        switch tool {
+        case .copilot: CopilotUsageAdapter.source
+        case .windsurf: WindsurfLocalAdapter.source
+        case .jetBrainsAI: JetBrainsAILocalAdapter.source
+        case .zed: ZedUsageAdapter.source
+        default: "unsupported"
+        }
     }
 
     private func collectDeviceCodingProvider(
@@ -632,6 +772,9 @@ final class AppModel: ObservableObject {
                 fact = (anthropicAPIUsage?.confidence, anthropicAPIUsage?.staleReason)
             case .cursorTeam:
                 fact = (cursorTeamUsage?.confidence, cursorTeamUsage?.staleReason)
+            case .copilot:
+                let snapshot = extendedResults.first(where: { $0.tool == .copilot })?.snapshot
+                fact = (snapshot?.confidence, snapshot?.staleReason)
             }
             return .resolved(
                 hasCredential: hasCredential,
@@ -646,6 +789,19 @@ final class AppModel: ObservableObject {
 
     func automaticPlanProviderState(_ provider: PlanProviderKind) -> ProviderConnectionState {
         guard provider.collectionMode == .macAutomatic else { return .unconfigured }
+        if MacExtendedProviderPreferences.tools.contains(provider.toolKind) {
+            guard MacExtendedProviderPreferences.isEnabled(provider.toolKind, defaults: defaults) else { return .disabled }
+            guard let result = extendedResults.first(where: { $0.tool == provider.toolKind }) else {
+                return isCollecting ? .checking : .unconfigured
+            }
+            if result.outcome == .skipped { return .unconfigured }
+            guard let snapshot = result.snapshot else { return .pendingVerification(.unknownFailure) }
+            let confidence: DataConfidence = Date().timeIntervalSince(snapshot.updatedAt) > Self.staleThreshold
+                ? .stale
+                : snapshot.confidence
+            return .resolved(hasCredential: true, isEnabled: true, confidence: confidence,
+                             staleReason: snapshot.staleReason)
+        }
         if ProcessInfo.processInfo.arguments.contains("--agentmeter-screenshot-provider-settings") {
             return switch provider {
             case .chatGPT, .cursor: .connected
@@ -727,6 +883,8 @@ final class AppModel: ObservableObject {
             await collectAnthropicAPI()
         case .cursorTeam:
             await collectCursorTeam(force: true)
+        case .copilot:
+            await collectExtendedProvider(.copilot, force: true)
         }
         return manualProviderState(provider)
     }
@@ -764,21 +922,21 @@ final class AppModel: ObservableObject {
             _ = cursorTeamRequestGate.begin()
             cursorTeamLastAttemptAt = nil
             cursorTeamUsage = nil
+        case .copilot:
+            extendedResults.removeAll { $0.tool == .copilot }
+            return await cloudKitDeletionCoordinator.disable(.copilot)
         }
         return true
     }
 
     private func resumePendingCloudKitDeletions() async {
         for tool in MacPendingCloudKitDeletionPreferences.tools(defaults: defaults) {
-            guard let provider = ManualProviderKind(rawValue: tool.rawValue) else {
-                MacPendingCloudKitDeletionPreferences.clear(tool, defaults: defaults)
-                continue
-            }
-            if ManualProviderPreferences.isEnabled(
-                provider,
-                credentialExists: false,
-                defaults: defaults
-            ) {
+            let enabled = MacExtendedProviderPreferences.tools.contains(tool)
+                ? MacExtendedProviderPreferences.isEnabled(tool, defaults: defaults)
+                : ManualProviderKind(rawValue: tool.rawValue).map {
+                    ManualProviderPreferences.isEnabled($0, credentialExists: false, defaults: defaults)
+                } ?? false
+            if enabled {
                 await cloudKitDeletionCoordinator.prepareForEnable(tool)
             } else {
                 await cloudKitDeletionCoordinator.resumePendingDeletion(tool)
@@ -812,6 +970,8 @@ final class AppModel: ObservableObject {
             return try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
         case .cursorTeam:
             return try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
+        case .copilot:
+            return try ProviderCredentialStore.read(kind: .copilot)?.isEmpty == false
         }
     }
 
@@ -827,7 +987,7 @@ final class AppModel: ObservableObject {
 
     // MARK: - 给 UI / 菜单栏 label
 
-    var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) + deviceCodingSnapshots }
+    var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) + deviceCodingSnapshots + extendedResults.compactMap(\.snapshot) }
 
     var activeHealthIssues: [MacHealthIssue] {
         var issues: [MacHealthIssue] = []
@@ -849,6 +1009,13 @@ final class AppModel: ObservableObject {
                 outcome: outcome,
                 snapshot: snapshot,
                 cloudSyncPending: deviceCodingCloudSyncPendingTools.contains(snapshot.tool)
+            ))
+        }
+
+        for result in extendedResults {
+            guard let item = MacDisplayItemID.item(for: result.tool) else { continue }
+            issues.append(contentsOf: MacHealthIssueBuilder.codingIssues(
+                item: item, outcome: result.outcome, snapshot: result.snapshot
             ))
         }
 
@@ -1014,6 +1181,10 @@ final class AppModel: ObservableObject {
         case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
         case .grok: return "xAI API"
+        case .copilot: return "GitHub Copilot"
+        case .windsurf: return "Windsurf"
+        case .jetBrainsAI: return "JetBrains AI"
+        case .zed: return "Zed"
         }
     }
 }

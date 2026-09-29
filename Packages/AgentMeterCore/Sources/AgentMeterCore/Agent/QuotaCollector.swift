@@ -18,6 +18,12 @@ public struct QuotaCollector: Sendable {
         public let outcome: Outcome
         /// 给 UI 显示:ok=fresh,degraded=stale/unknown,skipped=nil。
         public let snapshot: QuotaSnapshot?
+
+        public init(tool: ToolKind, outcome: Outcome, snapshot: QuotaSnapshot?) {
+            self.tool = tool
+            self.outcome = outcome
+            self.snapshot = snapshot
+        }
     }
 
     public typealias CredentialsProvider = @Sendable (ToolKind) throws -> KeychainReader.Credentials
@@ -258,6 +264,10 @@ public struct QuotaCollector: Sendable {
         case .deepSeek: return "deepseek_balance_endpoint"
         case .openRouter: return OpenRouterUsageAdapter.source
         case .grok: return GrokAPIUsageAdapter.source
+        case .copilot: return CopilotUsageAdapter.source
+        case .windsurf: return WindsurfLocalAdapter.source
+        case .jetBrainsAI: return JetBrainsAILocalAdapter.source
+        case .zed: return ZedUsageAdapter.source
         }
     }
 
@@ -273,7 +283,8 @@ public struct QuotaCollector: Sendable {
         case .cursor:
             return try await CursorPlanAdapter().fetch(
                 accessToken: creds.accessToken, fallbackPlan: creds.subscriptionType)
-        case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok:
+        case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
+             .copilot, .windsurf, .jetBrainsAI, .zed:
             throw UnsupportedTool(tool: tool)
         }
     }

@@ -94,6 +94,10 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         case .openRouter: return "OpenRouter"
         case .openCode: return "OpenCode"
         case .grok: return "xAI API"
+        case .copilot: return "GitHub Copilot"
+        case .windsurf: return "Windsurf"
+        case .jetBrainsAI: return "JetBrains AI"
+        case .zed: return "Zed"
         }
     }
 }

@@ -104,6 +104,10 @@ public enum BrandPresentation {
         case .deepSeek: standard = "DeepSeek"
         case .openRouter: standard = "OpenRouter"
         case .grok: standard = "xAI API"
+        case .copilot: standard = "GitHub Copilot"
+        case .windsurf: standard = "Windsurf"
+        case .jetBrainsAI: standard = "JetBrains AI"
+        case .zed: standard = "Zed"
         }
         return text(standard, mode: mode)
     }

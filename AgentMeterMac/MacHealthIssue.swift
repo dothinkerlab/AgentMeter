@@ -126,6 +126,10 @@ extension MacDisplayItemID {
         case .openRouter: "OpenRouter"
         case .xAI: "xAI API"
         case .cursorTeam: "Cursor Team"
+        case .copilot: "GitHub Copilot"
+        case .windsurf: "Windsurf"
+        case .jetBrainsAI: "JetBrains AI"
+        case .zed: "Zed"
         }
     }
 }

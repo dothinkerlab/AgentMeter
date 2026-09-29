@@ -89,13 +89,13 @@ public enum FiveHourResetAlertPlanner {
         guard snapshot.confidence == .fresh else { return nil }
         guard let window = snapshot.window(.fiveHour) else { return nil }
         guard window.remainingPercent < remainingPercentThreshold else { return nil }
-        guard window.resetsAt > now else { return nil }
+        guard let resetsAt = window.resetsAt, resetsAt > now else { return nil }
 
         let candidate = FiveHourResetAlertCandidate(
             tool: snapshot.tool,
             usedPercent: window.usedPercent,
             remainingPercent: window.remainingPercent,
-            resetsAt: window.resetsAt,
+            resetsAt: resetsAt,
             snapshotUpdatedAt: snapshot.updatedAt
         )
         return existingIdentifiers.contains(candidate.identifier) ? nil : candidate

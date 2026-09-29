@@ -117,13 +117,22 @@ public enum KeychainReader {
             return OpenRouterKeyStore.service
         case .grok:
             return GrokManagementKeyStore.service
+        case .copilot:
+            return ProviderCredentialStore.Kind.copilot.rawValue
+        case .windsurf:
+            return WindsurfLocalAdapter.source
+        case .jetBrainsAI:
+            return JetBrainsAILocalAdapter.source
+        case .zed:
+            return ZedUsageAdapter.source
         }
     }
 
     public static func readCredentials(tool: ToolKind = .claudeCode) throws -> Credentials {
         if tool == .cursor { return try readCursorState().credentials }
         switch tool {
-        case .kimiCode, .glmCoding, .miniMax, .deepSeek, .openRouter, .grok:
+        case .kimiCode, .glmCoding, .miniMax, .deepSeek, .openRouter, .grok,
+             .copilot, .windsurf, .jetBrainsAI, .zed:
             throw ReadError.notFound(serviceName(for: tool))
         default:
             break
@@ -174,7 +183,7 @@ public enum KeychainReader {
                 return nil
             case .openRouter:
                 return nil
-            case .grok:
+            case .grok, .copilot, .windsurf, .jetBrainsAI, .zed:
                 return nil
             }
         }

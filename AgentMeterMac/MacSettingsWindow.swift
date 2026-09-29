@@ -194,6 +194,18 @@ private struct MacAutomaticProviderDetail: View {
                     tint: provider.settingsTint,
                     state: state
                 )
+                if MacExtendedProviderPreferences.tools.contains(provider.toolKind) {
+                    if model.isExtendedProviderEnabled(provider.toolKind) {
+                        Button(L10n.string("暂停采集")) {
+                            Task { _ = await model.setExtendedProviderEnabled(provider.toolKind, enabled: false) }
+                        }
+                    } else {
+                        Button(L10n.string("启用并检测")) {
+                            Task { _ = await model.setExtendedProviderEnabled(provider.toolKind, enabled: true) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
             }
 
             Section(L10n.string("数据来源")) {
@@ -217,7 +229,7 @@ private struct MacAutomaticProviderDetail: View {
 
             Section {
                 Button {
-                    Task { await model.collectNow() }
+                    Task { await model.refreshAutomaticProvider(provider) }
                 } label: {
                     Label(L10n.string("重新检测"), systemImage: "arrow.clockwise")
                 }
@@ -233,7 +245,11 @@ private struct MacAutomaticProviderDetail: View {
         case .chatGPT: L10n.string("用量由此 Mac 的 Codex CLI 登录自动采集。")
         case .claude: L10n.string("用量由此 Mac 的 Claude Code 登录自动采集。")
         case .cursor: L10n.string("用量由此 Mac 的 Cursor 登录自动采集。")
-        default: ""
+        case .windsurf: L10n.string("只读 Windsurf 本机额度缓存，不读取浏览器 Cookie。")
+        case .jetBrainsAI: L10n.string("只读最近使用的 JetBrains IDE AI Assistant 额度文件。")
+        case .zed: L10n.string("读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。")
+        case .copilot: ""
+        case .kimiCode, .glmCoding, .miniMax: ""
         }
     }
 
@@ -242,7 +258,11 @@ private struct MacAutomaticProviderDetail: View {
         case .chatGPT: L10n.string("在终端打开 Codex 并完成登录，然后回到这里重新检测。")
         case .claude: L10n.string("在终端运行 Claude Code 并使用 /login 完成登录，然后回到这里重新检测。")
         case .cursor: L10n.string("打开 Cursor 并完成登录，然后回到这里重新检测。")
-        default: ""
+        case .windsurf: L10n.string("打开 Windsurf 使用一次 AI 功能，然后回到这里重新检测。")
+        case .jetBrainsAI: L10n.string("在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。")
+        case .zed: L10n.string("在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。")
+        case .copilot: ""
+        case .kimiCode, .glmCoding, .miniMax: ""
         }
     }
 }
@@ -284,7 +304,12 @@ private struct MacManualProviderDetail: View {
                 }
             }
 
-            if provider.category == .codingPlan {
+            if provider == .copilot {
+                Section(L10n.string("数据来源")) {
+                    Text(L10n.string("粘贴可读取当前账号 Copilot 信息的 GitHub Token。Token 仅发送到固定的 GitHub API 地址；首版不支持 GitHub Enterprise 或自动登录。"))
+                        .foregroundStyle(.secondary)
+                }
+            } else if provider.category == .codingPlan {
                 Section(L10n.string("数据来源")) {
                     Text(L10n.string("优先读取官方 CLI 或 Claude 配置；这里保存的 key 仅作回退。"))
                         .foregroundStyle(.secondary)
@@ -318,7 +343,7 @@ private struct MacManualProviderDetail: View {
                     credentialField("Team ID", placeholder: "输入 Team ID", text: $teamIDInput, secure: false)
                 } else {
                     credentialField(
-                        provider.category == .codingPlan
+                        provider == .copilot ? "GitHub Token" : provider.category == .codingPlan
                             ? "手动回退 API key"
                             : (provider == .openAIAPI || provider == .anthropicAPI || provider == .cursorTeam ? "Admin API key" : "API key"),
                         placeholder: hasManualCredential ? "已保存，输入新 key 以替换" : provider.settingsPlaceholder,
@@ -372,7 +397,7 @@ private struct MacManualProviderDetail: View {
                 Section {
                     Button(role: .destructive) { confirmRemoval = true } label: {
                         Label(
-                            provider.category == .codingPlan ? L10n.string("删除回退 key") : L10n.string("移除凭据"),
+                            provider == .copilot ? L10n.string("删除 GitHub Token") : provider.category == .codingPlan ? L10n.string("删除回退 key") : L10n.string("移除凭据"),
                             systemImage: "trash"
                         )
                     }
@@ -386,10 +411,10 @@ private struct MacManualProviderDetail: View {
         .navigationTitle(provider.settingsDisplayName)
         .task(id: provider) { load() }
         .confirmationDialog(
-            provider.category == .codingPlan ? L10n.string("删除手动回退 key？") : L10n.string("移除凭据？"),
+            provider == .copilot ? L10n.string("删除 GitHub Token？") : provider.category == .codingPlan ? L10n.string("删除手动回退 key？") : L10n.string("移除凭据？"),
             isPresented: $confirmRemoval
         ) {
-            Button(provider.category == .codingPlan ? L10n.string("删除回退 key") : L10n.string("移除凭据"), role: .destructive) {
+            Button(provider == .copilot ? L10n.string("删除 GitHub Token") : provider.category == .codingPlan ? L10n.string("删除回退 key") : L10n.string("移除凭据"), role: .destructive) {
                 Task { await removeCredential() }
             }
             Button(L10n.string("取消"), role: .cancel) {}
@@ -541,6 +566,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: .connected
         case .anthropicAPI: .disabled
         case .cursorTeam: .connected
+        case .copilot: .unconfigured
         }
     }
 
@@ -614,7 +640,7 @@ private struct MacManualProviderDetail: View {
             keyInput = ""
             teamIDInput = ""
             hasAnyCredential = try anyCredentialExists()
-            if provider.category == .codingPlan, hasAnyCredential {
+            if provider.category == .codingPlan, provider != .copilot, hasAnyCredential {
                 state = enabled ? await model.refreshManualProvider(provider) : .disabled
                 message = L10n.string("已删除手动回退 key；自动配置仍可继续采集。")
             } else {
@@ -651,6 +677,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.read(kind: .openAIAdmin)?.isEmpty == false
         case .anthropicAPI: try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
         case .cursorTeam: try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
+        case .copilot: try ProviderCredentialStore.read(kind: .copilot)?.isEmpty == false
         }
     }
 
@@ -673,6 +700,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .openAIAdmin) }
         case .anthropicAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .anthropicAdmin) }
         case .cursorTeam: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .cursorAdmin) }
+        case .copilot: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .copilot) }
         }
     }
 
@@ -688,6 +716,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.delete(kind: .openAIAdmin)
         case .anthropicAPI: try ProviderCredentialStore.delete(kind: .anthropicAdmin)
         case .cursorTeam: try ProviderCredentialStore.delete(kind: .cursorAdmin)
+        case .copilot: try ProviderCredentialStore.delete(kind: .copilot)
         }
     }
 
@@ -953,6 +982,10 @@ private extension PlanProviderKind {
         case .chatGPT: "ChatGPT"
         case .claude: "Claude"
         case .cursor: "Cursor"
+        case .copilot: "GitHub Copilot"
+        case .windsurf: "Windsurf"
+        case .jetBrainsAI: "JetBrains AI"
+        case .zed: "Zed"
         default: manualProvider!.settingsDisplayName
         }
     }
@@ -961,6 +994,10 @@ private extension PlanProviderKind {
         case .chatGPT: ">_"
         case .claude: "✱"
         case .cursor: "C"
+        case .copilot: "GH"
+        case .windsurf: "W"
+        case .jetBrainsAI: "JB"
+        case .zed: "Z"
         default: manualProvider!.settingsMonogram
         }
     }
@@ -969,6 +1006,10 @@ private extension PlanProviderKind {
         case .chatGPT: Color(red: 0.06, green: 0.62, blue: 0.45)
         case .claude: Color(red: 0.82, green: 0.38, blue: 0.23)
         case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
+        case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
+        case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
+        case .zed: Color(red: 0.28, green: 0.46, blue: 0.31)
         default: manualProvider!.settingsTint
         }
     }
@@ -987,6 +1028,7 @@ private extension ManualProviderKind {
         case .openAIAPI: L10n.string("OpenAI API 账单")
         case .anthropicAPI: L10n.string("Anthropic API 账单")
         case .cursorTeam: L10n.string("Cursor 团队用量")
+        case .copilot: "GitHub Copilot"
         }
     }
     var settingsPlaceholder: String {
@@ -996,6 +1038,7 @@ private extension ManualProviderKind {
         case .openAIAPI: "sk-admin-…"
         case .anthropicAPI: "sk-ant-admin-…"
         case .cursorTeam: "key_…"
+        case .copilot: "github_pat_…"
         default: "sk-…"
         }
     }
@@ -1010,6 +1053,7 @@ private extension ManualProviderKind {
         case .openAIAPI: "OA"
         case .anthropicAPI: "A"
         case .cursorTeam: "CT"
+        case .copilot: "GH"
         }
     }
     var settingsTint: Color {
@@ -1023,6 +1067,7 @@ private extension ManualProviderKind {
         case .openAIAPI: Color(red: 0.04, green: 0.55, blue: 0.42)
         case .anthropicAPI: Color(red: 0.76, green: 0.32, blue: 0.21)
         case .cursorTeam: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
         }
     }
     func settingsConsoleURL(region: ProviderRegion) -> URL? {
@@ -1039,6 +1084,7 @@ private extension ManualProviderKind {
         case (.openAIAPI, _): URL(string: "https://platform.openai.com/settings/organization/admin-keys")
         case (.anthropicAPI, _): URL(string: "https://console.anthropic.com/settings/admin-keys")
         case (.cursorTeam, _): URL(string: "https://cursor.com/dashboard/settings")
+        case (.copilot, _): URL(string: "https://github.com/settings/tokens")
         }
     }
 }
@@ -1059,6 +1105,10 @@ private extension MacDisplayItemID {
         case .openRouter: ManualProviderKind.openRouter.settingsDisplayName
         case .xAI: ManualProviderKind.xAI.settingsDisplayName
         case .cursorTeam: ManualProviderKind.cursorTeam.settingsDisplayName
+        case .copilot: "GitHub Copilot"
+        case .windsurf: "Windsurf"
+        case .jetBrainsAI: "JetBrains AI"
+        case .zed: "Zed"
         }
     }
     var settingsMonogram: String {
@@ -1066,6 +1116,10 @@ private extension MacDisplayItemID {
         case .codex: ">_"
         case .claudeCode: "✱"
         case .cursor: "C"
+        case .copilot: "GH"
+        case .windsurf: "W"
+        case .jetBrainsAI: "JB"
+        case .zed: "Z"
         default: manualProvider!.settingsMonogram
         }
     }
@@ -1074,6 +1128,10 @@ private extension MacDisplayItemID {
         case .codex: Color(red: 0.06, green: 0.62, blue: 0.45)
         case .claudeCode: Color(red: 0.82, green: 0.38, blue: 0.23)
         case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
+        case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
+        case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
+        case .zed: Color(red: 0.28, green: 0.46, blue: 0.31)
         default: manualProvider!.settingsTint
         }
     }

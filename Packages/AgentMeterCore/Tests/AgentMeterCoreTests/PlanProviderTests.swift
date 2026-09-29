@@ -6,6 +6,7 @@ struct PlanProviderTests {
     @Test func catalogOrderAndMappingsAreStable() {
         #expect(PlanProviderKind.allCases == [
             .chatGPT, .claude, .cursor, .kimiCode, .glmCoding, .miniMax,
+            .copilot, .windsurf, .jetBrainsAI, .zed,
         ])
         #expect(PlanProviderKind.chatGPT.toolKind == .codex)
         #expect(PlanProviderKind.claude.toolKind == .claudeCode)
@@ -15,6 +16,8 @@ struct PlanProviderTests {
         #expect(PlanProviderKind.claude.manualProvider == nil)
         #expect(PlanProviderKind.kimiCode.manualProvider == .kimiCode)
         #expect(PlanProviderKind.glmCoding.collectionMode == .deviceConfigured)
+        #expect(PlanProviderKind.copilot.manualProvider == .copilot)
+        #expect(PlanProviderKind.windsurf.collectionMode == .macAutomatic)
     }
 
     @Test func mainVisibilityDefaultsOnAndPersistsIndependently() throws {

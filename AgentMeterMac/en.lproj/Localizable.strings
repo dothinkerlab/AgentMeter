@@ -376,3 +376,21 @@
 "此项仅诊断可选的运行连接；自动恢复通过 Desktop 队列发送，不依赖此连接。" = "This only diagnoses an optional runtime connection. Automatic resume sends through the Desktop queue and does not depend on this connection.";
 
 "发送前条件已变化，已保留等待会话，未发送消息。" = "Conditions changed before sending. The session remains pending; no message was sent.";
+"每日窗口" = "Daily window";
+"高级请求" = "Premium requests";
+"聊天" = "Chat";
+"编辑预测" = "Edit predictions";
+"消息" = "Messages";
+"Flow 操作" = "Flow actions";
+"每日" = "Daily";
+"启用并检测" = "Enable and detect";
+"只读 Windsurf 本机额度缓存，不读取浏览器 Cookie。" = "Reads Windsurf's local quota cache only; browser cookies are never accessed.";
+"只读最近使用的 JetBrains IDE AI Assistant 额度文件。" = "Reads the AI Assistant quota file from the most recently used JetBrains IDE.";
+"读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。" = "Uses the local Zed Keychain login to query Zed Cloud quota.";
+"打开 Windsurf 使用一次 AI 功能，然后回到这里重新检测。" = "Use an AI feature in Windsurf, then return here and check again.";
+"在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。" = "Enable and use AI Assistant in a JetBrains IDE, then return here and check again.";
+"在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。" = "Sign in to Zed and allow AgentMeter read-only access to the matching Keychain item.";
+"GitHub Token" = "GitHub token";
+"粘贴可读取当前账号 Copilot 信息的 GitHub Token。Token 仅发送到固定的 GitHub API 地址；首版不支持 GitHub Enterprise 或自动登录。" = "Paste a GitHub token that can read Copilot information for the current account. The token is sent only to the fixed GitHub API endpoint; GitHub Enterprise and automatic sign-in are not supported yet.";
+"删除 GitHub Token" = "Delete GitHub token";
+"删除 GitHub Token？" = "Delete GitHub token?";

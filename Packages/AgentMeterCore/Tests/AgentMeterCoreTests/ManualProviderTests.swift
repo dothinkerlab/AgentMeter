@@ -4,7 +4,7 @@ import Testing
 
 struct ManualProviderTests {
     @Test func providerMappingsCoverAllServices() {
-        #expect(ManualProviderKind.allCases.count == 10)
+        #expect(ManualProviderKind.allCases.count == 11)
         #expect(ManualProviderKind.kimiCode.toolKind == .kimiCode)
         #expect(ManualProviderKind.kimiAPI.toolKind == nil)
         #expect(ManualProviderKind.xAI.toolKind == .grok)
@@ -17,6 +17,8 @@ struct ManualProviderTests {
         #expect(ManualProviderKind.anthropicAPI.credentialShape == .apiKey)
         #expect(ManualProviderKind.cursorTeam.localBillingService == nil)
         #expect(ManualProviderKind.cursorTeam.toolKind == nil)
+        #expect(ManualProviderKind.copilot.toolKind == .copilot)
+        #expect(ManualProviderKind.copilot.category == .codingPlan)
     }
 
     @Test func billingProvidersMigrateExistingCredentialsToEnabled() throws {

@@ -376,3 +376,21 @@
 "此项仅诊断可选的运行连接；自动恢复通过 Desktop 队列发送，不依赖此连接。" = "此项仅诊断可选的运行连接；自动恢复通过 Desktop 队列发送，不依赖此连接。";
 
 "发送前条件已变化，已保留等待会话，未发送消息。" = "发送前条件已变化，已保留等待会话，未发送消息。";
+"每日窗口" = "每日窗口";
+"高级请求" = "高级请求";
+"聊天" = "聊天";
+"编辑预测" = "编辑预测";
+"消息" = "消息";
+"Flow 操作" = "Flow 操作";
+"每日" = "每日";
+"启用并检测" = "启用并检测";
+"只读 Windsurf 本机额度缓存，不读取浏览器 Cookie。" = "只读 Windsurf 本机额度缓存，不读取浏览器 Cookie。";
+"只读最近使用的 JetBrains IDE AI Assistant 额度文件。" = "只读最近使用的 JetBrains IDE AI Assistant 额度文件。";
+"读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。" = "读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。";
+"打开 Windsurf 使用一次 AI 功能，然后回到这里重新检测。" = "打开 Windsurf 使用一次 AI 功能，然后回到这里重新检测。";
+"在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。" = "在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。";
+"在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。" = "在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。";
+"GitHub Token" = "GitHub Token";
+"粘贴可读取当前账号 Copilot 信息的 GitHub Token。Token 仅发送到固定的 GitHub API 地址；首版不支持 GitHub Enterprise 或自动登录。" = "粘贴可读取当前账号 Copilot 信息的 GitHub Token。Token 仅发送到固定的 GitHub API 地址；首版不支持 GitHub Enterprise 或自动登录。";
+"删除 GitHub Token" = "删除 GitHub Token";
+"删除 GitHub Token？" = "删除 GitHub Token？";
