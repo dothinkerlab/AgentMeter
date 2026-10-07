@@ -98,10 +98,10 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 | 本地 API 余额与账单 | DeepSeek、OpenRouter、Kimi API | 在各设备配置服务商凭据 |
 | 本地 API 成本 | OpenAI API、Anthropic API | 使用有权查看组织级成本的凭据 |
 | 本地 API 账单 | xAI API | Management Key 和 Team ID |
-| 仅限 Mac 的余额与用量 | TypeSafe API（Jev） | Chrome 控制台会话（默认 Auto）或完整 Cookie header（Manual） |
+| 余额与用量（可选 Mac → iPhone 同步） | TypeSafe API（Jev） | Chrome 控制台会话（默认 Auto）或完整 Cookie header（Manual） |
 | 仅限 Mac 的团队账单 | Cursor Team | Team/Enterprise Admin API key |
 
-可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单记录不会进入 CloudKit**，Cursor Team 成员身份与金额仅保留在 Mac 上。
+可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单默认不进入 CloudKit；Jev 可显式开启显示数据同步**，Cursor Team 成员身份与金额仅保留在 Mac 上。
 
 ### TypeSafe API（Jev）Mac 接入
 
@@ -109,7 +109,7 @@ TypeSafe 默认关闭，登录来源默认 Auto。启用后只读所选 Chrome �
 
 Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings/billing) 已登录请求的完整 Cookie header，保存在本机 Keychain；普通推理 API key 无法替代登录会话。两种来源不互相回退，可暂停、重新连接或删除手动 Cookie。
 
-余额、账单页周期消费、有效 Credit 的余额与到期日期，以及今日、最近 7 天、本月 Token 和本月请求数仅在 Mac 展示。账单页消费与 Token 用量口径不同，历史覆盖范围未知，数据可能延迟；到期时间不是额度重置时间。Auto Cookie 仅保留在内存，凭据和账单不进入 iCloud、日志或诊断。控制台接口未公开，可能变化或要求浏览器验证；采集不调用推理接口。
+余额、账单页周期消费、有效 Credit 的余额与到期日期，以及今日、最近 7 天、本月 Token 和本月请求数默认仅在 Mac 展示；在一台 Mac 开启“同步 Jev 到 iCloud”后，可通过相同 Apple ID 提供给 iPhone、Widget 和 Watch。账单页消费与 Token 用量口径不同，历史覆盖范围未知，数据可能延迟；到期时间不是额度重置时间。Auto Cookie 仅保留在内存，凭据不进入 iCloud；仅显式开启的 Jev 显示数据可进入私有 CloudKit。凭据和账单数值不进入日志或诊断。控制台接口未公开，可能变化或要求浏览器验证；采集不调用推理接口。
 
 ## 隐私与同步
 
@@ -118,7 +118,7 @@ Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings
 - **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 与 Windsurf 数据库和 JetBrains AI 额度文件均以只读方式打开；Zed 凭据只从同源的本机 Keychain 项目读取，AgentMeter 不刷新或修改这些凭据。
 - **手动输入的凭据**：存入本机 Keychain，关闭 iCloud Keychain 同步及通过备份迁移至其他设备的能力。
 - **私有额度同步**：仅将经过清理的编程套餐状态写入你的私有 CloudKit 数据库，例如额度窗口、重置时间、订阅档位、重置额度可用数量与数据更新状态；不包含服务商凭据或上游重置额度 ID。
-- **本地账单**：账单记录保留在采集设备上。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
+- **本地账单**：账单记录默认保留在采集设备上；Jev 显示数据可显式开启私有云同步。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
 - **设备访问范围**：Apple Watch 读取已同步的额度，不接收服务商令牌，也不直连服务商；iPhone 只查询你在该设备上明确配置的服务商。
 
 刷新失败时，应用会标记数据已过期。脱敏诊断仅在你主动导出时生成。

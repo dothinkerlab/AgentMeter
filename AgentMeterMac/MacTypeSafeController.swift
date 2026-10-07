@@ -93,7 +93,10 @@ struct MacTypeSafeCredentialStore: MacTypeSafeCredentialStoring {
 /// Owns account selection and request generations. Status getters never read browser secrets.
 @MainActor
 final class MacTypeSafeController: ObservableObject {
-    @Published private(set) var usage: TypeSafeUsage?
+    @Published private(set) var usage: TypeSafeUsage? {
+        didSet { cloudSync.update(TypeSafeDisplaySnapshot(usage ?? .init(), paused: !enabled)) }
+    }
+    let cloudSync: MacTypeSafeSyncController
     @Published private(set) var profiles: [MacTypeSafeProfile] = []
     @Published private(set) var source: TypeSafeCookieSource
     @Published private(set) var profileID: String
@@ -115,6 +118,7 @@ final class MacTypeSafeController: ObservableObject {
          credentials: any MacTypeSafeCredentialStoring = MacTypeSafeCredentialStore(),
          adapter: TypeSafeBillingAdapter = TypeSafeBillingAdapter()) {
         self.defaults = defaults
+        self.cloudSync = MacTypeSafeSyncController(defaults: defaults)
         self.importer = importer
         self.credentials = credentials
         self.adapter = adapter
@@ -184,7 +188,11 @@ final class MacTypeSafeController: ObservableObject {
     func setEnabled(_ value: Bool) {
         enabled = value
         ManualProviderPreferences.setEnabled(value, for: .typesafe, defaults: defaults)
-        if !value { invalidate() }
+        if !value {
+            let previous = usage
+            invalidate()
+            cloudSync.update(TypeSafeDisplaySnapshot(previous ?? .init(), paused: true))
+        }
     }
 
     func saveManualCookie(_ input: String) throws {

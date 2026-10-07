@@ -77,7 +77,7 @@ Manually entered credentials are device-local. If you configure a provider on bo
 
 ### 3. Check your quota
 
-View remaining quota and reset times in the Mac menu bar. To see coding-plan quota on iPhone and Apple Watch, enable iCloud with the **same Apple ID** across those devices. iCloud is used for cross-device quota sync; API billing stays on the device that collects it.
+View remaining quota and reset times in the Mac menu bar. To see coding-plan quota on iPhone and Apple Watch, enable iCloud with the **same Apple ID** across those devices. iCloud is used for cross-device quota sync; API billing stays on the device that collects it, with an opt-in exception for Jev display sync.
 
 ## Features
 
@@ -99,9 +99,9 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 | Local API costs | OpenAI API, Anthropic API | Credentials with access to organization-level costs |
 | Local API billing | xAI API | Management Key and Team ID |
 | Mac-only team billing | Cursor Team | Team/Enterprise Admin API key |
-| Mac-only API balance and usage | TypeSafe API (Jev) | Chrome console session (Auto, default) or manually pasted Cookie header |
+| API balance and usage with opt-in Mac → iPhone sync | TypeSafe API (Jev) | Chrome console session (Auto, default) or manually pasted Cookie header |
 
-Available metrics depend on the provider. OpenAI API and Anthropic API costs refer to developer API usage, not ChatGPT or Claude web/app subscriptions. Coding-plan quota can sync through private iCloud; **API billing records never enter CloudKit**, and Cursor Team member identities and amounts stay on Mac.
+Available metrics depend on the provider. OpenAI API and Anthropic API costs refer to developer API usage, not ChatGPT or Claude web/app subscriptions. Coding-plan quota can sync through private iCloud; **API billing remains local except for explicitly enabled Jev display sync**, and Cursor Team member identities and amounts stay on Mac.
 
 ### TypeSafe API (Jev) on Mac
 
@@ -109,17 +109,17 @@ TypeSafe is disabled until you enable it in Settings. Auto reads the selected Ch
 
 Manual accepts the full Cookie header from an authenticated request on [TypeSafe Billing](https://console.typesafe.ai/settings/billing). Store it using the secure field in Settings; an inference API key cannot replace a console session. You can pause collection, reconnect, or delete the manual Cookie. Auto and Manual are separate sources and do not fall back to each other.
 
-Balance, billing-page cycle spend, active credit grants, and token/request summaries stay on Mac. Billing-page spend and token totals use different accounting scopes; summaries may be delayed and history coverage is not guaranteed. Credit expiry is not a quota reset. Console interfaces are undocumented and may change or be blocked by a browser challenge. Collection does not call Jev inference.
+Balance, billing-page cycle spend, active credit grants, and token/request summaries stay on Mac by default. Enable **Sync Jev to iCloud** on one Mac to share cleaned display facts with iPhone, widgets, and Apple Watch using the same Apple ID. Phone refresh checks the cloud; it does not query Jev. Billing-page spend and token totals use different accounting scopes; summaries may be delayed and history coverage is not guaranteed. Credit expiry is not a quota reset. Console interfaces are undocumented and may change or be blocked by a browser challenge. Collection does not call Jev inference.
 
 ## Privacy and sync
 
 Each collecting device queries providers using its own local credentials. AgentMeter does not send those credentials to us or write them to iCloud.
 
 - **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Cursor and Windsurf databases and JetBrains AI quota files are opened read-only. Zed credentials are read from the matching local Keychain item and are never refreshed or modified by AgentMeter.
-- **TypeSafe console sessions:** automatic cookies stay in memory; manual Cookie headers use the device-local Keychain. Only the fixed TypeSafe console origin receives them, and redirects are refused. No TypeSafe billing or credentials enter CloudKit.
+- **TypeSafe console sessions:** automatic cookies stay in memory; manual Cookie headers use the device-local Keychain. Only the fixed TypeSafe console origin receives them, and redirects are refused. TypeSafe credentials never enter CloudKit. Opt-in Jev sync stores only display facts in a separate private record.
 - **Manually entered credentials:** stored in the local Keychain, with iCloud Keychain synchronization and backup migration to another device disabled.
 - **Private quota sync:** only cleaned coding-plan status—such as quota windows, reset times, subscription tier, reset-credit availability, and freshness information—is written to your private CloudKit database. Provider credentials and upstream reset-credit IDs are excluded.
-- **Local billing:** billing records remain on the collecting device. Cursor Team member identities and amounts remain on the Mac holding the Admin API key.
+- **Local billing:** billing records remain on the collecting device except for opt-in Jev display sync. Cursor Team member identities and amounts remain on the Mac holding the Admin API key.
 - **Device boundaries:** Apple Watch reads synced quota and never receives provider tokens or connects directly to providers. iPhone queries only providers you explicitly configure on that device.
 
 If a refresh fails, the app marks the data as stale. Sanitized diagnostics are generated only when you request an export.

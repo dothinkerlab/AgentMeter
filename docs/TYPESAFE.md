@@ -16,7 +16,7 @@ The billing action supplies Decimal USD balance, cycle spend, plan and unexpired
 
 Billing and tokens retain separate successful timestamps and failures. An error keeps that stream's previous values; an initial error is unknown. Login expiry, access denial, rate limiting, Cloudflare challenges, unavailable endpoints, network errors and changed formats have distinct settings messages.
 
-Production uses an isolated ephemeral URLSession with no Cookie storage or URL cache. Every request is restricted to `https://console.typesafe.ai`; all redirects, including same-origin login redirects, are refused. There are no inference calls. The local billing model is never written to CloudKit. Diagnostic exports include only service names, confidence, sanitized failure categories and successful timestamps; no Cookie, Chrome path, raw error, plan, amount or token count is exported.
+Production uses an isolated ephemeral URLSession with no Cookie storage or URL cache. Every request is restricted to `https://console.typesafe.ai`; all redirects, including same-origin login redirects, are refused. There are no inference calls. The local billing model is never written directly to CloudKit. An explicit, default-off sync switch exports only `TypeSafeDisplaySnapshot` via a separate private `TypeSafeDisplaySnapshot` record. Cookies and browser profiles are excluded. Diagnostic exports include only service names, confidence, sanitized failure categories and successful timestamps; no Cookie, Chrome path, raw error, plan, amount or token count is exported.
 
 SweetCookieKit **0.5.5** is an exact Mac-target-only dependency. macOS 13 remains the minimum; building requires Swift 6.2 or newer. The shared core has no browser dependency.
 
@@ -39,3 +39,10 @@ Nonzero spend, active Credit expiry and populated usage still have fixture cover
 - [TypeSafe billing](https://console.typesafe.ai/settings/billing): account login and manual comparison.
 
 The console endpoints are private and may change or require browser verification.
+
+
+## Jev display sync
+
+Enable **Sync Jev to iCloud** on one collecting Mac. iPhone reads the latest private record `billing-typesafe-mac`, caches the display DTO in its App Group, and distributes it to WatchConnectivity. Watch never queries Jev. Independent billing/token success times are preserved; received data older than 15 minutes is stale. Pause preserves last facts; disabling sync sends a tombstone. A serialized, persisted latest-state outbox retries failures every two minutes, including while collection is disabled. Changing iCloud accounts discards the old outbox and requires enabling sync again.
+
+Before release, deploy the additive schema in the iOS repository's `CloudKitSchema/agentmeter.ckdb`. Production must accept `TypeSafeDisplaySnapshot.payloadJSON` (String) and `revision` (Timestamp). Follow the existing Production deployment review gate. Never deploy a quota record change as part of Jev.

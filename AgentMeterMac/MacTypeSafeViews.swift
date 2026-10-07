@@ -39,6 +39,8 @@ struct MacTypeSafeSettingsView: View {
                     }
                 ))
             }
+            MacTypeSafeSyncSettingsView(sync: controller.cloudSync,
+                snapshot: TypeSafeDisplaySnapshot(controller.usage ?? .init(), paused: !controller.enabled))
             Section(L10n.string("登录来源")) {
                 Picker(L10n.string("来源"), selection: Binding(
                     get: { controller.source },
@@ -211,6 +213,28 @@ struct MacTypeSafeUsageDetails: View {
         }
         if let failure {
             Text(failure.typeSafeMessage).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+
+private struct MacTypeSafeSyncSettingsView: View {
+    @ObservedObject var sync: MacTypeSafeSyncController
+    let snapshot: TypeSafeDisplaySnapshot
+    var body: some View {
+        Section(L10n.string("Jev iCloud 同步")) {
+            Toggle(L10n.string("同步 Jev 到 iCloud"), isOn: Binding(
+                get: { sync.enabled }, set: { sync.setEnabled($0, snapshot: snapshot) }))
+            Text(L10n.string("仅同步余额与用量显示数据，Cookie 始终保留在 Mac。请只在一台 Mac 开启。"))
+                .font(.caption).foregroundStyle(.secondary)
+            if sync.uploading { ProgressView() }
+            if sync.failed {
+                Text(L10n.string(sync.failureMessage ?? "Jev 同步失败，将自动重试。请检查 iCloud 登录和网络。"))
+                    .foregroundStyle(.orange)
+            } else if let date = sync.lastUploadedAt {
+                Text("\(L10n.string("最近同步")): \(date.formatted())").font(.caption)
+            }
+            Button(L10n.string("重试同步")) { Task { await sync.flush() } }
         }
     }
 }
