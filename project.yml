@@ -29,6 +29,9 @@ settings:
       AGENTMETER_BUILD_CONFIGURATION: Release
 
 packages:
+  SweetCookieKit:
+    url: https://github.com/steipete/SweetCookieKit.git
+    exactVersion: 0.5.5
   AgentMeterCore:
     path: Packages/AgentMeterCore
 
@@ -58,6 +61,8 @@ targets:
     dependencies:
       - package: AgentMeterCore
         product: AgentMeterCore
+      - package: SweetCookieKit
+        product: SweetCookieKit
 
   AgentMeterMacTests:
     type: bundle.unit-test

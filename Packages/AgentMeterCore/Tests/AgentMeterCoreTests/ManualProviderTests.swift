@@ -4,7 +4,7 @@ import Testing
 
 struct ManualProviderTests {
     @Test func providerMappingsCoverAllServices() {
-        #expect(ManualProviderKind.allCases.count == 11)
+        #expect(ManualProviderKind.allCases.count == 12)
         #expect(ManualProviderKind.kimiCode.toolKind == .kimiCode)
         #expect(ManualProviderKind.kimiAPI.toolKind == nil)
         #expect(ManualProviderKind.xAI.toolKind == .grok)

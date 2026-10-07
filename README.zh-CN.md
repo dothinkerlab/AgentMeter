@@ -98,9 +98,18 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 | 本地 API 余额与账单 | DeepSeek、OpenRouter、Kimi API | 在各设备配置服务商凭据 |
 | 本地 API 成本 | OpenAI API、Anthropic API | 使用有权查看组织级成本的凭据 |
 | 本地 API 账单 | xAI API | Management Key 和 Team ID |
+| 仅限 Mac 的余额与用量 | TypeSafe API（Jev） | Chrome 控制台会话（默认 Auto）或完整 Cookie header（Manual） |
 | 仅限 Mac 的团队账单 | Cursor Team | Team/Enterprise Admin API key |
 
 可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单记录不会进入 CloudKit**，Cursor Team 成员身份与金额仅保留在 Mac 上。
+
+### TypeSafe API（Jev）Mac 接入
+
+TypeSafe 默认关闭，登录来源默认 Auto。启用后只读所选 Chrome 配置中的 TypeSafe 会话；首次连接可能请求 Chrome Safe Storage 钥匙串授权，后台刷新不会弹窗。多个 Chrome 配置可在设置中选择，会话过期后不会自动切换账号。
+
+Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings/billing) 已登录请求的完整 Cookie header，保存在本机 Keychain；普通推理 API key 无法替代登录会话。两种来源不互相回退，可暂停、重新连接或删除手动 Cookie。
+
+余额、账单页周期消费、有效 Credit 的余额与到期日期，以及今日、最近 7 天、本月 Token 和本月请求数仅在 Mac 展示。账单页消费与 Token 用量口径不同，历史覆盖范围未知，数据可能延迟；到期时间不是额度重置时间。Auto Cookie 仅保留在内存，凭据和账单不进入 iCloud、日志或诊断。控制台接口未公开，可能变化或要求浏览器验证；采集不调用推理接口。
 
 ## 隐私与同步
 
@@ -128,7 +137,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 本仓库包含 **macOS 伴侣应用**（`AgentMeterMac`）和**共享核心包**（`AgentMeterCore`）。iPhone 与 Apple Watch 应用通过 App Store 分发，其源码不包含在本仓库中。
 
-前置条件：包含 **Swift 6 工具链**的 Xcode，以及用于生成 Xcode 工程的 **XcodeGen**。以下命令均从仓库根目录执行。
+前置条件：包含 **Swift 6.2 或更新工具链**的 Xcode，以及用于生成 Xcode 工程的 **XcodeGen**。以下命令均从仓库根目录执行。
 
 运行核心测试：
 

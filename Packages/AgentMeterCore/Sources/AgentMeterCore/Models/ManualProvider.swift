@@ -16,6 +16,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     case anthropicAPI
     case cursorTeam
     case copilot
+    case typesafe
 
     public enum Category: Sendable {
         case codingPlan
@@ -25,17 +26,22 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     public enum CredentialShape: Sendable {
         case apiKey
         case managementKeyAndTeamID
+        case cookieHeader
     }
 
     public var category: Category {
         switch self {
         case .kimiCode, .glmCoding, .miniMax, .copilot: .codingPlan
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam: .billing
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe: .billing
         }
     }
 
     public var credentialShape: CredentialShape {
-        self == .xAI ? .managementKeyAndTeamID : .apiKey
+        switch self {
+        case .typesafe: .cookieHeader
+        case .xAI: .managementKeyAndTeamID
+        default: .apiKey
+        }
     }
 
     public var supportsRegion: Bool {
@@ -54,7 +60,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
-        case .kimiAPI, .openAIAPI, .anthropicAPI, .cursorTeam: nil
+        case .kimiAPI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe: nil
         }
     }
 
@@ -129,7 +135,7 @@ public enum ManualProviderPreferences {
         switch provider {
         case .kimiCode, .glmCoding, .miniMax, .copilot:
             return "codingProvider.\(provider.rawValue).enabled"
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam:
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe:
             return "manualProvider.\(provider.rawValue).enabled"
         }
     }
@@ -157,7 +163,7 @@ public enum ManualProviderPreferences {
         if defaults.object(forKey: key) != nil {
             return defaults.bool(forKey: key)
         }
-        return provider.category == .billing && credentialExists
+        return provider != .typesafe && provider.category == .billing && credentialExists
     }
 
     public static func setEnabled(

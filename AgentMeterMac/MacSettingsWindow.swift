@@ -85,8 +85,11 @@ struct MacSettingsView: View {
         case let .automatic(provider):
             MacAutomaticProviderDetail(provider: provider, model: model)
         case let .manual(provider):
-            MacManualProviderDetail(provider: provider, model: model)
-                .id(provider)
+            if provider == .typesafe {
+                MacTypeSafeSettingsView(controller: model.typeSafeController)
+            } else {
+                MacManualProviderDetail(provider: provider, model: model).id(provider)
+            }
         case .about:
             MacAboutSettingsView(model: model)
         }
@@ -566,6 +569,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: .connected
         case .anthropicAPI: .disabled
         case .cursorTeam: .connected
+        case .typesafe: .disabled
         case .copilot: .unconfigured
         }
     }
@@ -677,6 +681,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.read(kind: .openAIAdmin)?.isEmpty == false
         case .anthropicAPI: try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
         case .cursorTeam: try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
+        case .typesafe: try ProviderCredentialStore.read(kind: .typesafeCookie)?.isEmpty == false
         case .copilot: try ProviderCredentialStore.read(kind: .copilot)?.isEmpty == false
         }
     }
@@ -700,6 +705,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .openAIAdmin) }
         case .anthropicAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .anthropicAdmin) }
         case .cursorTeam: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .cursorAdmin) }
+        case .typesafe: if !key.isEmpty { try ProviderCredentialStore.save(TypeSafeCookieHeader.normalize(key), kind: .typesafeCookie) }
         case .copilot: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .copilot) }
         }
     }
@@ -716,6 +722,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.delete(kind: .openAIAdmin)
         case .anthropicAPI: try ProviderCredentialStore.delete(kind: .anthropicAdmin)
         case .cursorTeam: try ProviderCredentialStore.delete(kind: .cursorAdmin)
+        case .typesafe: try ProviderCredentialStore.delete(kind: .typesafeCookie)
         case .copilot: try ProviderCredentialStore.delete(kind: .copilot)
         }
     }
@@ -896,7 +903,7 @@ private struct MacAboutSettingsView: View {
             status("OpenAI API", model.openAIAPIUsage),
             status("Anthropic API", model.anthropicAPIUsage),
             status("Cursor Team", model.cursorTeamUsage),
-        ].compactMap { $0 }
+        ].compactMap { $0 } + MacTypeSafeDiagnostics.statuses(for: model.typesafeUsage)
 
         return AgentMeterDiagnosticReport(
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—",
@@ -1028,6 +1035,7 @@ private extension ManualProviderKind {
         case .openAIAPI: L10n.string("OpenAI API 账单")
         case .anthropicAPI: L10n.string("Anthropic API 账单")
         case .cursorTeam: L10n.string("Cursor 团队用量")
+        case .typesafe: "TypeSafe API (Jev)"
         case .copilot: "GitHub Copilot"
         }
     }
@@ -1053,6 +1061,7 @@ private extension ManualProviderKind {
         case .openAIAPI: "OA"
         case .anthropicAPI: "A"
         case .cursorTeam: "CT"
+        case .typesafe: "TS"
         case .copilot: "GH"
         }
     }
@@ -1067,6 +1076,7 @@ private extension ManualProviderKind {
         case .openAIAPI: Color(red: 0.04, green: 0.55, blue: 0.42)
         case .anthropicAPI: Color(red: 0.76, green: 0.32, blue: 0.21)
         case .cursorTeam: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .typesafe: Color(red: 0.28, green: 0.35, blue: 0.40)
         case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
         }
     }
@@ -1084,6 +1094,7 @@ private extension ManualProviderKind {
         case (.openAIAPI, _): URL(string: "https://platform.openai.com/settings/organization/admin-keys")
         case (.anthropicAPI, _): URL(string: "https://console.anthropic.com/settings/admin-keys")
         case (.cursorTeam, _): URL(string: "https://cursor.com/dashboard/settings")
+        case (.typesafe, _): TypeSafeBillingAdapter.billingURL
         case (.copilot, _): URL(string: "https://github.com/settings/tokens")
         }
     }
@@ -1105,6 +1116,7 @@ private extension MacDisplayItemID {
         case .openRouter: ManualProviderKind.openRouter.settingsDisplayName
         case .xAI: ManualProviderKind.xAI.settingsDisplayName
         case .cursorTeam: ManualProviderKind.cursorTeam.settingsDisplayName
+        case .typesafe: ManualProviderKind.typesafe.settingsDisplayName
         case .copilot: "GitHub Copilot"
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"

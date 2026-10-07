@@ -286,6 +286,8 @@ struct MenuBarContentView: View {
                     warning: apiCostWarning(usage, provider: "Anthropic")
                 )
             }
+        case .typesafe:
+            if let usage = model.typesafeUsage { MacTypeSafeUsageRow(usage: usage) }
         case .kimiAPI:
             if let balance = model.kimiAPIBalance { MacKimiAPIBalanceRow(balance: balance) }
         case .deepSeek:

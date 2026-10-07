@@ -14,6 +14,7 @@ public enum ProviderCredentialStore {
         case anthropicAdmin = "AnthropicAdmin-credentials"
         case cursorAdmin = "CursorAdmin-credentials"
         case copilot = "Copilot-credentials"
+        case typesafeCookie = "TypeSafeConsole-cookie"
     }
 
     public enum KeyError: Error, Equatable {
@@ -45,9 +46,9 @@ public enum ProviderCredentialStore {
         guard status == errSecSuccess else { throw KeyError.osStatus(status) }
     }
 
-    public static func read(kind: Kind, service: String? = nil) throws -> String? {
+    public static func read(kind: Kind, service: String? = nil, allowInteraction: Bool = true) throws -> String? {
         let service = service ?? kind.rawValue
-        let query: [String: Any] = [
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
@@ -55,6 +56,7 @@ public enum ProviderCredentialStore {
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
+        if !allowInteraction { query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
@@ -63,7 +65,7 @@ public enum ProviderCredentialStore {
             if status != errSecSuccess { throw KeyError.osStatus(status) }
             throw KeyError.invalidData
         }
-        try harden(service: service)
+        try harden(service: service, allowInteraction: allowInteraction)
         return value
     }
 
@@ -80,7 +82,7 @@ public enum ProviderCredentialStore {
         }
     }
 
-    private static func harden(service: String) throws {
+    private static func harden(service: String, allowInteraction: Bool) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -88,13 +90,16 @@ public enum ProviderCredentialStore {
             kSecAttrSynchronizable as String: kCFBooleanFalse!,
         ]
         var protected = query
+        if !allowInteraction { protected[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
         protected[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         protected[kSecMatchLimit as String] = kSecMatchLimitOne
         let lookup = SecItemCopyMatching(protected as CFDictionary, nil)
         if lookup == errSecSuccess { return }
         guard lookup == errSecItemNotFound else { throw KeyError.osStatus(lookup) }
+        var updateQuery = query
+        if !allowInteraction { updateQuery[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail }
         let status = SecItemUpdate(
-            query as CFDictionary,
+            updateQuery as CFDictionary,
             [kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly] as CFDictionary
         )
         guard status == errSecSuccess else { throw KeyError.osStatus(status) }
