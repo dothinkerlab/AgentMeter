@@ -89,14 +89,25 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 
 ## Supported services
 
-| Data | Providers | Setup |
+AgentMeter supports the following 19 services. Each service is listed separately with its data and setup requirements.
+
+| Data | Provider | Setup |
 | --- | --- | --- |
-| Coding-plan quota | Claude Code, Codex, Cursor | Existing sign-in on your Mac |
+| Coding-plan quota | Claude Code | Existing sign-in on your Mac |
+| Coding-plan quota | Codex | Existing sign-in on your Mac |
+| Coding-plan quota | Cursor | Existing sign-in on your Mac |
 | Coding-plan quota | GitHub Copilot | GitHub token stored in the local Keychain |
-| Coding-plan quota | Windsurf, JetBrains AI, Zed | Opt-in detection of an existing Mac sign-in or local quota cache |
-| Coding-plan quota | Kimi Code, GLM Coding Plan, MiniMax Token Plan | Provider settings on Mac or iPhone |
-| Local API balance and billing | DeepSeek, OpenRouter, Kimi API | Provider credentials on each device |
-| Local API costs | OpenAI API, Anthropic API | Credentials with access to organization-level costs |
+| Coding-plan quota | Windsurf | Opt-in detection of an existing Mac sign-in or local quota cache |
+| Coding-plan quota | JetBrains AI | Opt-in detection of an existing Mac sign-in or local quota cache |
+| Coding-plan quota | Zed | Opt-in detection of an existing Mac sign-in or local quota cache |
+| Coding-plan quota | Kimi Code | Provider settings on Mac or iPhone |
+| Coding-plan quota | GLM Coding Plan | Provider settings on Mac or iPhone |
+| Coding-plan quota | MiniMax Token Plan | Provider settings on Mac or iPhone |
+| Local API balance and billing | DeepSeek | Provider credentials on each device |
+| Local API balance and billing | OpenRouter | Provider credentials on each device |
+| Local API balance and billing | Kimi API | Provider credentials on each device |
+| Local API costs | OpenAI API | Credentials with access to organization-level costs |
+| Local API costs | Anthropic API | Credentials with access to organization-level costs |
 | Local API billing | xAI API | Management Key and Team ID |
 | Mac-only team billing | Cursor Team | Team/Enterprise Admin API key |
 | API balance and usage with opt-in Mac → iPhone sync | TypeSafe API (Jev) | Chrome console session (Auto, default) or manually pasted Cookie header |
