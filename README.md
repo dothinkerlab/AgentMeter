@@ -13,7 +13,7 @@
 </div>
 
 
-**AgentMeter** keeps AI coding quota, reset times, and API billing visible on your Mac menu bar, iPhone, and Apple Watch—even when you are away from the keyboard. All features are free.
+**AgentMeter** keeps AI coding quota, reset times, and API billing visible on your Mac menu bar, iPhone, and Apple Watch—even when you are away from the keyboard. Watch app and complications are free; iPhone widgets follow the existing Pro entitlement.
 
 ## Screenshots
 
@@ -77,7 +77,7 @@ Manually entered credentials are device-local. If you configure a provider on bo
 
 ### 3. Check your quota
 
-View remaining quota and reset times in the Mac menu bar. To see coding-plan quota on iPhone and Apple Watch, enable iCloud with the **same Apple ID** across those devices. iCloud is used for cross-device quota sync; API billing stays on the device that collects it, with an opt-in exception for Jev display sync.
+View remaining quota and reset times in the Mac menu bar. To see coding-plan quota on iPhone and Apple Watch, enable iCloud with the **same Apple ID** across those devices. iCloud is used for cross-device quota sync; API billing stays on the device that collects it, with opt-in exceptions for Jev display sync and Perplexity account credits.
 
 ## Features
 
@@ -100,6 +100,7 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 | Local API billing | xAI API | Management Key and Team ID |
 | Mac-only team billing | Cursor Team | Team/Enterprise Admin API key |
 | API balance and usage with opt-in Mac → iPhone sync | TypeSafe API (Jev) | Chrome console session (Auto, default) or manually pasted Cookie header |
+| Perplexity account credits with opt-in Mac → iPhone sync | Perplexity | Chrome session (Auto) or Cookie/session token (Manual); collection and sync default off |
 
 Available metrics depend on the provider. OpenAI API and Anthropic API costs refer to developer API usage, not ChatGPT or Claude web/app subscriptions. Coding-plan quota can sync through private iCloud; **API billing remains local except for explicitly enabled Jev display sync**, and Cursor Team member identities and amounts stay on Mac.
 
@@ -111,15 +112,22 @@ Manual accepts the full Cookie header from an authenticated request on [TypeSafe
 
 Balance, billing-page cycle spend, active credit grants, and token/request summaries stay on Mac by default. Enable **Sync Jev to iCloud** on one Mac to share cleaned display facts with iPhone, widgets, and Apple Watch using the same Apple ID. Phone refresh checks the cloud; it does not query Jev. Billing-page spend and token totals use different accounting scopes; summaries may be delayed and history coverage is not guaranteed. Credit expiry is not a quota reset. Console interfaces are undocumented and may change or be blocked by a browser challenge. Collection does not call Jev inference.
 
+### Perplexity account credits
+
+Enable **Perplexity account credits** in Mac Settings. Auto uses one fixed Chrome profile (Default first); Manual accepts a Cookie header or session token stored in the local Keychain. Background reads never prompt, and sources never fall back to each other. The three pools show recurring, purchased and bonus credits, with inferred consumption and actual renewal/expiry dates. No dollar conversion or developer API cost history is included.
+
+Enable **Sync Perplexity to iCloud** on one collecting Mac to share display facts with iPhone, widgets and Watch. Cookies stay on Mac. Refresh failures retain the last successful facts; data older than 15 minutes is stale. See [setup, calculation and sync details](docs/PERPLEXITY.md). The web interface is undocumented and may require browser verification.
+
 ## Privacy and sync
 
 Each collecting device queries providers using its own local credentials. AgentMeter does not send those credentials to us or write them to iCloud.
 
 - **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Cursor and Windsurf databases and JetBrains AI quota files are opened read-only. Zed credentials are read from the matching local Keychain item and are never refreshed or modified by AgentMeter.
 - **TypeSafe console sessions:** automatic cookies stay in memory; manual Cookie headers use the device-local Keychain. Only the fixed TypeSafe console origin receives them, and redirects are refused. TypeSafe credentials never enter CloudKit. Opt-in Jev sync stores only display facts in a separate private record.
+- **Perplexity web sessions:** Auto cookies stay in memory; Manual credentials stay in the local Keychain. Requests go only to the fixed Perplexity credits endpoint and refuse redirects. Optional sync uses a separate private display record containing credits, timestamps and state, never cookies or profile identities.
 - **Manually entered credentials:** stored in the local Keychain, with iCloud Keychain synchronization and backup migration to another device disabled.
 - **Private quota sync:** only cleaned coding-plan status—such as quota windows, reset times, subscription tier, reset-credit availability, and freshness information—is written to your private CloudKit database. Provider credentials and upstream reset-credit IDs are excluded.
-- **Local billing:** billing records remain on the collecting device except for opt-in Jev display sync. Cursor Team member identities and amounts remain on the Mac holding the Admin API key.
+- **Local billing:** billing records remain on the collecting device except for opt-in Jev display sync. Perplexity account credits use their own optional display sync. Cursor Team member identities and amounts remain on the Mac holding the Admin API key.
 - **Device boundaries:** Apple Watch reads synced quota and never receives provider tokens or connects directly to providers. iPhone queries only providers you explicitly configure on that device.
 
 If a refresh fails, the app marks the data as stale. Sanitized diagnostics are generated only when you request an export.

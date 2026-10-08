@@ -133,3 +133,11 @@ Do not publish the DMG or submit the iPhone build when any of the following is t
 - the iPhone and Mac timestamps/values do not match;
 - logs contain a Production schema rejection; or
 - required evidence is missing.
+
+## Perplexity account credits gate
+
+- Review the private repository schema addition: record type `PerplexityDisplaySnapshot`, fixed record `credits-perplexity-mac`, `payloadJSON` String and `revision` Timestamp. Deploy the reviewed additive schema before distributing either release; do not modify `QuotaSnapshot` or Jev records.
+- With the designated QA account, compare the final DMG's three credit pools, actual dates and success timestamp with the Perplexity web page. Exercise Chrome Auto and isolated Manual sources and noninteractive background reads.
+- On the exact TestFlight iPhone and paired Watch, compare credits and timestamps in home/detail, Pro widget, free Watch app and complication. After 15 minutes without fresh collection, all displays must mark stale.
+- Validate collection pause, source/profile/credential changes, late requests, retry, sync-off tombstone and iCloud account changes; old facts must not revive or cross accounts. Retain Jev regression evidence.
+- Record real-account and Production results separately from fixture/simulator results. A skipped live test is not acceptance. Implementation alone does not authorize deployment or publication.

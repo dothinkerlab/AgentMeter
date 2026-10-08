@@ -286,6 +286,10 @@ struct MenuBarContentView: View {
                     warning: apiCostWarning(usage, provider: "Anthropic")
                 )
             }
+        case .perplexity:
+            if let usage = model.perplexityUsage {
+                MacPerplexityUsageRow(snapshot: .init(usage, paused: !model.perplexityController.enabled))
+            }
         case .typesafe:
             if let usage = model.typesafeUsage { MacTypeSafeUsageRow(usage: usage) }
         case .kimiAPI:

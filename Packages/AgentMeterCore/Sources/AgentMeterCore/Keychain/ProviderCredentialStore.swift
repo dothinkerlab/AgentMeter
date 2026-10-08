@@ -14,6 +14,7 @@ public enum ProviderCredentialStore {
         case anthropicAdmin = "AnthropicAdmin-credentials"
         case cursorAdmin = "CursorAdmin-credentials"
         case copilot = "Copilot-credentials"
+        case perplexityCookie = "PerplexityAccount-cookie"
         case typesafeCookie = "TypeSafeConsole-cookie"
     }
 

@@ -88,6 +88,9 @@ struct DeviceCodingCollectionState: Sendable {
 @MainActor
 final class AppModel: ObservableObject {
     let appUpdater = MacAppUpdater()
+    let perplexityController: MacPerplexityController
+    var perplexityUsage: PerplexityUsage? { perplexityController.usage }
+    private var perplexityObservation: AnyCancellable?
     let typeSafeController: MacTypeSafeController
     var typesafeUsage: TypeSafeUsage? { typeSafeController.usage }
     private var typeSafeObservation: AnyCancellable?
@@ -179,6 +182,7 @@ final class AppModel: ObservableObject {
         resetNotificationScheduler: FiveHourResetNotificationScheduling = FiveHourResetNotificationScheduler()
     ) {
         self.defaults = defaults
+        self.perplexityController = MacPerplexityController(defaults: defaults)
         self.typeSafeController = MacTypeSafeController(defaults: defaults)
         self.codexResumeCoordinator = CodexResumeCoordinator(defaults: defaults)
         self.resetNotificationScheduler = resetNotificationScheduler
@@ -205,6 +209,7 @@ final class AppModel: ObservableObject {
             fileLog.append("[\(ts)] \(message)")
         })
         loginItemEnabled = (SMAppService.mainApp.status == .enabled)
+        perplexityObservation = perplexityController.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         typeSafeObservation = typeSafeController.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -248,10 +253,11 @@ final class AppModel: ObservableObject {
             async let kimiAPI: Void = collectKimiAPI()
             async let openAIAPI: Void = collectOpenAIAPI()
             async let anthropicAPI: Void = collectAnthropicAPI()
+            async let perplexity: Void = perplexityController.collect()
             async let typesafe: Void = typeSafeController.collect()
             async let cursorTeam: Void = collectCursorTeam()
             async let extended: Void = collectCurrentExtendedProviders()
-            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, typesafe, cursorTeam, extended)
+            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, perplexity, typesafe, cursorTeam, extended)
             return
         }
         isCollecting = true
@@ -265,12 +271,13 @@ final class AppModel: ObservableObject {
         async let kimiAPI: Void = collectKimiAPI()
         async let openAIAPI: Void = collectOpenAIAPI()
         async let anthropicAPI: Void = collectAnthropicAPI()
+        async let perplexity: Void = perplexityController.collect()
         async let typesafe: Void = typeSafeController.collect()
         async let cursorTeam: Void = collectCursorTeam()
         async let extended: Void = collectCurrentExtendedProviders()
         results = await legacyResults
         await codexMonitoring
-        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, typesafe, cursorTeam, extended)
+        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, perplexity, typesafe, cursorTeam, extended)
         lastCollectedAt = Date()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
@@ -766,6 +773,7 @@ final class AppModel: ObservableObject {
             let fact: (DataConfidence?, QuotaStaleReason?)
             switch provider {
             case .typesafe: return typeSafeController.state
+            case .perplexity: return perplexityController.state
             case .kimiCode, .glmCoding, .miniMax:
                 let snapshot = deviceCodingSnapshots.first { $0.tool == provider.toolKind }
                 fact = (snapshot?.confidence, snapshot?.staleReason)
@@ -864,6 +872,8 @@ final class AppModel: ObservableObject {
     @discardableResult
     func refreshManualProvider(_ provider: ManualProviderKind) async -> ProviderConnectionState {
         switch provider {
+        case .perplexity:
+            await perplexityController.collect(allowInteraction: true)
         case .typesafe:
             await typeSafeController.collect(allowInteraction: true)
         case .kimiCode, .glmCoding, .miniMax:
@@ -906,6 +916,8 @@ final class AppModel: ObservableObject {
     func disableManualProvider(_ provider: ManualProviderKind) async -> Bool {
         ManualProviderPreferences.setEnabled(false, for: provider, defaults: defaults)
         switch provider {
+        case .perplexity:
+            perplexityController.setEnabled(false)
         case .typesafe:
             typeSafeController.setEnabled(false)
         case .kimiCode, .glmCoding, .miniMax:
@@ -965,7 +977,7 @@ final class AppModel: ObservableObject {
 
     private func macProviderCredentialExists(_ provider: ManualProviderKind) throws -> Bool {
         switch provider {
-        case .typesafe: return true // The controller resolves state without reading browser secrets.
+        case .typesafe, .perplexity: return true // The controller resolves state without reading browser secrets.
         case .kimiCode, .glmCoding, .miniMax:
             guard let tool = provider.toolKind else { return false }
             return try MacCodingCredentialResolver.resolve(
@@ -1069,6 +1081,8 @@ final class AppModel: ObservableObject {
             confidence: typesafeUsage?.confidence, staleReason: typesafeUsage?.failure?.staleReason
         )
 
+        appendLocalHealthIssue(&issues, item: .perplexity, provider: .perplexity,
+            confidence: perplexityUsage?.confidence, staleReason: perplexityUsage?.failure?.staleReason)
         let normalized = MacHealthIssueBuilder.normalized(issues, displayOrder: displayOrder)
         let visibleItems = Set(MacDisplayItemID.allCases.filter(isDisplayItemVisible))
         return MacHealthIssueBuilder.applyingDisplayVisibility(
@@ -1149,6 +1163,7 @@ final class AppModel: ObservableObject {
         case .xAI: grokAPIUsage != nil
         case .cursorTeam: cursorTeamUsage != nil
         case .typesafe: typesafeUsage != nil
+        case .perplexity: perplexityUsage != nil
         default: false
         }
     }

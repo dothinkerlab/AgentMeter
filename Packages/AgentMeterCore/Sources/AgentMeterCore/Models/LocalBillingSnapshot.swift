@@ -9,6 +9,7 @@ public enum LocalBillingService: String, Codable, CaseIterable, Sendable {
     case openAIAPI
     case anthropicAPI
     case typesafe
+    case perplexity
 }
 
 /// OpenAI/Anthropic 组织级 API 成本的显示白名单。Admin API key 不在该类型中。
@@ -277,6 +278,7 @@ public struct LocalBillingSnapshotBundle: Codable, Sendable, Equatable {
     public var kimiAPI: KimiAPIDisplaySnapshot?
     public var openAIAPI: APICostDisplaySnapshot?
     public var anthropicAPI: APICostDisplaySnapshot?
+    public var perplexity: PerplexityDisplaySnapshot?
     public var typesafe: TypeSafeDisplaySnapshot?
 
     public init(
@@ -287,7 +289,8 @@ public struct LocalBillingSnapshotBundle: Codable, Sendable, Equatable {
         kimiAPI: KimiAPIDisplaySnapshot? = nil,
         openAIAPI: APICostDisplaySnapshot? = nil,
         anthropicAPI: APICostDisplaySnapshot? = nil,
-        typesafe: TypeSafeDisplaySnapshot? = nil
+        typesafe: TypeSafeDisplaySnapshot? = nil,
+        perplexity: PerplexityDisplaySnapshot? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.deepSeek = deepSeek
@@ -297,11 +300,12 @@ public struct LocalBillingSnapshotBundle: Codable, Sendable, Equatable {
         self.openAIAPI = openAIAPI
         self.anthropicAPI = anthropicAPI
         self.typesafe = typesafe
+        self.perplexity = perplexity
     }
 
     public var isEmpty: Bool {
         deepSeek == nil && openRouter == nil && xAI == nil && kimiAPI == nil
-            && openAIAPI == nil && anthropicAPI == nil && typesafe == nil
+            && openAIAPI == nil && anthropicAPI == nil && typesafe == nil && perplexity == nil
     }
 
     public func contains(_ service: LocalBillingService) -> Bool {
@@ -313,6 +317,7 @@ public struct LocalBillingSnapshotBundle: Codable, Sendable, Equatable {
         case .openAIAPI: return openAIAPI != nil
         case .anthropicAPI: return anthropicAPI != nil
         case .typesafe: return typesafe != nil
+        case .perplexity: return perplexity != nil
         }
     }
 }

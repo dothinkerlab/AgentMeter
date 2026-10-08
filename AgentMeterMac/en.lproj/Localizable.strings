@@ -471,3 +471,45 @@
 "检查云端更新" = "Check cloud updates";
 "手机刷新只读取云端快照；Mac 离线时不会产生新数据。" = "Refresh checks the cloud snapshot. An offline Mac cannot collect new data.";
 "CloudKit 未准备好 Jev 同步，请检查 schema" = "CloudKit is not ready for Jev sync. Check the schema.";
+
+
+/* Perplexity account credits */
+"Perplexity 账户积分" = "Perplexity account credits";
+"账户积分" = "Account credits";
+"周期积分" = "Recurring credits";
+"购买积分" = "Purchased credits";
+"奖励积分" = "Bonus credits";
+"续期" = "Renewal";
+"到期／续期" = "Expiry / renewal";
+"启用 Perplexity 采集" = "Collect Perplexity credits";
+"Perplexity iCloud 同步" = "Perplexity iCloud sync";
+"同步 Perplexity 到 iCloud" = "Sync Perplexity to iCloud";
+"仅同步积分显示数据，Cookie 始终保留在 Mac。请只在一台 Mac 开启。" = "Only credit display facts are synced. Cookies stay on your Mac. Enable this on one Mac only.";
+"分池消耗按总消耗推算，顺序为周期、购买、奖励；积分不是 API 美元余额。" = "Pool consumption is inferred from total usage in recurring, purchased, then bonus order. Credits are not a developer API dollar balance.";
+"分池消耗按总消耗推算" = "Pool consumption is inferred from total usage.";
+"未找到 Perplexity 会话，请在所选 Chrome 配置中登录，或切换到 Manual。" = "No Perplexity session found. Sign in using the selected Chrome profile, or switch to Manual.";
+"Cookie 格式无效，请粘贴 Cookie header 或 session token，且不要包含换行。" = "Invalid Cookie format. Paste a Cookie header or session token without line breaks.";
+"Perplexity 会话已过期，请重新登录 Chrome 或更新手动 Cookie。" = "Your Perplexity session expired. Sign in again in Chrome or update the manual Cookie.";
+"Perplexity 请求受限，将在下次刷新时重试。" = "Perplexity rate limited the request. Collection will retry at the next refresh.";
+"Perplexity 网页要求浏览器验证，请在 Chrome 中打开账户用量页后重试。" = "Perplexity requires browser verification. Open the account usage page in Chrome, then reconnect.";
+"Perplexity 网页暂时不可用。" = "Perplexity is temporarily unavailable.";
+"无法连接 Perplexity，已保留上次成功的数据。" = "Unable to reach Perplexity. The last successful data has been retained.";
+"Perplexity 响应格式已变化，暂时无法读取。" = "The Perplexity response format changed and cannot be read.";
+"Auto 只读 Chrome 的 Perplexity 登录 Cookie；首次连接可能请求钥匙串授权。后台不会弹出授权窗口。" = "Auto reads Perplexity session cookies from Chrome. The first connection may request Keychain access; background refresh never prompts.";
+"在账户用量页打开开发者工具 Network，从已登录请求的 Request Headers 复制完整 Cookie。普通 API key 不适用于此查询。" = "On the account usage page, copy the Cookie header from an authenticated request in Developer Tools → Network. A developer API key cannot authenticate this query.";
+"打开 Perplexity 账户用量页" = "Open Perplexity account usage";
+"Cookie 仅保留在此 Mac；开启同步后，积分显示数据进入 iCloud。Auto 不使用手动 Cookie，Manual 不读取浏览器。" = "Cookies stay on this Mac; enabling sync shares credit display facts through iCloud. Auto never uses a manual Cookie, and Manual never reads your browser.";
+"Mac 已暂停 Perplexity 采集" = "Mac has paused Perplexity collection";
+"请在 Mac 重新登录 Perplexity" = "Sign in to Perplexity again on your Mac";
+"Perplexity 同步失败，保留上次数据" = "Perplexity sync failed; last data retained";
+"Perplexity 数据陈旧，请检查 Mac 采集状态" = "Perplexity data is stale. Check collection on your Mac.";
+"CloudKit 未准备好 Perplexity 同步，请检查 schema" = "CloudKit is not ready for Perplexity sync. Check the schema.";
+"Perplexity 同步失败，将自动重试。请检查 iCloud 登录和网络。" = "Perplexity sync failed and will retry. Check your iCloud sign-in and network.";
+"在 Mac 启用 Perplexity 采集和同步，两端使用相同 Apple ID。手机无需登录 Perplexity。" = "Enable Perplexity collection and sync on your Mac using the same Apple ID. No Perplexity login is needed on your phone.";
+"等待 Mac 首次同步 Perplexity" = "Waiting for the first Perplexity sync from your Mac";
+"iCloud 账号已变更，请刷新 Perplexity" = "Your iCloud account changed. Refresh Perplexity.";
+"Mac 已关闭 Perplexity 同步" = "Mac has disabled Perplexity sync";
+"Perplexity 同步缓存不可用" = "Perplexity sync cache is unavailable";
+"账单与账户积分" = "Billing and account credits";
+"Enable Perplexity iCloud sync on your Mac" = "Enable Perplexity iCloud sync on your Mac";
+"Perplexity Credits" = "Perplexity Credits";

@@ -118,3 +118,11 @@ iPhone Widget、Watch app 和 complication 只能显示旧记录或空状态。
 - iPhone 与 Mac 的时间戳/数值不一致；
 - 日志出现 Production Schema rejection；
 - 缺少规定的验收证据。
+
+## Perplexity 账户积分门禁
+
+- 审核私有仓库新增 Schema：`PerplexityDisplaySnapshot`，固定记录 `credits-perplexity-mac`，字段 `payloadJSON`（String）与 `revision`（Timestamp）。分发前完成已审核的新增 Schema 部署，不改 `QuotaSnapshot` 或 Jev 记录。
+- 使用专门 QA 账号，将最终 DMG 的三池积分、实际日期及成功时间与 Perplexity 网页对照；验证 Chrome Auto、独立 Manual 和后台无弹窗读取。
+- 使用实际 TestFlight iPhone 与配对 Watch，对照主页／详情、Pro Widget、免费 Watch App／complication 的积分与时间；超过 15 分钟未采集成功时标陈旧。
+- 验证暂停、更换来源／profile／凭据、迟到请求、重试、关闭同步 tombstone 与 iCloud 账号切换；旧事实不得复活或跨账号。保留 Jev 回归证据。
+- 将真实账号及 Production 结果与 fixture／模拟器结果分别记录。跳过 live 测试不等于验收；实现任务本身不授权自动部署或发布。

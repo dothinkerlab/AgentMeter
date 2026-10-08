@@ -127,6 +127,7 @@ extension MacDisplayItemID {
         case .xAI: "xAI API"
         case .cursorTeam: "Cursor Team"
         case .typesafe: "TypeSafe API (Jev)"
+        case .perplexity: L10n.string("Perplexity 账户积分")
         case .copilot: "GitHub Copilot"
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"

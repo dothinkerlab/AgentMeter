@@ -17,6 +17,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     case cursorTeam
     case copilot
     case typesafe
+    case perplexity
 
     public enum Category: Sendable {
         case codingPlan
@@ -32,13 +33,13 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
     public var category: Category {
         switch self {
         case .kimiCode, .glmCoding, .miniMax, .copilot: .codingPlan
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe: .billing
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe, .perplexity: .billing
         }
     }
 
     public var credentialShape: CredentialShape {
         switch self {
-        case .typesafe: .cookieHeader
+        case .typesafe, .perplexity: .cookieHeader
         case .xAI: .managementKeyAndTeamID
         default: .apiKey
         }
@@ -60,7 +61,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
-        case .kimiAPI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe: nil
+        case .kimiAPI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe, .perplexity: nil
         }
     }
 
@@ -73,6 +74,7 @@ public enum ManualProviderKind: String, Codable, CaseIterable, Sendable, Hashabl
         case .openAIAPI: .openAIAPI
         case .anthropicAPI: .anthropicAPI
         case .cursorTeam: nil
+        case .perplexity: .perplexity
         default: nil
         }
     }
@@ -135,7 +137,7 @@ public enum ManualProviderPreferences {
         switch provider {
         case .kimiCode, .glmCoding, .miniMax, .copilot:
             return "codingProvider.\(provider.rawValue).enabled"
-        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe:
+        case .kimiAPI, .deepSeek, .openRouter, .xAI, .openAIAPI, .anthropicAPI, .cursorTeam, .typesafe, .perplexity:
             return "manualProvider.\(provider.rawValue).enabled"
         }
     }
@@ -163,7 +165,7 @@ public enum ManualProviderPreferences {
         if defaults.object(forKey: key) != nil {
             return defaults.bool(forKey: key)
         }
-        return provider != .typesafe && provider.category == .billing && credentialExists
+        return provider != .typesafe && provider != .perplexity && provider.category == .billing && credentialExists
     }
 
     public static func setEnabled(

@@ -13,7 +13,7 @@
 </div>
 
 
-**AgentMeter** 让你在 Mac 菜单栏、iPhone 和 Apple Watch 上随时查看 AI 编程额度、重置时间与 API 账单，离开键盘也能掌握用量。全部功能免费。
+**AgentMeter** 让你在 Mac 菜单栏、iPhone 和 Apple Watch 上随时查看 AI 编程额度、重置时间与 API 账单，离开键盘也能掌握用量。Watch App 与表盘组件免费；手机 Widget 沿用现有 Pro 权益。
 
 ## 截图
 
@@ -77,7 +77,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ### 3. 查看额度
 
-在 Mac 菜单栏查看剩余额度与重置时间。如果需要在 iPhone 和 Apple Watch 上查看编程套餐额度，请在这些设备上使用**同一个 Apple ID** 并开启 iCloud。iCloud 用于跨设备同步额度；API 账单保留在采集数据的设备上。
+在 Mac 菜单栏查看剩余额度与重置时间。如果需要在 iPhone 和 Apple Watch 上查看编程套餐额度，请在这些设备上使用**同一个 Apple ID** 并开启 iCloud。iCloud 用于跨设备同步额度；API 账单默认保留在采集设备上；Jev 和 Perplexity 账户积分可分别开启显示数据同步。
 
 ## 功能概览
 
@@ -100,6 +100,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 | 本地 API 账单 | xAI API | Management Key 和 Team ID |
 | 余额与用量（可选 Mac → iPhone 同步） | TypeSafe API（Jev） | Chrome 控制台会话（默认 Auto）或完整 Cookie header（Manual） |
 | 仅限 Mac 的团队账单 | Cursor Team | Team/Enterprise Admin API key |
+| Perplexity 账户积分（可选 Mac → iPhone 同步） | Perplexity | Chrome 会话（Auto）或 Cookie／session token（Manual），采集与同步默认关闭 |
 
 可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单默认不进入 CloudKit；Jev 可显式开启显示数据同步**，Cursor Team 成员身份与金额仅保留在 Mac 上。
 
@@ -111,14 +112,21 @@ Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings
 
 余额、账单页周期消费、有效 Credit 的余额与到期日期，以及今日、最近 7 天、本月 Token 和本月请求数默认仅在 Mac 展示；在一台 Mac 开启“同步 Jev 到 iCloud”后，可通过相同 Apple ID 提供给 iPhone、Widget 和 Watch。账单页消费与 Token 用量口径不同，历史覆盖范围未知，数据可能延迟；到期时间不是额度重置时间。Auto Cookie 仅保留在内存，凭据不进入 iCloud；仅显式开启的 Jev 显示数据可进入私有 CloudKit。凭据和账单数值不进入日志或诊断。控制台接口未公开，可能变化或要求浏览器验证；采集不调用推理接口。
 
+### Perplexity 账户积分
+
+在 Mac 设置启用 **Perplexity 账户积分**。Auto 固定读取一个 Chrome profile，优先 Default；Manual 支持 Cookie header 或裸 session token，保存在本机 Keychain。后台读取不会弹出授权窗口，两种来源不互相回退。周期、购买、奖励三池展示剩余量、总量及百分比；分池消耗按总消耗推算，仅显示实际返回的续期或到期时间，不换算美元，也不包含开发者 API 成本历史。
+
+在一台采集 Mac 开启“同步 Perplexity 到 iCloud”，可向同 Apple ID 的 iPhone、Widget 与 Watch 提供显示事实。Cookie 仅在 Mac 使用。刷新失败保留上次成功数据，超过 15 分钟标陈旧。详见[配置、计算与同步说明](docs/PERPLEXITY.zh-CN.md)。网页接口未公开，可能要求浏览器验证。
+
 ## 隐私与同步
 
 每台采集设备使用自己的本机凭据查询服务商。AgentMeter 不会将这些凭据发送给我们，也不会写入 iCloud。
 
 - **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 与 Windsurf 数据库和 JetBrains AI 额度文件均以只读方式打开；Zed 凭据只从同源的本机 Keychain 项目读取，AgentMeter 不刷新或修改这些凭据。
+- **Perplexity 网页会话**：Auto Cookie 仅留内存，Manual 存设备本地 Keychain。仅请求固定积分端点并拒绝重定向；可选同步使用独立私有显示记录，只包含积分、时间和状态，不含 Cookie 或 profile 身份。
 - **手动输入的凭据**：存入本机 Keychain，关闭 iCloud Keychain 同步及通过备份迁移至其他设备的能力。
 - **私有额度同步**：仅将经过清理的编程套餐状态写入你的私有 CloudKit 数据库，例如额度窗口、重置时间、订阅档位、重置额度可用数量与数据更新状态；不包含服务商凭据或上游重置额度 ID。
-- **本地账单**：账单记录默认保留在采集设备上；Jev 显示数据可显式开启私有云同步。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
+- **本地账单**：账单记录默认保留在采集设备上；Jev 显示数据和 Perplexity 账户积分可分别显式开启私有云同步。Cursor Team 成员身份与金额只留在持有 Admin API key 的 Mac 上。
 - **设备访问范围**：Apple Watch 读取已同步的额度，不接收服务商令牌，也不直连服务商；iPhone 只查询你在该设备上明确配置的服务商。
 
 刷新失败时，应用会标记数据已过期。脱敏诊断仅在你主动导出时生成。

@@ -87,6 +87,8 @@ struct MacSettingsView: View {
         case let .manual(provider):
             if provider == .typesafe {
                 MacTypeSafeSettingsView(controller: model.typeSafeController)
+            } else if provider == .perplexity {
+                MacPerplexitySettingsView(controller: model.perplexityController)
             } else {
                 MacManualProviderDetail(provider: provider, model: model).id(provider)
             }
@@ -569,7 +571,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: .connected
         case .anthropicAPI: .disabled
         case .cursorTeam: .connected
-        case .typesafe: .disabled
+        case .typesafe, .perplexity: .disabled
         case .copilot: .unconfigured
         }
     }
@@ -681,6 +683,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.read(kind: .openAIAdmin)?.isEmpty == false
         case .anthropicAPI: try ProviderCredentialStore.read(kind: .anthropicAdmin)?.isEmpty == false
         case .cursorTeam: try ProviderCredentialStore.read(kind: .cursorAdmin)?.isEmpty == false
+        case .perplexity: try ProviderCredentialStore.read(kind: .perplexityCookie, allowInteraction: false)?.isEmpty == false
         case .typesafe: try ProviderCredentialStore.read(kind: .typesafeCookie)?.isEmpty == false
         case .copilot: try ProviderCredentialStore.read(kind: .copilot)?.isEmpty == false
         }
@@ -705,6 +708,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .openAIAdmin) }
         case .anthropicAPI: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .anthropicAdmin) }
         case .cursorTeam: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .cursorAdmin) }
+        case .perplexity: if !key.isEmpty { try ProviderCredentialStore.save(PerplexityCookieHeader.normalize(key), kind: .perplexityCookie) }
         case .typesafe: if !key.isEmpty { try ProviderCredentialStore.save(TypeSafeCookieHeader.normalize(key), kind: .typesafeCookie) }
         case .copilot: if !key.isEmpty { try ProviderCredentialStore.save(key, kind: .copilot) }
         }
@@ -722,6 +726,7 @@ private struct MacManualProviderDetail: View {
         case .openAIAPI: try ProviderCredentialStore.delete(kind: .openAIAdmin)
         case .anthropicAPI: try ProviderCredentialStore.delete(kind: .anthropicAdmin)
         case .cursorTeam: try ProviderCredentialStore.delete(kind: .cursorAdmin)
+        case .perplexity: try ProviderCredentialStore.delete(kind: .perplexityCookie)
         case .typesafe: try ProviderCredentialStore.delete(kind: .typesafeCookie)
         case .copilot: try ProviderCredentialStore.delete(kind: .copilot)
         }
@@ -903,7 +908,7 @@ private struct MacAboutSettingsView: View {
             status("OpenAI API", model.openAIAPIUsage),
             status("Anthropic API", model.anthropicAPIUsage),
             status("Cursor Team", model.cursorTeamUsage),
-        ].compactMap { $0 } + MacTypeSafeDiagnostics.statuses(for: model.typesafeUsage)
+        ].compactMap { $0 } + MacTypeSafeDiagnostics.statuses(for: model.typesafeUsage) + MacPerplexityDiagnostics.statuses(for: model.perplexityUsage)
 
         return AgentMeterDiagnosticReport(
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—",
@@ -1036,6 +1041,7 @@ private extension ManualProviderKind {
         case .anthropicAPI: L10n.string("Anthropic API 账单")
         case .cursorTeam: L10n.string("Cursor 团队用量")
         case .typesafe: "TypeSafe API (Jev)"
+        case .perplexity: L10n.string("Perplexity 账户积分")
         case .copilot: "GitHub Copilot"
         }
     }
@@ -1062,6 +1068,7 @@ private extension ManualProviderKind {
         case .anthropicAPI: "A"
         case .cursorTeam: "CT"
         case .typesafe: "TS"
+        case .perplexity: "P"
         case .copilot: "GH"
         }
     }
@@ -1076,6 +1083,7 @@ private extension ManualProviderKind {
         case .openAIAPI: Color(red: 0.04, green: 0.55, blue: 0.42)
         case .anthropicAPI: Color(red: 0.76, green: 0.32, blue: 0.21)
         case .cursorTeam: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .perplexity: .teal
         case .typesafe: Color(red: 0.28, green: 0.35, blue: 0.40)
         case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
         }
@@ -1094,6 +1102,7 @@ private extension ManualProviderKind {
         case (.openAIAPI, _): URL(string: "https://platform.openai.com/settings/organization/admin-keys")
         case (.anthropicAPI, _): URL(string: "https://console.anthropic.com/settings/admin-keys")
         case (.cursorTeam, _): URL(string: "https://cursor.com/dashboard/settings")
+        case (.perplexity, _): PerplexityCreditsAdapter.usageURL
         case (.typesafe, _): TypeSafeBillingAdapter.billingURL
         case (.copilot, _): URL(string: "https://github.com/settings/tokens")
         }
@@ -1117,6 +1126,7 @@ private extension MacDisplayItemID {
         case .xAI: ManualProviderKind.xAI.settingsDisplayName
         case .cursorTeam: ManualProviderKind.cursorTeam.settingsDisplayName
         case .typesafe: ManualProviderKind.typesafe.settingsDisplayName
+        case .perplexity: ManualProviderKind.perplexity.settingsDisplayName
         case .copilot: "GitHub Copilot"
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
