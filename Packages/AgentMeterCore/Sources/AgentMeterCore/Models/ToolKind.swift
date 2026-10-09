@@ -8,6 +8,8 @@ public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case kimiCode
     case glmCoding
     case miniMax
+    case arkCoding
+    case arkAgent
     case openCode
     case deepSeek
     case openRouter

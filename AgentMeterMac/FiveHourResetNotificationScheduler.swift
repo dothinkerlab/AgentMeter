@@ -89,6 +89,8 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
+        case .arkCoding: return "Ark Coding Plan"
+        case .arkAgent: return "Ark Agent Plan"
         case .miniMax: return "MiniMax Token Plan"
         case .deepSeek: return "DeepSeek"
         case .openRouter: return "OpenRouter"

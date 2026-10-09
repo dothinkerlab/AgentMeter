@@ -259,6 +259,8 @@ public struct QuotaCollector: Sendable {
         case .cursor: return CursorPlanAdapter.source
         case .kimiCode: return KimiCodeAdapter.source
         case .glmCoding: return GLMCodingPlanAdapter.source
+        case .arkCoding: return ArkPlanAdapter.Product.coding.source
+        case .arkAgent: return ArkPlanAdapter.Product.agent.source
         case .miniMax: return MiniMaxTokenPlanAdapter.source
         case .openCode: return "unsupported"
         case .deepSeek: return "deepseek_balance_endpoint"
@@ -283,7 +285,7 @@ public struct QuotaCollector: Sendable {
         case .cursor:
             return try await CursorPlanAdapter().fetch(
                 accessToken: creds.accessToken, fallbackPlan: creds.subscriptionType)
-        case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
+        case .arkCoding, .arkAgent, .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
              .copilot, .windsurf, .jetBrainsAI, .zed:
             throw UnsupportedTool(tool: tool)
         }

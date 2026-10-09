@@ -250,7 +250,7 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private func displayRow(for item: MacDisplayItemID) -> some View {
         switch item {
-        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax,
+        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
              .copilot, .windsurf, .jetBrainsAI, .zed:
             if let snapshot = model.snapshot(for: item) {
                 ToolRow(
@@ -655,6 +655,8 @@ struct MenuBarContentView: View {
         case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
+        case .arkCoding: return "Ark Coding Plan"
+        case .arkAgent: return "Ark Agent Plan"
         case .miniMax: return "MiniMax Token Plan"
         case .deepSeek: return "DeepSeek"
         case .openRouter: return "OpenRouter"
@@ -1031,8 +1033,10 @@ private struct BrandMark: View {
             Text("C").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
         case .kimiCode:
             Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
-        case .glmCoding:
+        case .glmCoding, .arkCoding, .arkAgent:
             Text("GLM").font(.system(size: 7.5, weight: .bold)).foregroundColor(Color.menuOnBrand)
+        case .arkCoding, .arkAgent:
+            Text("Ark").font(.system(size: 8, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .miniMax:
             Text("MM").font(.system(size: 9, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .openCode:
@@ -1097,7 +1101,7 @@ private func brand(for tool: ToolKind) -> Brand {
         return Brand(accent: .menuBrandCursor)
     case .kimiCode:
         return Brand(accent: .menuBrandKimi)
-    case .glmCoding:
+    case .glmCoding, .arkCoding, .arkAgent:
         return Brand(accent: .menuBrandGLM)
     case .miniMax:
         return Brand(accent: .menuBrandMiniMax)

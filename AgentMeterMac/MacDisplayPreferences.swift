@@ -10,6 +10,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case kimiCode
     case glmCoding
     case miniMax
+    case arkCoding
+    case arkAgent
     case openAIAPI
     case anthropicAPI
     case kimiAPI
@@ -34,6 +36,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .arkCoding: .arkCoding
+        case .arkAgent: .arkAgent
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .xAI: .grok
@@ -50,6 +54,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .arkCoding, .arkAgent: nil
         case .openAIAPI: .openAIAPI
         case .anthropicAPI: .anthropicAPI
         case .kimiAPI: .kimiAPI
@@ -72,6 +77,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .arkCoding: .arkCoding
+        case .arkAgent: .arkAgent
         case .deepSeek: .deepSeek
         case .openRouter: .openRouter
         case .grok: .xAI

@@ -9,13 +9,15 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
     case kimiCode
     case glmCoding
     case miniMax
+    case arkCoding
+    case arkAgent
     case copilot
     case windsurf
     case jetBrainsAI
     case zed
 
     public enum CollectionMode: Sendable, Equatable {
-        /// The Mac collector reads an existing CLI login. iPhone only consumes
+        /// The Mac collector reads local CLI or configured cloud credentials. iPhone only consumes
         /// the sanitized CloudKit snapshot.
         case macAutomatic
         /// Mac and iPhone can each configure and collect this provider.
@@ -30,6 +32,8 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
+        case .arkCoding: .arkCoding
+        case .arkAgent: .arkAgent
         case .copilot: .copilot
         case .windsurf: .windsurf
         case .jetBrainsAI: .jetBrainsAI
@@ -39,7 +43,7 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
 
     public var manualProvider: ManualProviderKind? {
         switch self {
-        case .chatGPT, .claude, .cursor, .windsurf, .jetBrainsAI, .zed: nil
+        case .chatGPT, .claude, .cursor, .windsurf, .jetBrainsAI, .zed, .arkCoding, .arkAgent: nil
         case .copilot: .copilot
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding

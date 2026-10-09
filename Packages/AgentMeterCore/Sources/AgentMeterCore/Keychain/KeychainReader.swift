@@ -107,6 +107,8 @@ public enum KeychainReader {
             return ProviderCredentialStore.Kind.kimiCode.rawValue
         case .glmCoding:
             return ProviderCredentialStore.Kind.glmCoding.rawValue
+        case .arkCoding: return ProviderCredentialStore.Kind.arkCoding.rawValue
+        case .arkAgent: return ProviderCredentialStore.Kind.arkAgent.rawValue
         case .miniMax:
             return ProviderCredentialStore.Kind.miniMax.rawValue
         case .openCode:
@@ -175,7 +177,7 @@ public enum KeychainReader {
                 return codexOauth ?? codex
             case .cursor:
                 return nil
-            case .kimiCode, .glmCoding, .miniMax:
+            case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent:
                 return nil
             case .openCode:
                 return nil

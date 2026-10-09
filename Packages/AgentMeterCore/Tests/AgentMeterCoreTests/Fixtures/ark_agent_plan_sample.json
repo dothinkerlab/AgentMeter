@@ -1,0 +1,28 @@
+{
+  "ResponseMetadata": {
+    "Action": "GetAFPUsage"
+  },
+  "Result": {
+    "PlanType": "Large",
+    "AFPFiveHour": {
+      "Quota": "500.0",
+      "Used": "12.5",
+      "ResetTime": 1791763200000
+    },
+    "AFPDaily": {
+      "Quota": "500.0",
+      "Used": "22.5",
+      "ResetTime": 1791763200000
+    },
+    "AFPWeekly": {
+      "Quota": "500.0",
+      "Used": "150.0",
+      "ResetTime": 1791763200000
+    },
+    "AFPMonthly": {
+      "Quota": "500.0",
+      "Used": "450.0",
+      "ResetTime": 1791763200000
+    }
+  }
+}

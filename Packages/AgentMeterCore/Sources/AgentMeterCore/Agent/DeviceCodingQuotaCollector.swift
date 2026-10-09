@@ -250,6 +250,7 @@ public struct DeviceCodingQuotaCollector: Sendable {
 
     public static func staleReason(for error: Error) -> QuotaStaleReason {
         switch error {
+        case let failure as ProviderRequestFailure: failure.reason
         case is KimiCodeAdapter.FetchError: KimiCodeAdapter.staleReason(for: error)
         case is GLMCodingPlanAdapter.FetchError: GLMCodingPlanAdapter.staleReason(for: error)
         case is MiniMaxTokenPlanAdapter.FetchError: MiniMaxTokenPlanAdapter.staleReason(for: error)

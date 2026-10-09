@@ -1,0 +1,25 @@
+{
+  "ResponseMetadata": {
+    "Action": "GetCodingPlanUsage"
+  },
+  "Result": {
+    "QuotaUsage": [
+      {
+        "Level": "Session",
+        "Percent": 25,
+        "ResetTimestamp": 1791504000
+      },
+      {
+        "Level": "Weekly",
+        "Percent": 40,
+        "ResetTimestamp": 1791763200
+      },
+      {
+        "Level": "Monthly",
+        "Percent": 60,
+        "ResetTimestamp": 1793491200
+      }
+    ],
+    "UpdateTimestamp": 1791503940000
+  }
+}

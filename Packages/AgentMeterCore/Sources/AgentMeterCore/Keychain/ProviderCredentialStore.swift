@@ -8,6 +8,8 @@ public enum ProviderCredentialStore {
     public enum Kind: String, Sendable, CaseIterable {
         case kimiCode = "KimiCode-credentials"
         case glmCoding = "GLMCoding-credentials"
+        case arkCoding = "ArkCodingPlan-credentials"
+        case arkAgent = "ArkAgentPlan-credentials"
         case miniMax = "MiniMaxTokenPlan-credentials"
         case kimiAPI = "KimiAPI-credentials"
         case openAIAdmin = "OpenAIAdmin-credentials"

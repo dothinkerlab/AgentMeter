@@ -88,6 +88,8 @@ struct DeviceCodingCollectionState: Sendable {
 @MainActor
 final class AppModel: ObservableObject {
     let appUpdater = MacAppUpdater()
+    let arkPlanController: MacArkPlanController
+    private var arkObservation: AnyCancellable?
     let perplexityController: MacPerplexityController
     var perplexityUsage: PerplexityUsage? { perplexityController.usage }
     private var perplexityObservation: AnyCancellable?
@@ -151,7 +153,7 @@ final class AppModel: ObservableObject {
     static let staleThreshold: TimeInterval = 15 * 60
     static let cursorTeamInterval: TimeInterval = 10 * 60
     static let legacyTools: [ToolKind] = AgentToolSelection.defaultTools
-    static let tools: [ToolKind] = legacyTools + MacCodingProviderPreferences.tools + MacExtendedProviderPreferences.tools
+    static let tools: [ToolKind] = legacyTools + MacCodingProviderPreferences.tools + MacExtendedProviderPreferences.tools + [.arkCoding, .arkAgent]
     private static let toolDisplayOrderKey = "toolDisplayOrder"
     private static let showsStatusPercentageKey = "macShowsStatusPercentage"
     private static let hidesInactiveToolsKey = "hideInactiveTools"
@@ -184,6 +186,7 @@ final class AppModel: ObservableObject {
         self.defaults = defaults
         self.perplexityController = MacPerplexityController(defaults: defaults)
         self.typeSafeController = MacTypeSafeController(defaults: defaults)
+        self.arkPlanController = MacArkPlanController(defaults: defaults)
         self.codexResumeCoordinator = CodexResumeCoordinator(defaults: defaults)
         self.resetNotificationScheduler = resetNotificationScheduler
         self.cloudKitDeletionCoordinator = MacPendingCloudKitDeletionCoordinator(defaults: defaults)
@@ -209,6 +212,7 @@ final class AppModel: ObservableObject {
             fileLog.append("[\(ts)] \(message)")
         })
         loginItemEnabled = (SMAppService.mainApp.status == .enabled)
+        arkObservation = arkPlanController.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         perplexityObservation = perplexityController.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         typeSafeObservation = typeSafeController.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
@@ -253,11 +257,12 @@ final class AppModel: ObservableObject {
             async let kimiAPI: Void = collectKimiAPI()
             async let openAIAPI: Void = collectOpenAIAPI()
             async let anthropicAPI: Void = collectAnthropicAPI()
+            async let ark: Void = arkPlanController.collect()
             async let perplexity: Void = perplexityController.collect()
             async let typesafe: Void = typeSafeController.collect()
             async let cursorTeam: Void = collectCursorTeam()
             async let extended: Void = collectCurrentExtendedProviders()
-            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, perplexity, typesafe, cursorTeam, extended)
+            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended)
             return
         }
         isCollecting = true
@@ -271,13 +276,14 @@ final class AppModel: ObservableObject {
         async let kimiAPI: Void = collectKimiAPI()
         async let openAIAPI: Void = collectOpenAIAPI()
         async let anthropicAPI: Void = collectAnthropicAPI()
+        async let ark: Void = arkPlanController.collect()
         async let perplexity: Void = perplexityController.collect()
         async let typesafe: Void = typeSafeController.collect()
         async let cursorTeam: Void = collectCursorTeam()
         async let extended: Void = collectCurrentExtendedProviders()
         results = await legacyResults
         await codexMonitoring
-        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, perplexity, typesafe, cursorTeam, extended)
+        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended)
         lastCollectedAt = Date()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
@@ -1015,7 +1021,7 @@ final class AppModel: ObservableObject {
 
     // MARK: - 给 UI / 菜单栏 label
 
-    var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) + deviceCodingSnapshots + extendedResults.compactMap(\.snapshot) }
+    var snapshots: [QuotaSnapshot] { results.compactMap(\.snapshot) + deviceCodingSnapshots + extendedResults.compactMap(\.snapshot) + arkPlanController.snapshots }
 
     var activeHealthIssues: [MacHealthIssue] {
         var issues: [MacHealthIssue] = []
@@ -1029,14 +1035,14 @@ final class AppModel: ObservableObject {
             ))
         }
 
-        for snapshot in deviceCodingSnapshots {
+        for snapshot in deviceCodingSnapshots + arkPlanController.snapshots {
             guard let item = MacDisplayItemID.item(for: snapshot.tool) else { continue }
             let outcome: QuotaCollector.Outcome = snapshot.confidence == .fresh ? .ok : .degraded
             issues.append(contentsOf: MacHealthIssueBuilder.codingIssues(
                 item: item,
                 outcome: outcome,
                 snapshot: snapshot,
-                cloudSyncPending: deviceCodingCloudSyncPendingTools.contains(snapshot.tool)
+                cloudSyncPending: deviceCodingCloudSyncPendingTools.contains(snapshot.tool) || arkPlanController.pending.contains(snapshot.tool)
             ))
         }
 
@@ -1213,6 +1219,8 @@ final class AppModel: ObservableObject {
         case .cursor: return "Cursor"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
+        case .arkCoding: return "Ark Coding Plan"
+        case .arkAgent: return "Ark Agent Plan"
         case .miniMax: return "MiniMax Token Plan"
         case .deepSeek: return "DeepSeek"
         case .openRouter: return "OpenRouter"

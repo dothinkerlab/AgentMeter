@@ -118,6 +118,8 @@ extension MacDisplayItemID {
         case .cursor: "Cursor"
         case .kimiCode: "Kimi Code"
         case .glmCoding: "GLM Coding Plan"
+        case .arkCoding: "Ark Coding Plan"
+        case .arkAgent: "Ark Agent Plan"
         case .miniMax: "MiniMax Token Plan"
         case .openAIAPI: "OpenAI API"
         case .anthropicAPI: "Anthropic API"

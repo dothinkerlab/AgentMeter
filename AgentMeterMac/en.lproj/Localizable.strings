@@ -513,3 +513,11 @@
 "账单与账户积分" = "Billing and account credits";
 "Enable Perplexity iCloud sync on your Mac" = "Enable Perplexity iCloud sync on your Mac";
 "Perplexity Credits" = "Perplexity Credits";
+
+/* Ark personal plans */
+"查询个人版套餐额度。Access Key 仅保存在此 Mac；iPhone 和 Watch 通过 iCloud 查看清洗后的额度。" = "Query personal plan usage. Access Keys stay on this Mac; iPhone and Watch receive quota snapshots through iCloud.";
+"使用具有套餐查询权限的 Access Key，不是模型调用 API key。建议使用最小只读权限。" = "Use an Access Key with plan query permission. An inference API key cannot be used here. Prefer minimal read-only permissions.";
+"无法验证或安全保存凭据，请检查后重试。" = "Unable to verify or securely save credentials. Check them and retry.";
+"正在等待 iCloud 同步或清理旧快照。" = "Waiting for iCloud sync or removal of the previous snapshot.";
+"打开官方凭据控制台" = "Open Official Credential Console";
+"无法移除凭据，请重试。" = "Unable to remove credentials. Please retry.";

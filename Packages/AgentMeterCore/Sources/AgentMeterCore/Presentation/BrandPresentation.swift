@@ -100,6 +100,8 @@ public enum BrandPresentation {
         case .kimiCode: standard = short ? "Kimi" : "Kimi Code"
         case .glmCoding: standard = short ? "GLM" : "GLM Coding Plan"
         case .miniMax: standard = short ? "MiniMax" : "MiniMax Token Plan"
+        case .arkCoding: standard = "Ark Coding Plan"
+        case .arkAgent: standard = "Ark Agent Plan"
         case .openCode: standard = "OpenCode"
         case .deepSeek: standard = "DeepSeek"
         case .openRouter: standard = "OpenRouter"

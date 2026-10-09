@@ -80,7 +80,7 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             accessToken: credentials.accessToken,
             fallbackPlan: credentials.subscriptionType
         )
-    case .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
+    case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent, .openCode, .deepSeek, .openRouter, .grok,
          .copilot, .windsurf, .jetBrainsAI, .zed:
         throw ProbeError.unsupportedTool(tool.rawValue)
     }

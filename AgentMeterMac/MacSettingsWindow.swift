@@ -6,6 +6,7 @@ import AgentMeterCore
 
 enum MacSettingsRoute: Hashable {
     case general
+    case ark(ArkPlanAdapter.Product)
     case automatic(PlanProviderKind)
     case manual(ManualProviderKind)
     case about
@@ -32,7 +33,11 @@ struct MacSettingsView: View {
 
                 Section("Plan") {
                     ForEach(filteredPlanProviders, id: \.self) { provider in
-                        if let manualProvider = provider.manualProvider {
+                        if provider == .arkCoding || provider == .arkAgent {
+                            ProviderSidebarRow(name: provider.settingsDisplayName, mark: "Ark", tint: .blue,
+                                state: model.arkPlanController.state(provider == .arkCoding ? .coding : .agent))
+                                .tag(MacSettingsRoute.ark(provider == .arkCoding ? .coding : .agent))
+                        } else if let manualProvider = provider.manualProvider {
                             ProviderSidebarRow(
                                 name: provider.settingsDisplayName,
                                 mark: provider.settingsMonogram,
@@ -92,6 +97,8 @@ struct MacSettingsView: View {
             } else {
                 MacManualProviderDetail(provider: provider, model: model).id(provider)
             }
+        case .ark(let product):
+            MacArkPlanSettingsView(product: product, controller: model.arkPlanController).id(product)
         case .about:
             MacAboutSettingsView(model: model)
         }
@@ -254,7 +261,7 @@ private struct MacAutomaticProviderDetail: View {
         case .jetBrainsAI: L10n.string("只读最近使用的 JetBrains IDE AI Assistant 额度文件。")
         case .zed: L10n.string("读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。")
         case .copilot: ""
-        case .kimiCode, .glmCoding, .miniMax: ""
+        case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent: ""
         }
     }
 
@@ -267,7 +274,7 @@ private struct MacAutomaticProviderDetail: View {
         case .jetBrainsAI: L10n.string("在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。")
         case .zed: L10n.string("在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。")
         case .copilot: ""
-        case .kimiCode, .glmCoding, .miniMax: ""
+        case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent: ""
         }
     }
 }
@@ -998,6 +1005,8 @@ private extension PlanProviderKind {
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
         case .zed: "Zed"
+        case .arkCoding: "Ark Coding Plan"
+        case .arkAgent: "Ark Agent Plan"
         default: manualProvider!.settingsDisplayName
         }
     }
@@ -1010,6 +1019,7 @@ private extension PlanProviderKind {
         case .windsurf: "W"
         case .jetBrainsAI: "JB"
         case .zed: "Z"
+        case .arkCoding, .arkAgent: "Ark"
         default: manualProvider!.settingsMonogram
         }
     }
@@ -1022,6 +1032,7 @@ private extension PlanProviderKind {
         case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
         case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
         case .zed: Color(red: 0.28, green: 0.46, blue: 0.31)
+        case .arkCoding, .arkAgent: .blue
         default: manualProvider!.settingsTint
         }
     }
@@ -1131,6 +1142,8 @@ private extension MacDisplayItemID {
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
         case .zed: "Zed"
+        case .arkCoding: "Ark Coding Plan"
+        case .arkAgent: "Ark Agent Plan"
         }
     }
     var settingsMonogram: String {
@@ -1142,6 +1155,7 @@ private extension MacDisplayItemID {
         case .windsurf: "W"
         case .jetBrainsAI: "JB"
         case .zed: "Z"
+        case .arkCoding, .arkAgent: "Ark"
         default: manualProvider!.settingsMonogram
         }
     }
@@ -1154,12 +1168,13 @@ private extension MacDisplayItemID {
         case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
         case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
         case .zed: Color(red: 0.28, green: 0.46, blue: 0.31)
+        case .arkCoding, .arkAgent: .blue
         default: manualProvider!.settingsTint
         }
     }
 }
 
-private extension ProviderConnectionState {
+extension ProviderConnectionState {
     var settingsLabel: String {
         switch self {
         case .unconfigured: L10n.string("未配置")

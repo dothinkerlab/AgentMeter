@@ -5,7 +5,7 @@ import Testing
 struct PlanProviderTests {
     @Test func catalogOrderAndMappingsAreStable() {
         #expect(PlanProviderKind.allCases == [
-            .chatGPT, .claude, .cursor, .kimiCode, .glmCoding, .miniMax,
+            .chatGPT, .claude, .cursor, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
             .copilot, .windsurf, .jetBrainsAI, .zed,
         ])
         #expect(PlanProviderKind.chatGPT.toolKind == .codex)
