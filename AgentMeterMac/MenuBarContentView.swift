@@ -259,9 +259,9 @@ struct MenuBarContentView: View {
                     brand: brand(for: snapshot.tool),
                     tool: snapshot.tool,
                     isStale: model.isStale(snapshot),
-                    staleLabel: staleLabel(snapshot),
+                    staleLabel: (snapshot.tool == .arkCoding && !model.arkPlanController.isEnabled(.coding)) || (snapshot.tool == .arkAgent && !model.arkPlanController.isEnabled(.agent)) ? L10n.string("已暂停") : staleLabel(snapshot),
                     ageText: relativeAge(snapshot.updatedAt),
-                    warning: staleWarning(snapshot),
+                    warning: planWarning(snapshot),
                     windows: orderedWindows(snapshot.windows),
                     resetSummary: resetSummary(snapshot.windows),
                     resetCredits: snapshot.resetCredits,
@@ -622,11 +622,11 @@ struct MenuBarContentView: View {
     private func rank(_ kind: WindowKind) -> Int {
         switch kind {
         case .fiveHour: return 0
-        case .sevenDay: return 1
-        case .sevenDayOpus: return 2
-        case .sevenDaySonnet: return 3
-        case .monthly: return 4
-        case .daily: return 0
+        case .sevenDay: return 2
+        case .sevenDayOpus: return 3
+        case .sevenDaySonnet: return 4
+        case .monthly: return 5
+        case .daily: return 1
         case .weekly: return 1
         case .premiumInteractions: return 0
         case .chat: return 1
@@ -694,6 +694,27 @@ struct MenuBarContentView: View {
         }
     }
 
+    private func planWarning(_ snapshot: QuotaSnapshot) -> String? {
+        let status: MacPlanQueryStatus
+        switch snapshot.tool {
+        case .miniMax: status = model.miniMaxStatus
+        case .arkCoding:
+            guard model.arkPlanController.isEnabled(.coding) else { return nil }
+            status = model.arkPlanController.status(.coding)
+        case .arkAgent:
+            guard model.arkPlanController.isEnabled(.agent) else { return nil }
+            status = model.arkPlanController.status(.agent)
+        default: return staleWarning(snapshot)
+        }
+        if let message = status.message {
+            if let retryAt = status.retryAt, retryAt > Date() {
+                return message + " " + L10n.format("可于 %@ 后重试", retryAt.formatted(date: .omitted, time: .standard))
+            }
+            return message
+        }
+        return staleWarning(snapshot)
+    }
+
     private func staleWarning(_ snapshot: QuotaSnapshot) -> String? {
         guard model.isStale(snapshot) else { return nil }
         switch snapshot.staleReason {
@@ -731,7 +752,7 @@ struct MenuBarContentView: View {
 // MARK: - 工具行(方向 C)
 // MARK: - 工具行(方向 C)
 
-private struct ToolRow: View {
+struct ToolRow: View {
     let name: String
     let plan: String?
     let brand: Brand
@@ -753,6 +774,10 @@ private struct ToolRow: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 headerLine
+                if tool == .arkCoding || tool == .arkAgent || tool == .miniMax {
+                    Text(ageText).font(.system(size: 10)).foregroundColor(Color.menuTertiaryText)
+                        .padding(.top, 3)
+                }
 
                 if let warning {
                     warningBox(warning)
@@ -761,7 +786,14 @@ private struct ToolRow: View {
 
                 VStack(spacing: 7) {
                     ForEach(windows, id: \.kind) { w in
-                        WindowLine(label: labelFor(w.kind), remaining: w.remainingPercent, brand: brand)
+                        VStack(alignment: .leading, spacing: 3) {
+                            WindowLine(label: labelFor(w.kind), remaining: w.remainingPercent, brand: brand)
+                            if tool == .arkCoding || tool == .arkAgent || tool == .miniMax {
+                                Text(w.resetsAt.map { L10n.format("重置时间：%@", $0.formatted(date: .abbreviated, time: .standard)) }
+                                     ?? L10n.string("重置时间未知"))
+                                    .font(.system(size: 10)).foregroundColor(Color.menuTertiaryText)
+                            }
+                        }
                     }
                 }
                 .padding(.top, 11)
@@ -1033,7 +1065,7 @@ private struct BrandMark: View {
             Text("C").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
         case .kimiCode:
             Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
-        case .glmCoding, .arkCoding, .arkAgent:
+        case .glmCoding:
             Text("GLM").font(.system(size: 7.5, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .arkCoding, .arkAgent:
             Text("Ark").font(.system(size: 8, weight: .bold)).foregroundColor(Color.menuOnBrand)
@@ -1087,11 +1119,11 @@ private struct Sunburst: Shape {
 }
 
 /// 每个服务一个品牌色。Codex 墨绿、Claude 陶土橙。
-private struct Brand {
+struct Brand {
     let accent: Color
 }
 
-private func brand(for tool: ToolKind) -> Brand {
+func brand(for tool: ToolKind) -> Brand {
     switch tool {
     case .codex:
         return Brand(accent: .menuBrandCodex)

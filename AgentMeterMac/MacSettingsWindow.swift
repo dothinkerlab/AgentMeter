@@ -321,6 +321,25 @@ private struct MacManualProviderDetail: View {
                     Text(L10n.string("粘贴可读取当前账号 Copilot 信息的 GitHub Token。Token 仅发送到固定的 GitHub API 地址；首版不支持 GitHub Enterprise 或自动登录。"))
                         .foregroundStyle(.secondary)
                 }
+            } else if provider == .miniMax {
+                Section(L10n.string("数据来源")) {
+                    Text(L10n.string("优先使用 MiniMax CLI 配置，手动 key 仅在没有可用 CLI 配置时回退；请求失败不会切换凭据。"))
+                    Text(model.miniMaxStatus.source == "miniMaxCLI"
+                         ? L10n.string("当前来源：MiniMax CLI")
+                         : model.miniMaxStatus.source == "manualKeychain"
+                            ? L10n.string("当前来源：本机手动回退 key") : L10n.string("当前来源：未配置"))
+                    if let region = model.miniMaxStatus.region {
+                        Text(region == .china ? L10n.string("实际查询区域：中国大陆") : L10n.string("实际查询区域：国际"))
+                    }
+                    Text(L10n.string("仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。"))
+                    if let message = model.miniMaxStatus.message { Text(message).foregroundStyle(.orange) }
+                    if let retryAt = model.miniMaxStatus.retryAt {
+                        Text(L10n.format("可于 %@ 后重试", retryAt.formatted(date: .omitted, time: .standard)))
+                    }
+                    if let updated = model.miniMaxStatus.lastSuccess {
+                        Text(L10n.format("上次成功：%@", updated.formatted(date: .abbreviated, time: .standard)))
+                    }
+                }
             } else if provider.category == .codingPlan {
                 Section(L10n.string("数据来源")) {
                     Text(L10n.string("优先读取官方 CLI 或 Claude 配置；这里保存的 key 仅作回退。"))
@@ -375,9 +394,11 @@ private struct MacManualProviderDetail: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!canSave || busy)
 
-                if state.needsRetry, hasAnyCredential {
-                    Button(L10n.string("重新验证")) { Task { await verify() } }
-                        .disabled(busy)
+                if (state.needsRetry || provider == .miniMax), hasAnyCredential {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Button(L10n.string("重新验证")) { Task { await verify() } }
+                            .disabled(busy || (provider == .miniMax && !model.miniMaxStatus.canQuery(now: context.date)))
+                    }
                 }
 
                 if let message {
@@ -530,6 +551,7 @@ private struct MacManualProviderDetail: View {
 
     private func load() {
         resetTransientState()
+        if provider == .miniMax, screenshotState == nil { model.inspectMiniMaxConfiguration() }
         if let screenshotState {
             state = screenshotState
             hasAnyCredential = screenshotState != .unconfigured

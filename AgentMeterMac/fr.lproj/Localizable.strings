@@ -292,3 +292,32 @@
 "账单与账户积分" = "Billing and account credits";
 "Enable Perplexity iCloud sync on your Mac" = "Enable Perplexity iCloud sync on your Mac";
 "Perplexity Credits" = "Perplexity Credits";
+
+/* Personal plan status and recovery */
+"凭据无效，请重新配置。" = "Identifiants invalides. Configurez-les à nouveau.";
+"权限不足，请检查当前身份的个人套餐查询权限。" = "Accès refusé. Vérifiez les droits de consultation du forfait personnel de cette identité.";
+"网络异常，显示上次成功获取的数据。" = "Erreur réseau. Affichage des dernières données obtenues.";
+"查询受限，请等待后重试。" = "Requêtes limitées. Réessayez plus tard.";
+"服务暂不可用或当前身份没有有效套餐。" = "Service indisponible ou aucun forfait actif pour cette identité.";
+"额度响应无法可靠解析，显示上次数据。" = "La réponse de quota ne peut pas être interprétée de façon fiable. Affichage des données précédentes.";
+"多个文本额度池存在冲突，无法确定共享额度；保留上次数据。" = "Les quotas de texte sont contradictoires. Le quota partagé est indéterminé ; les données précédentes sont conservées.";
+"无法读取本机凭据，请检查 Keychain 后重试。" = "Impossible de lire les identifiants locaux. Vérifiez le Trousseau et réessayez.";
+"无法安全保存本机数据，请重试。" = "Impossible d’enregistrer les données locales en toute sécurité. Réessayez.";
+"可于 %@ 后重试" = "Réessayer après %@";
+"上次成功：%@" = "Dernière réussite : %@";
+"Access Key 仅保存在此 Mac，跨设备只同步额度快照。个人套餐仅由一台 Mac 发布。" = "Les Access Keys restent sur ce Mac. Seuls les quotas sont synchronisés entre appareils. Utilisez un seul Mac émetteur par forfait personnel.";
+"AFP 是套餐统一额度，不代表 Token 数或人民币金额。" = "AFP est une allocation unifiée du forfait, pas un nombre de tokens ni un montant en yuans.";
+"凭据已保存在 Keychain；输入新凭据以替换，不回显原值。" = "Identifiants enregistrés dans le Trousseau. Saisissez-en de nouveaux pour les remplacer ; les valeurs enregistrées ne sont jamais affichées.";
+"暂停保留上次额度并停止云端更新；移除凭据才清理本机和云端数据。" = "La pause conserve le quota précédent et arrête les mises à jour cloud. La suppression des identifiants efface les données locales et cloud.";
+"额度已获取，等待上传到 iCloud。" = "Quota reçu, en attente d’envoi vers iCloud.";
+"等待从 iCloud 清理旧账号额度。" = "En attente de suppression du quota de l’ancien compte dans iCloud.";
+"重试清理" = "Réessayer la suppression";
+"优先使用 MiniMax CLI 配置，手动 key 仅在没有可用 CLI 配置时回退；请求失败不会切换凭据。" = "La configuration MiniMax CLI est prioritaire. La clé manuelle sert uniquement en l’absence de configuration utilisable ; un échec de requête ne change pas les identifiants.";
+"当前来源：MiniMax CLI" = "Source : MiniMax CLI";
+"当前来源：本机手动回退 key" = "Source : clé locale de secours";
+"当前来源：未配置" = "Source : non configurée";
+"实际查询区域：中国大陆" = "Région interrogée : Chine continentale";
+"实际查询区域：国际" = "Région interrogée : internationale";
+"仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Seul le quota de texte partagé general / M3 est affiché. Les quotas d’images, de vidéos et des modèles indépendants ne sont pas combinés.";
+"重置时间：%@" = "Réinitialisation : %@";
+"已暂停" = "En pause";

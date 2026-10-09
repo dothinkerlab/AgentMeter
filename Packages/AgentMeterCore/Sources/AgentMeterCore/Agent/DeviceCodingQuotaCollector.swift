@@ -120,6 +120,7 @@ public struct DeviceCodingQuotaCollector: Sendable {
     public let device: QuotaCollectorDevice
     public let sync: any DeviceCodingSnapshotSyncing
     public let operationGate: DeviceCodingOperationGate
+    private var queryObserver: (@Sendable (Error?) async -> Void)? = nil
     private let fetchOverride: (@Sendable (ToolKind, CodingProviderCredential) async throws -> QuotaSnapshot)?
 
     public init(
@@ -148,6 +149,13 @@ public struct DeviceCodingQuotaCollector: Sendable {
         self.fetchOverride = fetchOverride
     }
 
+    /// Local query diagnostics only; never added to a synced snapshot.
+    public func observingQuery(_ observer: @escaping @Sendable (Error?) async -> Void) -> Self {
+        var copy = self
+        copy.queryObserver = observer
+        return copy
+    }
+
     public func refresh(
         tool: ToolKind,
         credential: CodingProviderCredential
@@ -164,6 +172,7 @@ public struct DeviceCodingQuotaCollector: Sendable {
                 ), cloudSync: .pending)
             }
             let fresh = try await fetch(tool: tool, credential: credential)
+            await queryObserver?(nil)
             let scoped = fresh.collected(on: device)
             let saved = await operationGate.performIfCurrent(
                 device: device, tool: tool, generation: generation
@@ -177,6 +186,7 @@ public struct DeviceCodingQuotaCollector: Sendable {
             }
             return Self.outcome(scoped: scoped, saved: saved)
         } catch {
+            await queryObserver?(error)
             return await degrade(
                 tool: tool,
                 reason: Self.staleReason(for: error),

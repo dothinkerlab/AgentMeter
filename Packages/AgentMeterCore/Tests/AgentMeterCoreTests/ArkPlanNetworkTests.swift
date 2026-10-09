@@ -38,7 +38,7 @@ struct ArkPlanNetworkTests {
                 #expect([200, 429].contains(status))
                 #expect(failure.isRateLimited && failure.retryAt != nil)
             } catch let error as ArkPlanAdapter.FetchError {
-                #expect(error == ((status == 401 || status == 403) ? .unauthorized : .httpStatus(status)))
+                #expect(error == (status == 401 ? .unauthorized : status == 403 ? .permissionDenied : .httpStatus(status)))
             }
         }
         let timedOut = session { _ in throw URLError(.timedOut) }

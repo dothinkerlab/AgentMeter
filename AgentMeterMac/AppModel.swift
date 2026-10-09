@@ -112,6 +112,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var openAIAPIUsage: APICostUsage?
     @Published private(set) var anthropicAPIUsage: APICostUsage?
     @Published private(set) var cursorTeamUsage: CursorTeamUsage?
+    @Published private(set) var miniMaxStatus = MacPlanQueryStatus()
     @Published private(set) var deviceCodingSnapshots: [QuotaSnapshot] = []
     @Published private(set) var extendedResults: [QuotaCollector.Result] = []
     @Published private(set) var deviceCodingCloudSyncPendingTools: Set<ToolKind> = []
@@ -212,6 +213,10 @@ final class AppModel: ObservableObject {
             fileLog.append("[\(ts)] \(message)")
         })
         loginItemEnabled = (SMAppService.mainApp.status == .enabled)
+        if let data = defaults.data(forKey: "miniMaxQueryStatus.v1") {
+            do { self.miniMaxStatus = try JSONDecoder().decode(MacPlanQueryStatus.self, from: data) }
+            catch { self.miniMaxStatus.issue = .storage }
+        }
         arkObservation = arkPlanController.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         perplexityObservation = perplexityController.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         typeSafeObservation = typeSafeController.objectWillChange.sink { [weak self] _ in
@@ -599,8 +604,22 @@ final class AppModel: ObservableObject {
             guard let credential = try MacCodingCredentialResolver.resolve(
                 tool: tool, manualRegion: MacCodingProviderPreferences.region(tool)
             ) else { return .unavailable(tool, generation: publishGeneration) }
-            switch await collector.refresh(tool: tool, credential: credential) {
+            if tool == .miniMax {
+                miniMaxStatus.source = credential.source.rawValue
+                miniMaxStatus.region = credential.region
+                miniMaxStatus.credentialAvailable = true
+                persistMiniMaxStatus()
+            }
+            let activeCollector = collector.observingQuery { [weak self] error in
+                await self?.recordMiniMaxQuery(error, tool: tool, generation: publishGeneration)
+            }
+            switch await activeCollector.refresh(tool: tool, credential: credential) {
             case .snapshot(let snapshot, let cloudSync):
+                if tool == .miniMax, deviceCodingPublishGenerations[tool] == publishGeneration,
+                   snapshot.confidence == .fresh {
+                    miniMaxStatus.lastSuccess = snapshot.updatedAt
+                    persistMiniMaxStatus()
+                }
                 return .collected(
                     DeviceCodingCollectedValue(snapshot: snapshot, cloudSync: cloudSync),
                     generation: publishGeneration
@@ -619,6 +638,27 @@ final class AppModel: ObservableObject {
                 return .superseded(tool, generation: publishGeneration)
             }
         }
+    }
+
+    func inspectMiniMaxConfiguration() {
+        do {
+            let credential = try MacCodingCredentialResolver.resolve(tool: .miniMax,
+                manualRegion: MacCodingProviderPreferences.region(.miniMax))
+            miniMaxStatus.credentialAvailable = credential != nil
+            miniMaxStatus.source = credential?.source.rawValue
+            miniMaxStatus.region = credential?.region
+            if miniMaxStatus.issue == .credentialRead { miniMaxStatus.issue = nil }
+        } catch { miniMaxStatus.issue = .credentialRead; miniMaxStatus.credentialAvailable = false }
+        persistMiniMaxStatus()
+    }
+    private func recordMiniMaxQuery(_ error: Error?, tool: ToolKind, generation: UInt64) {
+        guard tool == .miniMax, deviceCodingPublishGenerations[tool] == generation else { return }
+        miniMaxStatus.receive(error)
+        persistMiniMaxStatus()
+    }
+    private func persistMiniMaxStatus() {
+        do { defaults.set(try JSONEncoder().encode(miniMaxStatus), forKey: "miniMaxQueryStatus.v1") }
+        catch { miniMaxStatus.issue = .storage }
     }
 
     private func beginDeviceCodingPublishRequest(for tool: ToolKind) -> UInt64 {
@@ -1017,6 +1057,10 @@ final class AppModel: ObservableObject {
             // 失败就回读真实状态,不假装成功
         }
         loginItemEnabled = (SMAppService.mainApp.status == .enabled)
+        if let data = defaults.data(forKey: "miniMaxQueryStatus.v1") {
+            do { self.miniMaxStatus = try JSONDecoder().decode(MacPlanQueryStatus.self, from: data) }
+            catch { self.miniMaxStatus.issue = .storage }
+        }
     }
 
     // MARK: - 给 UI / 菜单栏 label

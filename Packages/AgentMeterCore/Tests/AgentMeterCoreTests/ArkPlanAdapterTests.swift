@@ -40,7 +40,7 @@ private func planFixture(_ name: String) throws -> Data {
 }
 @Test func arkBusinessErrorsAreExplicitAndOldServerDataIsStale() throws {
     let denied = Data(#"{"ResponseMetadata":{"Error":{"Code":"AccessDenied"}}}"#.utf8)
-    #expect(throws: ArkPlanAdapter.FetchError.unauthorized) { try ArkPlanAdapter(product: .coding).parse(data: denied) }
+    #expect(throws: ArkPlanAdapter.FetchError.permissionDenied) { try ArkPlanAdapter(product: .coding).parse(data: denied) }
     let throttled = Data(#"{"ResponseMetadata":{"Error":{"Code":"Throttling"}}}"#.utf8)
     #expect(throws: ProviderRequestFailure.self) { try ArkPlanAdapter(product: .coding).parse(data: throttled) }
     let old = Data(#"{"Result":{"QuotaUsage":[{"Level":"Session","Percent":20}],"UpdateTimestamp":1791500000000}}"#.utf8)

@@ -31,7 +31,7 @@ public struct ArkPlanAdapter: Sendable {
         public var source: String { self == .coding ? "ark_coding_plan_api" : "ark_agent_plan_api" }
     }
     public enum FetchError: Error, Sendable, Equatable {
-        case unauthorized, httpStatus(Int), transport, decode, business
+        case unauthorized, permissionDenied, httpStatus(Int), transport, decode, business
     }
     public let product: Product
     public init(product: Product) { self.product = product }
@@ -73,7 +73,8 @@ public struct ArkPlanAdapter: Sendable {
         if let metadata = root["ResponseMetadata"] as? [String: Any],
            let error = metadata["Error"] as? [String: Any] {
             let code = error["Code"] as? String ?? ""
-            if ["AccessDenied", "InvalidAccessKey", "SignatureDoesNotMatch", "InvalidToken", "InvalidAccessKeyId"].contains(code) { throw FetchError.unauthorized }
+            if code == "AccessDenied" { throw FetchError.permissionDenied }
+            if ["InvalidAccessKey", "SignatureDoesNotMatch", "InvalidToken", "InvalidAccessKeyId"].contains(code) { throw FetchError.unauthorized }
             if code.contains("Throttl") || code.contains("LimitExceeded") {
                 throw ProviderRequestFailure(isRateLimited: true, httpStatus: 200)
             }
@@ -143,7 +144,8 @@ public struct ArkPlanAdapter: Sendable {
             throw FetchError.transport
         }
         guard let http = response as? HTTPURLResponse else { throw FetchError.transport }
-        if http.statusCode == 401 || http.statusCode == 403 { throw FetchError.unauthorized }
+        if http.statusCode == 401 { throw FetchError.unauthorized }
+        if http.statusCode == 403 { throw FetchError.permissionDenied }
         guard (200...299).contains(http.statusCode) else { throw FetchError.httpStatus(http.statusCode) }
         return try parse(data: data, now: now)
     }
@@ -153,7 +155,7 @@ public struct ArkPlanAdapter: Sendable {
         case FetchError.unauthorized: .authExpired
         case FetchError.transport: .networkFailure
         case FetchError.decode: .responseChanged
-        case FetchError.business, FetchError.httpStatus: .endpointFailure
+        case FetchError.permissionDenied, FetchError.business, FetchError.httpStatus: .endpointFailure
         default: .unknownFailure
         }
     }

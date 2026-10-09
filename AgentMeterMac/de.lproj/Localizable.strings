@@ -292,3 +292,32 @@
 "账单与账户积分" = "Billing and account credits";
 "Enable Perplexity iCloud sync on your Mac" = "Enable Perplexity iCloud sync on your Mac";
 "Perplexity Credits" = "Perplexity Credits";
+
+/* Personal plan status and recovery */
+"凭据无效，请重新配置。" = "Ungültige Zugangsdaten. Bitte erneut konfigurieren.";
+"权限不足，请检查当前身份的个人套餐查询权限。" = "Zugriff verweigert. Prüfen Sie die Abfragerechte dieser Identität für persönliche Abonnements.";
+"网络异常，显示上次成功获取的数据。" = "Netzwerkfehler. Die zuletzt erfolgreich abgerufenen Daten werden angezeigt.";
+"查询受限，请等待后重试。" = "Abfragen begrenzt. Bitte später erneut versuchen.";
+"服务暂不可用或当前身份没有有效套餐。" = "Der Dienst ist nicht verfügbar oder diese Identität hat kein aktives Abonnement.";
+"额度响应无法可靠解析，显示上次数据。" = "Die Kontingentantwort kann nicht zuverlässig gelesen werden. Vorherige Daten werden angezeigt.";
+"多个文本额度池存在冲突，无法确定共享额度；保留上次数据。" = "Textkontingente widersprechen sich. Das gemeinsame Kontingent ist unklar; vorherige Daten bleiben erhalten.";
+"无法读取本机凭据，请检查 Keychain 后重试。" = "Lokale Zugangsdaten können nicht gelesen werden. Prüfen Sie den Schlüsselbund und versuchen Sie es erneut.";
+"无法安全保存本机数据，请重试。" = "Lokale Daten können nicht sicher gespeichert werden. Bitte erneut versuchen.";
+"可于 %@ 后重试" = "Nach %@ erneut versuchen";
+"上次成功：%@" = "Zuletzt erfolgreich: %@";
+"Access Key 仅保存在此 Mac，跨设备只同步额度快照。个人套餐仅由一台 Mac 发布。" = "Access Keys bleiben auf diesem Mac. Nur Kontingentstände werden synchronisiert. Verwenden Sie pro persönlichem Abonnement nur einen veröffentlichenden Mac.";
+"AFP 是套餐统一额度，不代表 Token 数或人民币金额。" = "AFP ist ein einheitliches Plankontingent, keine Tokenanzahl und kein Betrag in Yuan.";
+"凭据已保存在 Keychain；输入新凭据以替换，不回显原值。" = "Zugangsdaten sind im Schlüsselbund gespeichert. Geben Sie neue Daten zum Ersetzen ein; gespeicherte Werte werden nicht angezeigt.";
+"暂停保留上次额度并停止云端更新；移除凭据才清理本机和云端数据。" = "Pausieren behält das letzte Kontingent und stoppt Cloud-Updates. Erst das Entfernen der Zugangsdaten löscht lokale und Cloud-Daten.";
+"额度已获取，等待上传到 iCloud。" = "Kontingent abgerufen. Upload zu iCloud ausstehend.";
+"等待从 iCloud 清理旧账号额度。" = "Entfernung des alten Kontingents aus iCloud ausstehend.";
+"重试清理" = "Entfernung wiederholen";
+"优先使用 MiniMax CLI 配置，手动 key 仅在没有可用 CLI 配置时回退；请求失败不会切换凭据。" = "MiniMax-CLI-Konfiguration hat Vorrang. Der manuelle Schlüssel wird nur ohne nutzbare CLI-Konfiguration verwendet; fehlgeschlagene Anfragen wechseln keine Zugangsdaten.";
+"当前来源：MiniMax CLI" = "Quelle: MiniMax CLI";
+"当前来源：本机手动回退 key" = "Quelle: lokaler Ersatzschlüssel";
+"当前来源：未配置" = "Quelle: nicht konfiguriert";
+"实际查询区域：中国大陆" = "Abfrageregion: Festlandchina";
+"实际查询区域：国际" = "Abfrageregion: international";
+"仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Nur das gemeinsame general-/M3-Textkontingent wird angezeigt. Bild-, Video- und unabhängige Modellkontingente werden nicht zusammengeführt.";
+"重置时间：%@" = "Zurücksetzung: %@";
+"已暂停" = "Pausiert";
