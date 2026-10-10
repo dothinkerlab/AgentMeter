@@ -48,6 +48,78 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         XCTAssertThrowsError(try CodexQueueTarget.read(valid, threadID: turn))
     }
 
+    func testSettingsAfterFailureRemainEligible() throws {
+        let url = try fixture()
+        let failure = try CodexQueueTarget.read(url, threadID: thread)
+        try appendSettings(to: url)
+        let target = try CodexQueueTarget.read(url, threadID: thread)
+        XCTAssertEqual(target.failedTurnID, failure.failedTurnID)
+        XCTAssertEqual(target.failedAt, failure.failedAt)
+        XCTAssertEqual(target.lastEvidenceAt.timeIntervalSince1970, 1791647894.412, accuracy: 0.001)
+        try target.revalidate()
+        try appendSettings(to: url)
+        XCTAssertThrowsError(try target.revalidate())
+        XCTAssertEqual(try CodexQueueTarget.read(url, threadID: thread).failedTurnID, turn)
+    }
+
+    func testOnlyMatchingWellFormedSettingsCanBeSkipped() throws {
+        let settings: [String: Any] = ["type": "thread_settings_applied", "thread_id": thread]
+        let invalidRows: [[String: Any]] = [
+            ["timestamp": "2026-10-10T15:58:14.412Z", "type": "event_msg",
+             "payload": ["type": "thread_settings_applied", "thread_id": message]],
+            ["timestamp": "invalid", "type": "event_msg", "payload": settings],
+            ["type": "event_msg", "payload": settings],
+            ["timestamp": "2999-10-10T15:58:14Z", "type": "event_msg", "payload": settings],
+            ["timestamp": "2026-10-10T14:00:00Z", "type": "event_msg", "payload": settings],
+            ["timestamp": "2026-10-10T15:58:14Z", "type": "response_item", "payload": settings],
+            ["timestamp": "2026-10-10T15:58:14Z", "type": "event_msg",
+             "payload": ["type": "unknown_event"]]
+        ]
+        for row in invalidRows {
+            let url = try fixture()
+            try appendRow(row, to: url)
+            XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+        }
+        for kind in ["task_started", "user_message", "turn_aborted", "task_complete"] {
+            let url = try fixture()
+            try appendRow(["timestamp": "2026-10-10T15:00:00Z", "type": "event_msg",
+                           "payload": ["type": kind]], to: url)
+            try appendSettings(to: url)
+            XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+        }
+    }
+
+    func testMalformedPartialAndOutOfBoundsEvidenceBlocks() throws {
+        for suffix in [Data("{broken}\n".utf8), Data("{\"type\":\"event_msg\"".utf8), Data([10])] {
+            let url = try fixture()
+            try appendData(suffix, to: url)
+            XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+        }
+        let url = try fixture()
+        try appendRow(["timestamp": "2026-10-10T15:58:14Z", "type": "event_msg",
+            "payload": ["type": "thread_settings_applied", "thread_id": thread,
+                        "thread_settings": ["padding": String(repeating: "x", count: 512 * 1024)]]], to: url)
+        XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+    }
+
+    private func appendSettings(to url: URL) throws {
+        try appendRow(["timestamp": "2026-10-10T15:58:14.412Z", "type": "event_msg",
+            "payload": ["type": "thread_settings_applied", "thread_id": thread, "thread_settings": [:]]], to: url)
+    }
+
+    private func appendRow(_ row: [String: Any], to url: URL) throws {
+        var data = try JSONSerialization.data(withJSONObject: row)
+        data.append(10)
+        try appendData(data, to: url)
+    }
+
+    private func appendData(_ data: Data, to url: URL) throws {
+        let handle = try FileHandle(forWritingTo: url)
+        defer { try? handle.close() }
+        try handle.seekToEnd()
+        try handle.write(contentsOf: data)
+    }
+
     func testSymlinkSourceIsRejected() throws {
         let url = try fixture()
         let alias = url.deletingLastPathComponent().appendingPathComponent("alias")
@@ -98,6 +170,7 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         let source = home.appendingPathComponent("sessions/test.jsonl")
         let older = home.appendingPathComponent("sessions/older.jsonl")
         try writeFixture(to: source, turnID: turn)
+        try appendSettings(to: source)
         try writeFixture(to: older, turnID: message)
         var state = CodexMonitorCheckpoint(homePath: home.path, monitoringSince: Date())
         let candidate = CodexResumeCandidate(threadID: thread, failedTurnID: turn, detectedAt: Date())
@@ -144,7 +217,7 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let records: [[String: Any]] = [
             ["type": "session_meta", "payload": ["id": thread, "originator": "Codex Desktop"]],
-            ["type": "event_msg", "payload": ["type": "task_complete", "turn_id": turnID,
+            ["timestamp": "2026-10-10T14:59:36.558Z", "type": "event_msg", "payload": ["type": "task_complete", "turn_id": turnID,
               "error": ["codex_error_info": error]]]
         ]
         var data = Data()

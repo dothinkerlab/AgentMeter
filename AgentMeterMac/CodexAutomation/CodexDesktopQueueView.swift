@@ -8,6 +8,7 @@ final class CodexDesktopQueueController: ObservableObject {
     @Published private(set) var message = ""
 
     enum Outcome { case observed, uncertain, notSent, deferred }
+    private enum PreReservationFailure: Error { case sourceChanged }
     private let resolveExecutable: @MainActor () throws -> URL
     private let runProcess: @Sendable (URL, [String], URL) throws -> Data
 
@@ -54,7 +55,8 @@ final class CodexDesktopQueueController: ObservableObject {
             }
             attempted = true
             let messageID = try await Task.detached(priority: .userInitiated) {
-                try target.revalidate()
+                do { try target.revalidate() }
+                catch { throw PreReservationFailure.sourceChanged }
                 let attempt = try store.reserve(target)
                 defer { try? attempt.close() }
                 do {
@@ -82,12 +84,15 @@ final class CodexDesktopQueueController: ObservableObject {
             }
             message = L10n.format("已入队（%@），执行结果待确认。请查看 Codex，不要重复发送。", messageID)
             return .uncertain
+        } catch PreReservationFailure.sourceChanged {
+            message = L10n.string("发送前条件已变化，已保留等待会话，未发送消息。")
+            return .deferred
         } catch CodexDesktopQueueError.duplicate {
             message = L10n.string("此失败轮次已有发送记录，已阻止再次提交。请查看 Codex 原会话。")
             return .uncertain
         } catch CodexDesktopQueueError.invalidSource {
             message = L10n.string("文件不匹配或末尾已不是该会话的额度失败，未提交新消息。")
-            return attempted ? .uncertain : .notSent
+            return attempted ? .uncertain : (expectedTarget == nil ? .notSent : .deferred)
         } catch CodexRuntimeProbeError.unsupportedHost {
             message = CodexResumeBlock.hostUnavailable.message
             return .notSent

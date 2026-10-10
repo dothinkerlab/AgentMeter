@@ -21,7 +21,8 @@ final class CodexResumeCoordinatorTests: XCTestCase {
             let source = sessions.appendingPathComponent("\(index).jsonl")
             let lines: [[String: Any]] = [
                 ["type": "session_meta", "payload": ["id": thread, "originator": "Codex Desktop"]],
-                ["type": "event_msg", "payload": ["type": "task_complete", "turn_id": turn,
+                ["timestamp": ISO8601DateFormatter().string(from: now.addingTimeInterval(Double(index - 10))),
+                 "type": "event_msg", "payload": ["type": "task_complete", "turn_id": turn,
                     "error": ["codex_error_info": "usage_limit_exceeded"]]]
             ]
             var data = Data()

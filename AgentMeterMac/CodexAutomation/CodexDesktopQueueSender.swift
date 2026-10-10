@@ -9,6 +9,9 @@ enum CodexDesktopQueueError: Error { case invalidSource, duplicate, storage, pro
 struct CodexQueueTarget {
     let threadID: String
     let failedTurnID: String
+    let failedAt: Date
+    let lastSettingsAt: Date?
+    var lastEvidenceAt: Date { max(failedAt, lastSettingsAt ?? failedAt) }
     let source: URL
     let size: UInt64
     let fileID: UInt64
@@ -25,18 +28,36 @@ struct CodexQueueTarget {
         let header = try file.read(upToCount: 64 * 1024) ?? Data()
         guard CodexSessionEventParser.header(header)?.threadID == threadID else { throw CodexDesktopQueueError.invalidSource }
         let size = try file.seekToEnd()
-        try file.seek(toOffset: size > 512 * 1024 ? size - 512 * 1024 : 0)
-        let tail = try file.readToEnd() ?? Data()
-        guard tail.last == 10, let line = tail.split(separator: 10).last,
-              let object = try JSONSerialization.jsonObject(with: Data(line)) as? [String: Any],
-              object["type"] as? String == "event_msg",
-              let payload = object["payload"] as? [String: Any], payload["type"] as? String == "task_complete",
-              let error = payload["error"] as? [String: Any], error["codex_error_info"] as? String == "usage_limit_exceeded",
-              let turn = payload["turn_id"] as? String, UUID(uuidString: turn) != nil else {
+        let start = size > 512 * 1024 ? size - 512 * 1024 : 0
+        try file.seek(toOffset: start)
+        let tail = try file.read(upToCount: 512 * 1024) ?? Data()
+        guard UInt64(tail.count) == size - start, tail.last == 10 else {
             throw CodexDesktopQueueError.invalidSource
         }
-        return .init(threadID: threadID, failedTurnID: turn, source: url, size: size,
-                     fileID: inode.uint64Value, tail: tail)
+        // Drop the first fragment whenever the bounded read starts inside the file.
+        // It must never be interpreted as a complete record, even if it resembles JSON.
+        var lines = tail.dropLast().split(separator: 10, omittingEmptySubsequences: false)
+        if start > 0 { lines.removeFirst() }
+        let now = Date()
+        var lastSettingsAt: Date?
+        var nextTimestamp: Date?
+        for line in lines.reversed() {
+            guard let record = CodexSessionEventParser.resumeRecord(Data(line), threadID: threadID, now: now) else {
+                throw CodexDesktopQueueError.invalidSource
+            }
+            switch record {
+            case .settingsApplied(let at):
+                guard nextTimestamp.map({ at <= $0 }) ?? true else { throw CodexDesktopQueueError.invalidSource }
+                lastSettingsAt = lastSettingsAt ?? at
+                nextTimestamp = at
+            case .quotaFailure(let turn, let at):
+                guard UUID(uuidString: turn) != nil,
+                      nextTimestamp.map({ at <= $0 }) ?? true else { throw CodexDesktopQueueError.invalidSource }
+                return .init(threadID: threadID, failedTurnID: turn, failedAt: at, lastSettingsAt: lastSettingsAt,
+                             source: url, size: size, fileID: inode.uint64Value, tail: tail)
+            }
+        }
+        throw CodexDesktopQueueError.invalidSource
     }
 
     func revalidate() throws {

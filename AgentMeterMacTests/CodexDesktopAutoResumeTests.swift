@@ -26,7 +26,7 @@ final class CodexDesktopAutoResumeTests: XCTestCase {
         try auth(home: home)
         let now = Date()
         let candidate = CodexResumeCandidate(threadID: UUID().uuidString, failedTurnID: UUID().uuidString,
-            detectedAt: now.addingTimeInterval(-5), projectName: "Fixture")
+            detectedAt: Date(timeIntervalSince1970: floor(now.timeIntervalSince1970) - 5), projectName: "Fixture")
         let source = sessions.appendingPathComponent("rollout.jsonl")
         try rows([
             ["type": "session_meta", "payload": ["id": candidate.threadID, "originator": "Codex Desktop"]],
@@ -146,6 +146,103 @@ final class CodexDesktopAutoResumeTests: XCTestCase {
             return try self.usage()
         })
         assertBlocked(await service.prepare(candidate: f.candidate, source: f.source, accountID: "account"), .accountMismatch)
+    }
+
+    func testSettingsExplainIndexAdvanceAndPreserveTimestampBinding() async throws {
+        let f = try fixture()
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        try appendSettings(f)
+        guard case .ready(let prepared) = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("Settings-only index update must remain eligible")
+        }
+        XCTAssertEqual(prepared.target.failedAt, f.candidate.detectedAt)
+        XCTAssertNotNil(prepared.target.lastSettingsAt)
+        var wrong = f.candidate
+        wrong = CodexResumeCandidate(threadID: wrong.threadID, failedTurnID: wrong.failedTurnID,
+                                     detectedAt: wrong.detectedAt.addingTimeInterval(1))
+        assertBlocked(await service.prepare(candidate: wrong, source: f.source, accountID: "account"), .sessionChanged)
+        try execute(f.home, "UPDATE threads SET updated_at_ms = updated_at_ms + 2000")
+        assertBlocked(await service.prepare(candidate: f.candidate, source: f.source, accountID: "account"), .sessionChanged)
+        XCTAssertThrowsError(try service.validate(prepared))
+    }
+
+    func testSettingsCandidateWaitsThenSendsOnceAcrossRestart() async throws {
+        let f = try fixture()
+        try appendSettings(f)
+        let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+        let waiting = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage(used: 100) })
+        let sender = CodexDesktopQueueController(resolveExecutable: { self.executable }, runProcess: { try process.run($0, $1, $2) })
+        let first = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: waiting, sender: sender)
+        await first.poll()
+        XCTAssertEqual(first.pending.count, 1)
+        guard case .waiting = first.checks[f.candidate.id] else { return XCTFail("Expected quota wait") }
+        XCTAssertEqual(process.sends, 0)
+        let ready = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        let restarted = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: ready, sender: sender)
+        await restarted.checkPending()
+        XCTAssertEqual(restarted.candidates.first?.state, .observed)
+        XCTAssertEqual(process.sends, 1)
+        let again = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: ready, sender: sender)
+        await again.checkPending()
+        XCTAssertEqual(process.sends, 1)
+    }
+
+    func testSettingsChangeAfterPreparationDefersWithoutReservation() async throws {
+        let f = try fixture()
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        guard case .ready(let prepared) = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("Expected ready")
+        }
+        let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+        let sender = CodexDesktopQueueController(resolveExecutable: { self.executable }, runProcess: { try process.run($0, $1, $2) })
+        let store = CodexQueueAttemptStore(directory: f.home.appendingPathComponent("attempts"))
+        let outcome = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+            store: store, expectedTarget: prepared.target, authorize: {
+                try self.appendSettings(f)
+                try service.validate(prepared)
+            }, onQueued: { _ in XCTFail("Must not send") })
+        XCTAssertEqual(outcome, .deferred)
+        XCTAssertEqual(process.sends, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.file(for: prepared.target.key).path))
+        guard case .ready = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("Next preparation should accept settings")
+        }
+    }
+
+    func testSourceChangesBeforeSendAndBeforeReservationRemainRetryable() async throws {
+        for mutateBeforeSend in [true, false] {
+            let f = try fixture()
+            let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+            guard case .ready(let prepared) = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+                return XCTFail("Expected ready")
+            }
+            let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+            let sender = CodexDesktopQueueController(resolveExecutable: { self.executable }, runProcess: { try process.run($0, $1, $2) })
+            let store = CodexQueueAttemptStore(directory: f.home.appendingPathComponent("attempts"))
+            if mutateBeforeSend { try appendSettings(f) }
+            let outcome = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+                store: store, expectedTarget: prepared.target, authorize: {
+                    try service.validate(prepared)
+                    // Simulate an append immediately after authorization, before durable reservation.
+                    if !mutateBeforeSend { try self.appendSettings(f) }
+                }, onQueued: { _ in XCTFail("Must not send") })
+            XCTAssertEqual(outcome, .deferred)
+            XCTAssertEqual(process.sends, 0)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: store.file(for: prepared.target.key).path))
+        }
+    }
+
+    private func appendSettings(_ f: Fixture) throws {
+        let at = f.candidate.detectedAt.addingTimeInterval(2)
+        let handle = try FileHandle(forWritingTo: f.source)
+        defer { try? handle.close() }
+        try handle.seekToEnd()
+        try handle.write(contentsOf: rows([["timestamp": ISO8601DateFormatter().string(from: at), "type": "event_msg",
+            "payload": ["type": "thread_settings_applied", "thread_id": f.candidate.threadID, "thread_settings": [:]]]]))
+        try execute(f.home, "UPDATE threads SET updated_at_ms = \(Int64(at.timeIntervalSince1970 * 1000) + 93)")
     }
 
     private func assertBlocked(_ check: CodexDesktopAutoResume.Check, _ reason: CodexResumeBlock,

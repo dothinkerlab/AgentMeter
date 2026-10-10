@@ -55,11 +55,12 @@ final class CodexDesktopAutoResume {
             let root = home.appendingPathComponent("sessions").resolvingSymlinksInPath().path + "/"
             guard source.resolvingSymlinksInPath().path.hasPrefix(root) else { return .blocked(.sourceUnavailable) }
             let target = try CodexQueueTarget.read(source, threadID: candidate.threadID)
-            guard target.failedTurnID == candidate.failedTurnID else { return .blocked(.sessionChanged) }
+            guard target.failedTurnID == candidate.failedTurnID,
+                  abs(target.failedAt.timeIntervalSince(candidate.detectedAt)) < 0.001 else { return .blocked(.sessionChanged) }
             let index = try CodexResumeThreadIndex.read(home: home, target: target)
-            // A paginated history may advance without appending to the legacy rollout. The index
-            // must not report activity newer than the failure we're about to resume.
-            guard index.updatedAt <= candidate.detectedAt.addingTimeInterval(1) else { return .blocked(.sessionChanged) }
+            // Index updates need matching terminal evidence. Only verified settings records
+            // may extend the failure timestamp; unexplained activity still fails closed.
+            guard index.updatedAt <= target.lastEvidenceAt.addingTimeInterval(1) else { return .blocked(.sessionChanged) }
             let usage: CodexResumeUsage
             do { usage = try await fetchUsage(credentials) }
             catch CodexResumeUsage.Failure.accountMismatch { return .blocked(.accountMismatch) }

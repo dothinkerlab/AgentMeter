@@ -7,6 +7,29 @@ enum CodexObservedSessionEvent: Equatable {
 }
 
 enum CodexSessionEventParser {
+    enum ResumeRecord {
+        case quotaFailure(turnID: String, at: Date)
+        case settingsApplied(at: Date)
+    }
+
+    /// Strict terminal evidence shared by monitoring and queue source selection.
+    static func resumeRecord(_ data: Data, threadID: String, now: Date = Date()) -> ResumeRecord? {
+        guard let object = json(data), object["type"] as? String == "event_msg",
+              let timestamp = object["timestamp"] as? String, let at = date(timestamp), at <= now,
+              let payload = object["payload"] as? [String: Any] else { return nil }
+        if payload["type"] as? String == "thread_settings_applied",
+           payload["thread_id"] as? String == threadID {
+            return .settingsApplied(at: at)
+        }
+        if payload["type"] as? String == "task_complete",
+           let error = payload["error"] as? [String: Any],
+           isQuotaBlocked(error["codex_error_info"] as? String ?? error["codexErrorInfo"] as? String),
+           let turnID = identifier(payload["turn_id"]) {
+            return .quotaFailure(turnID: turnID, at: at)
+        }
+        return nil
+    }
+
     static func header(_ data: Data) -> (threadID: String, projectName: String?)? {
         guard let end = data.firstIndex(of: 10),
               let object = json(Data(data.prefix(upTo: end))), object["type"] as? String == "session_meta",
@@ -42,10 +65,11 @@ enum CodexSessionEventParser {
         // payload.error.codex_error_info == "usage_limit_exceeded" with payload.turn_id set. This must be
         // matched before the progress list below, otherwise the record reporting the interruption would
         // revoke the candidate it should create (task_complete alone is otherwise treated as progress).
-        if kind == "task_complete", let error = payload["error"] as? [String: Any],
-           isQuotaBlocked(error["codex_error_info"] as? String ?? error["codexErrorInfo"] as? String),
-           let turnID = identifier(payload["turn_id"]) {
-            return .quotaBlocked(candidate(cursor, turnID, at))
+        if let record = resumeRecord(data, threadID: cursor.threadID, now: now) {
+            switch record {
+            case .quotaFailure(let turnID, let at): return .quotaBlocked(candidate(cursor, turnID, at))
+            case .settingsApplied: return nil
+            }
         }
         // Compatibility branch for a top-level error record; not observed in Desktop rollout files so far.
         if kind == "error", let turnID = identifier(payload["turn_id"]),
