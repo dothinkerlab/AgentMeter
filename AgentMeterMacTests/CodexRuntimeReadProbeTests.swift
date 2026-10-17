@@ -6,6 +6,23 @@ import AgentMeterCore
 final class CodexRuntimeReadProbeTests: XCTestCase {
     private let home = URL(fileURLWithPath: "/private/tmp/agentmeter-runtime-test")
 
+    func testHostSelectionSupportsCurrentAndLegacyBundleLayouts() throws {
+        let bundle = URL(fileURLWithPath: "/private/tmp/ChatGPT.app")
+        let current = bundle.appendingPathComponent("Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+        let legacy = bundle.appendingPathComponent("Contents/Resources/codex")
+        XCTAssertEqual(try CodexRuntimeReadProbe.hostExecutable(in: [bundle], isExecutable: { $0 == current }), current)
+        XCTAssertEqual(try CodexRuntimeReadProbe.hostExecutable(in: [bundle], isExecutable: { $0 == legacy }), legacy)
+        XCTAssertEqual(try CodexRuntimeReadProbe.hostExecutable(in: [bundle, bundle], isExecutable: { $0 == current || $0 == legacy }), current)
+    }
+
+    func testHostSelectionRejectsMissingAndMultipleRunningHosts() {
+        let first = URL(fileURLWithPath: "/private/tmp/ChatGPT.app")
+        let second = URL(fileURLWithPath: "/private/tmp/Codex.app")
+        XCTAssertThrowsError(try CodexRuntimeReadProbe.hostExecutable(in: [first], isExecutable: { _ in false }))
+        XCTAssertThrowsError(try CodexRuntimeReadProbe.hostExecutable(in: [first, second], isExecutable: { _ in true }))
+        XCTAssertThrowsError(try CodexRuntimeReadProbe.hostExecutable(in: [], isExecutable: { _ in true }))
+    }
+
     func testHandshakeOnlyRequestsQuotaAndMetadata() throws {
         var state = CodexRuntimeReadProtocol(home: home, threadID: "target")
         XCTAssertEqual(try json(state.initialRequest())["method"] as? String, "initialize")

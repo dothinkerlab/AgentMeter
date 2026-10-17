@@ -89,6 +89,68 @@ final class CodexDesktopQueueSenderTests: XCTestCase {
         }
     }
 
+    func testDelayedCommandsFromFailedTurnExplainTailAndRemainRevalidated() throws {
+        let url = try fixture()
+        let failure = try CodexQueueTarget.read(url, threadID: thread)
+        try appendRow(commandCompletion(), to: url)
+        var failed = commandCompletion()
+        var payload = failed["payload"] as! [String: Any]
+        payload["item"] = ["type": "CommandExecution", "id": "exec-failed", "status": "failed"]
+        failed["payload"] = payload
+        try appendRow(failed, to: url)
+        try appendSettings(to: url)
+        let target = try CodexQueueTarget.read(url, threadID: thread)
+        XCTAssertEqual(target.failedTurnID, turn)
+        XCTAssertEqual(target.failedAt, failure.failedAt)
+        XCTAssertEqual(target.lastCommandCompletedAt, ISO8601DateFormatter().date(from: "2026-10-10T15:00:00Z"))
+        XCTAssertEqual(target.lastEvidenceAt, target.lastSettingsAt)
+        try target.revalidate()
+        try appendRow(["timestamp": "2026-10-10T16:00:00Z", "type": "event_msg",
+                       "payload": ["type": "task_started", "turn_id": message]], to: url)
+        XCTAssertThrowsError(try target.revalidate())
+        XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+    }
+
+    func testUnrelatedMalformedOrNewCommandsCannotExplainTail() throws {
+        let valid = commandCompletion()
+        let validPayload = valid["payload"] as! [String: Any]
+        let invalidPayloads: [[String: Any]] = [
+            ["thread_id": message], ["turn_id": message], ["turn_id": NSNull()],
+            ["started_at_ms": ISO8601DateFormatter().date(from: "2026-10-10T14:59:37Z")!.timeIntervalSince1970 * 1000],
+            ["started_at_ms": 0], ["started_at_ms": NSNull()], ["completed_at_ms": 1],
+            ["item": ["type": "AgentMessage", "id": "item", "status": "completed"]],
+            ["item": ["type": "CommandExecution", "id": "item", "status": "inProgress"]],
+            ["item": ["type": "CommandExecution", "status": "completed"]]
+        ]
+        for changes in invalidPayloads {
+            let url = try fixture()
+            var row = valid
+            row["payload"] = validPayload.merging(changes) { _, new in new }
+            try appendRow(row, to: url)
+            XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread), "Accepted \(changes)")
+        }
+        for timestamp in ["invalid", "2999-10-10T15:00:00Z", "2026-10-10T14:00:00Z"] {
+            let url = try fixture()
+            var row = valid
+            row["timestamp"] = timestamp
+            try appendRow(row, to: url)
+            XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+        }
+        let url = try fixture()
+        try appendSettings(to: url)
+        try appendRow(valid, to: url) // Earlier completion appended after newer settings.
+        XCTAssertThrowsError(try CodexQueueTarget.read(url, threadID: thread))
+    }
+
+    private func commandCompletion() -> [String: Any] {
+        let formatter = ISO8601DateFormatter()
+        return ["timestamp": "2026-10-10T15:00:00Z", "type": "event_msg", "payload": [
+            "type": "item_completed", "thread_id": thread, "turn_id": turn,
+            "started_at_ms": formatter.date(from: "2026-10-10T14:59:00Z")!.timeIntervalSince1970 * 1000,
+            "completed_at_ms": formatter.date(from: "2026-10-10T15:00:00Z")!.timeIntervalSince1970 * 1000,
+            "item": ["type": "CommandExecution", "id": "exec-completed", "status": "completed"]]]
+    }
+
     func testMalformedPartialAndOutOfBoundsEvidenceBlocks() throws {
         for suffix in [Data("{broken}\n".utf8), Data("{\"type\":\"event_msg\"".utf8), Data([10])] {
             let url = try fixture()

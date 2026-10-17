@@ -10,6 +10,7 @@ enum CodexSessionEventParser {
     enum ResumeRecord {
         case quotaFailure(turnID: String, at: Date)
         case settingsApplied(at: Date)
+        case commandCompleted(turnID: String, startedAt: Date, at: Date)
     }
 
     /// Strict terminal evidence shared by monitoring and queue source selection.
@@ -20,6 +21,21 @@ enum CodexSessionEventParser {
         if payload["type"] as? String == "thread_settings_applied",
            payload["thread_id"] as? String == threadID {
             return .settingsApplied(at: at)
+        }
+        // Commands already running when quota failed can finish after task_complete.
+        // Only their typed terminal records can extend the failure's local evidence.
+        if payload["type"] as? String == "item_completed",
+           payload["thread_id"] as? String == threadID,
+           let turnID = identifier(payload["turn_id"]),
+           let item = payload["item"] as? [String: Any],
+           item["type"] as? String == "CommandExecution",
+           identifier(item["id"]) != nil,
+           ["completed", "failed"].contains(item["status"] as? String ?? ""),
+           let started = payload["started_at_ms"] as? Double,
+           let completed = payload["completed_at_ms"] as? Double,
+           started.isFinite, completed.isFinite, started > 0, started <= completed,
+           abs(completed / 1000 - at.timeIntervalSince1970) < 0.002 {
+            return .commandCompleted(turnID: turnID, startedAt: Date(timeIntervalSince1970: started / 1000), at: at)
         }
         if payload["type"] as? String == "task_complete",
            let error = payload["error"] as? [String: Any],
@@ -68,7 +84,7 @@ enum CodexSessionEventParser {
         if let record = resumeRecord(data, threadID: cursor.threadID, now: now) {
             switch record {
             case .quotaFailure(let turnID, let at): return .quotaBlocked(candidate(cursor, turnID, at))
-            case .settingsApplied: return nil
+            case .settingsApplied, .commandCompleted: return nil
             }
         }
         // Compatibility branch for a top-level error record; not observed in Desktop rollout files so far.

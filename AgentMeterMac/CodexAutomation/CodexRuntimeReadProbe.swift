@@ -6,10 +6,19 @@ enum CodexRuntimeReadProbe {
     /// Select the CLI bundled with one running host, never an unrelated CLI on PATH.
     @MainActor
     static func runningHostExecutable() throws -> URL {
-        let executables = Set(NSWorkspace.shared.runningApplications.compactMap { app -> URL? in
-            guard let bundle = app.bundleURL else { return nil }
-            let executable = bundle.appendingPathComponent("Contents/Resources/codex")
-            return FileManager.default.isExecutableFile(atPath: executable.path) ? executable : nil
+        try hostExecutable(in: NSWorkspace.shared.runningApplications.compactMap(\.bundleURL))
+    }
+
+    static func hostExecutable(in bundles: [URL],
+                               isExecutable: (URL) -> Bool = { FileManager.default.isExecutableFile(atPath: $0.path) }) throws -> URL {
+        let executables = Set(bundles.compactMap { bundle -> URL? in
+            // Current ChatGPT bundles the CLI as a nested app; older Codex hosts
+            // put the binary directly in Resources. Never fall back to PATH.
+            for path in ["Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex", "Contents/Resources/codex"] {
+                let executable = bundle.appendingPathComponent(path)
+                if isExecutable(executable) { return executable.resolvingSymlinksInPath() }
+            }
+            return nil
         })
         guard executables.count == 1, let executable = executables.first else { throw CodexRuntimeProbeError.unsupportedHost }
         return executable

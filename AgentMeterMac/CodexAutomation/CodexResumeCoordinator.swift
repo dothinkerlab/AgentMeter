@@ -215,15 +215,17 @@ final class CodexResumeCoordinator: ObservableObject {
         if let before = accountBeforeScan, let after = accountAfterScan, before.accountID == after.accountID,
            before.fileModifiedAt == after.fileModifiedAt {
             var bindings = checkpoint.accountBindings ?? [:]
-            if let previous = checkpoint.observedAccount, previous.accountID == after.accountID {
+            let observation = after.continuing(checkpoint.observedAccount)
+            if let since = observation.continuousSince {
                 for candidate in result.checkpoint.queue.pendingInOrder where bindings[candidate.id] == nil {
-                    if previous.observedAt <= candidate.detectedAt && after.fileModifiedAt <= candidate.detectedAt {
+                    if since <= candidate.detectedAt && candidate.detectedAt <= observation.observedAt,
+                       after.fileModifiedAt <= candidate.detectedAt {
                         bindings[candidate.id] = after.accountID
                     }
                 }
             }
             result.checkpoint.accountBindings = bindings
-            result.checkpoint.observedAccount = after
+            result.checkpoint.observedAccount = observation
         } else { result.checkpoint.observedAccount = nil }
         guard persist(result.checkpoint) else { return }
         lastCheckedAt = now

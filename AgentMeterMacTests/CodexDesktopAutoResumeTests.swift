@@ -41,7 +41,8 @@ final class CodexDesktopAutoResumeTests: XCTestCase {
         checkpoint = CodexIncrementalSessionMonitor().scan(checkpoint, now: now).checkpoint
         if bound { checkpoint.accountBindings = [candidate.id: "account"] }
         if observeAccount {
-            checkpoint.observedAccount = .init(accountID: "account", observedAt: now.addingTimeInterval(-10), fileModifiedAt: now.addingTimeInterval(-20))
+            let modified = try FileManager.default.attributesOfItem(atPath: home.appendingPathComponent("auth.json").path)[.modificationDate] as! Date
+            checkpoint.observedAccount = .init(accountID: "account", observedAt: now.addingTimeInterval(-10), fileModifiedAt: modified)
         }
         let store = CodexMonitorCheckpointStore(url: home.appendingPathComponent("checkpoint.json"))
         try store.save(checkpoint)
@@ -146,6 +147,90 @@ final class CodexDesktopAutoResumeTests: XCTestCase {
             return try self.usage()
         })
         assertBlocked(await service.prepare(candidate: f.candidate, source: f.source, accountID: "account"), .accountMismatch)
+    }
+
+    func testAccountCoverageSurvivesBacklogAndCoordinatorRestart() async throws {
+        let f = try fixture(bound: false, observeAccount: true)
+        var checkpoint = try XCTUnwrap(f.store.load())
+        checkpoint.queue = CodexResumeQueue()
+        checkpoint.cursors = [:]
+        let original = try Data(contentsOf: f.source)
+        let headerEnd = try XCTUnwrap(original.firstIndex(of: 10))
+        var rollout = Data(original[...headerEnd])
+        // Multiple bounded reads are needed before the already-observed failure is reached.
+        let padding = try rows([["type": "response_item", "payload": ["type": "message", "text": String(repeating: "x", count: 300_000)]]])
+        for _ in 0..<4 { rollout.append(padding) }
+        rollout.append(original[(headerEnd + 1)...])
+        try rollout.write(to: f.source)
+        try f.store.save(checkpoint)
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage(used: 100) })
+        for _ in 0..<4 {
+            let coordinator = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+                notificationsEnabled: false, desktop: service)
+            await coordinator.poll()
+        }
+        let saved = try XCTUnwrap(f.store.load())
+        XCTAssertEqual(saved.queue.latestPending?.failedTurnID, f.candidate.failedTurnID)
+        XCTAssertEqual(saved.accountBindings?[f.candidate.id], "account")
+        XCTAssertLessThanOrEqual(try XCTUnwrap(saved.observedAccount?.continuousSince), f.candidate.detectedAt)
+    }
+
+    func testCredentialRewriteDoesNotBackfillUnverifiedAccountHistory() async throws {
+        let f = try fixture(bound: false, observeAccount: true)
+        var checkpoint = try XCTUnwrap(f.store.load())
+        let old = try XCTUnwrap(checkpoint.observedAccount)
+        checkpoint.observedAccount = .init(accountID: old.accountID, observedAt: old.observedAt,
+            fileModifiedAt: old.fileModifiedAt.addingTimeInterval(-1), continuousSince: old.observedAt.addingTimeInterval(-60))
+        try f.store.save(checkpoint)
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage(used: 100) })
+        let coordinator = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: service)
+        await coordinator.poll()
+        XCTAssertNil(try f.store.load()?.accountBindings?[f.candidate.id])
+        XCTAssertEqual(coordinator.checks[f.candidate.id], .blocked(.accountUnknown))
+    }
+
+    func testDelayedCommandsWaitThenQueueOnceAndExplainIndexAdvance() async throws {
+        let f = try fixture()
+        try appendCommandCompletion(f)
+        let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+        let sender = CodexDesktopQueueController(resolveExecutable: { self.executable }, runProcess: { try process.run($0, $1, $2) })
+        let waiting = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage(used: 100) })
+        let first = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: waiting, sender: sender)
+        await first.poll()
+        guard case .waiting = first.checks[f.candidate.id] else { return XCTFail("Expected quota wait") }
+        XCTAssertEqual(process.sends, 0)
+        let ready = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        guard case .ready(let prepared) = await ready.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("Delayed commands must explain index advances")
+        }
+        XCTAssertEqual(prepared.target.failedAt, f.candidate.detectedAt)
+        XCTAssertNotNil(prepared.target.lastCommandCompletedAt)
+        try execute(f.home, "UPDATE threads SET updated_at_ms = updated_at_ms + 2000")
+        assertBlocked(await ready.prepare(candidate: f.candidate, source: f.source, accountID: "account"), .sessionChanged)
+        XCTAssertThrowsError(try ready.validate(prepared))
+        try execute(f.home, "UPDATE threads SET updated_at_ms = updated_at_ms - 2000")
+        let restarted = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: ready, sender: sender)
+        await restarted.checkPending()
+        XCTAssertEqual(restarted.candidates.first?.state, .observed)
+        XCTAssertEqual(process.sends, 1)
+        await restarted.checkPending()
+        XCTAssertEqual(process.sends, 1)
+    }
+
+    private func appendCommandCompletion(_ f: Fixture) throws {
+        let at = f.candidate.detectedAt.addingTimeInterval(2)
+        let handle = try FileHandle(forWritingTo: f.source)
+        defer { try? handle.close() }
+        try handle.seekToEnd()
+        try handle.write(contentsOf: rows([["timestamp": ISO8601DateFormatter().string(from: at), "type": "event_msg",
+            "payload": ["type": "item_completed", "thread_id": f.candidate.threadID, "turn_id": f.candidate.failedTurnID,
+                "started_at_ms": f.candidate.detectedAt.addingTimeInterval(-20).timeIntervalSince1970 * 1000,
+                "completed_at_ms": at.timeIntervalSince1970 * 1000,
+                "item": ["type": "CommandExecution", "id": "exec-late", "status": "completed"]]]]))
+        try execute(f.home, "UPDATE threads SET updated_at_ms = \(Int64(at.timeIntervalSince1970 * 1000) + 93)")
     }
 
     func testSettingsExplainIndexAdvanceAndPreserveTimestampBinding() async throws {

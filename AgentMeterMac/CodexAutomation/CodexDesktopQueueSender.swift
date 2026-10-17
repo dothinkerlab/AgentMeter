@@ -11,7 +11,8 @@ struct CodexQueueTarget {
     let failedTurnID: String
     let failedAt: Date
     let lastSettingsAt: Date?
-    var lastEvidenceAt: Date { max(failedAt, lastSettingsAt ?? failedAt) }
+    let lastCommandCompletedAt: Date?
+    var lastEvidenceAt: Date { max(failedAt, max(lastSettingsAt ?? failedAt, lastCommandCompletedAt ?? failedAt)) }
     let source: URL
     let size: UInt64
     let fileID: UInt64
@@ -40,6 +41,8 @@ struct CodexQueueTarget {
         if start > 0 { lines.removeFirst() }
         let now = Date()
         var lastSettingsAt: Date?
+        var lastCommandCompletedAt: Date?
+        var commands: [(turnID: String, startedAt: Date)] = []
         var nextTimestamp: Date?
         for line in lines.reversed() {
             guard let record = CodexSessionEventParser.resumeRecord(Data(line), threadID: threadID, now: now) else {
@@ -50,10 +53,17 @@ struct CodexQueueTarget {
                 guard nextTimestamp.map({ at <= $0 }) ?? true else { throw CodexDesktopQueueError.invalidSource }
                 lastSettingsAt = lastSettingsAt ?? at
                 nextTimestamp = at
+            case .commandCompleted(let turnID, let startedAt, let at):
+                guard nextTimestamp.map({ at <= $0 }) ?? true else { throw CodexDesktopQueueError.invalidSource }
+                commands.append((turnID, startedAt))
+                lastCommandCompletedAt = lastCommandCompletedAt ?? at
+                nextTimestamp = at
             case .quotaFailure(let turn, let at):
                 guard UUID(uuidString: turn) != nil,
+                      commands.allSatisfy({ $0.turnID == turn && $0.startedAt <= at }),
                       nextTimestamp.map({ at <= $0 }) ?? true else { throw CodexDesktopQueueError.invalidSource }
                 return .init(threadID: threadID, failedTurnID: turn, failedAt: at, lastSettingsAt: lastSettingsAt,
+                             lastCommandCompletedAt: lastCommandCompletedAt,
                              source: url, size: size, fileID: inode.uint64Value, tail: tail)
             }
         }

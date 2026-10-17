@@ -6,6 +6,20 @@ struct CodexResumeAccountObservation: Codable, Equatable, Sendable {
     let accountID: String
     let observedAt: Date
     let fileModifiedAt: Date
+    var continuousSince: Date? = nil
+
+    /// Preserve account coverage while bounded scans work through a large rollout.
+    /// A credential rewrite or failed observation starts a new coverage interval.
+    func continuing(_ previous: Self?) -> Self {
+        var result = self
+        result.continuousSince = observedAt
+        if let previous, previous.accountID == accountID, previous.fileModifiedAt == fileModifiedAt,
+           previous.observedAt <= observedAt {
+            let since = previous.continuousSince ?? previous.observedAt
+            if since <= previous.observedAt { result.continuousSince = since }
+        }
+        return result
+    }
 }
 
 /// Uses the running Desktop's queue CLI and local interruption evidence, not an app-server socket.
@@ -58,8 +72,8 @@ final class CodexDesktopAutoResume {
             guard target.failedTurnID == candidate.failedTurnID,
                   abs(target.failedAt.timeIntervalSince(candidate.detectedAt)) < 0.001 else { return .blocked(.sessionChanged) }
             let index = try CodexResumeThreadIndex.read(home: home, target: target)
-            // Index updates need matching terminal evidence. Only verified settings records
-            // may extend the failure timestamp; unexplained activity still fails closed.
+            // Settings and delayed completions of commands from the failed turn explain
+            // index advances. Unexplained activity still fails closed.
             guard index.updatedAt <= target.lastEvidenceAt.addingTimeInterval(1) else { return .blocked(.sessionChanged) }
             let usage: CodexResumeUsage
             do { usage = try await fetchUsage(credentials) }
