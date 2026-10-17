@@ -151,10 +151,12 @@ final class MacHealthIssueTests: XCTestCase {
         XCTAssertEqual(MacHealthIssueBuilder.highestSeverity(in: issues), .warning)
     }
 
-    func testDebugHostReportsDevelopmentEnvironment() {
+    func testDebugHostReportsDevelopmentEnvironment() throws {
         XCTAssertEqual(MacBuildMetadata.buildConfiguration, "Debug")
         XCTAssertEqual(MacBuildMetadata.cloudKitEnvironment, "Development")
-        XCTAssertEqual(MacBuildMetadata.aboutVersion, "2.3 (26 · Debug · Development)")
+        let version = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
+        let build = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String)
+        XCTAssertEqual(MacBuildMetadata.aboutVersion, "\(version) (\(build) · Debug · Development)")
     }
 
     func testAboutVersionUsesUnknownPlaceholderForEveryMissingField() {
