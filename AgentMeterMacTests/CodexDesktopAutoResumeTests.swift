@@ -67,12 +67,126 @@ final class CodexDesktopAutoResumeTests: XCTestCase {
         XCTAssertEqual(try f.store.load()?.queue.candidates.first?.state, .observed)
     }
 
+    func testColdSessionLoadsOnlyAfterDurableReceiptAndQueuesOnce() async throws {
+        let f = try fixture()
+        let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID, startsAutomatically: false)
+        let store = CodexQueueAttemptStore(directory: f.home.appendingPathComponent("attempts"))
+        let target = try CodexQueueTarget.read(f.source, threadID: f.candidate.threadID)
+        var wakes = 0, receiptPublished = false
+        let sender = CodexDesktopQueueController(resolveExecutable: { self.executable },
+            runProcess: { try process.run($0, $1, $2) }, wakeSession: { executable, thread in
+                XCTAssertTrue(receiptPublished)
+                XCTAssertEqual(executable, self.executable)
+                XCTAssertEqual(thread, f.candidate.threadID)
+                let record = try JSONDecoder().decode([String: String].self, from: Data(contentsOf: store.file(for: target.key)))
+                XCTAssertEqual(record["state"], "queued")
+                XCTAssertNotNil(record["queuedMessageID"])
+                wakes += 1
+                try process.start()
+            }, wakeAfter: 0, observationDuration: 2)
+        let outcome = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+            store: store, onQueued: { _ in receiptPublished = true })
+        XCTAssertEqual(outcome, .observed)
+        XCTAssertEqual(wakes, 1)
+        XCTAssertEqual(process.sends, 1)
+        _ = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+            store: store, onQueued: { _ in XCTFail("Cannot queue twice") })
+        XCTAssertEqual(wakes, 1)
+        XCTAssertEqual(process.sends, 1)
+    }
+
+    func testURLAcceptanceOrFailureNeverCountsAsExecutionOrAllowsResend() async throws {
+        for fails in [false, true] {
+            let f = try fixture()
+            let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID, startsAutomatically: false)
+            let store = CodexQueueAttemptStore(directory: f.home.appendingPathComponent("attempts"))
+            var wakes = 0
+            let sender = CodexDesktopQueueController(resolveExecutable: { self.executable },
+                runProcess: { try process.run($0, $1, $2) }, wakeSession: { _, _ in
+                    wakes += 1
+                    if fails { throw CodexDesktopSessionWake.Failure.hostUnavailable }
+                }, wakeAfter: 0, observationDuration: 0.05)
+            let outcome = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+                store: store, onQueued: { _ in })
+            XCTAssertEqual(outcome, .uncertain)
+            XCTAssertEqual(wakes, 1)
+            let retry = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+                store: store, onQueued: { _ in XCTFail("Cannot queue twice") })
+            XCTAssertEqual(retry, .uncertain)
+            XCTAssertEqual(wakes, 1)
+            XCTAssertEqual(process.sends, 1)
+        }
+    }
+
+    func testAlreadyRunningSessionAndRejectedAuthorizationDoNotWake() async throws {
+        for authorized in [true, false] {
+            let f = try fixture()
+            let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+            let sender = CodexDesktopQueueController(resolveExecutable: { self.executable },
+                runProcess: { try process.run($0, $1, $2) }, wakeSession: { _, _ in XCTFail("Must not open a session") },
+                wakeAfter: 0, observationDuration: 1)
+            let result = await sender.send(source: f.source, threadID: f.candidate.threadID, home: f.home,
+                store: .init(directory: f.home.appendingPathComponent("attempts")), authorize: {
+                    if !authorized { throw CancellationError() }
+                }, onQueued: { _ in })
+            XCTAssertEqual(result, authorized ? .observed : .deferred)
+        }
+    }
+
     func testQuotaExhaustionWaitsAndNeverLaunchesQueue() async throws {
         let f = try fixture()
         let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage(used: 100) })
         let check = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account")
         guard case .waiting(let date) = check else { return XCTFail("Expected quota wait") }
         XCTAssertNotNil(date)
+    }
+
+    func testCheckpointedWALWithoutSidecarsInReadOnlyDirectoryCanResume() async throws {
+        let f = try fixture()
+        try execute(f.home, "PRAGMA journal_mode = WAL")
+        let database = f.home.appendingPathComponent("state_5.sqlite")
+        let original = try Data(contentsOf: database)
+        XCTAssertEqual(Array(original[18...19]), [2, 2])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path + "-wal"))
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: f.home.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: f.home.path) }
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        guard case .ready(let prepared) = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("A checkpointed WAL database must remain readable without creating sidecars")
+        }
+        try service.validate(prepared)
+        XCTAssertEqual(try Data(contentsOf: database), original)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path + "-wal"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path + "-shm"))
+    }
+
+    func testCheckpointedWALSendsOnceAndNewArchivedWALStillBlocksValidation() async throws {
+        let f = try fixture()
+        try execute(f.home, "PRAGMA journal_mode = WAL")
+        let service = CodexDesktopAutoResume(home: f.home, host: { self.executable }, fetchUsage: { _ in try self.usage() })
+        guard case .ready(let prepared) = await service.prepare(candidate: f.candidate, source: f.source, accountID: "account") else {
+            return XCTFail("Expected ready from checkpoint")
+        }
+        var writer: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(f.home.appendingPathComponent("state_5.sqlite").path, &writer), SQLITE_OK)
+        defer { sqlite3_close(writer) }
+        XCTAssertEqual(sqlite3_exec(writer, "UPDATE threads SET archived = 1", nil, nil, nil), SQLITE_OK)
+        XCTAssertThrowsError(try service.validate(prepared)) {
+            XCTAssertEqual(($0 as? CodexDesktopAutoResume.Blocked)?.reason, .sessionArchived)
+        }
+        XCTAssertEqual(sqlite3_exec(writer, "UPDATE threads SET archived = 0", nil, nil, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_close(writer), SQLITE_OK)
+        writer = nil
+        try execute(f.home, "PRAGMA journal_mode = DELETE; PRAGMA journal_mode = WAL")
+        let process = FakeQueueProcess(source: f.source, threadID: f.candidate.threadID)
+        let sender = CodexDesktopQueueController(resolveExecutable: { self.executable }, runProcess: { try process.run($0, $1, $2) })
+        let coordinator = CodexResumeCoordinator(defaults: f.defaults, home: f.home, storeURL: f.store.url,
+            notificationsEnabled: false, desktop: service, sender: sender)
+        await coordinator.checkPending()
+        XCTAssertEqual(coordinator.candidates.first?.state, .observed)
+        await coordinator.checkPending()
+        XCTAssertEqual(process.sends, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: f.home.appendingPathComponent("state_5.sqlite-wal").path))
     }
 
     func testAccountAndSessionFailuresHaveSpecificReasons() async throws {
@@ -366,12 +480,19 @@ private final class FakeQueueProcess: @unchecked Sendable {
     let threadID: String
     private let lock = NSLock()
     private var count = 0
+    private let startsAutomatically: Bool
     var sends: Int { lock.lock(); defer { lock.unlock() }; return count }
-    init(source: URL, threadID: String) { self.source = source; self.threadID = threadID }
+    init(source: URL, threadID: String, startsAutomatically: Bool = true) {
+        self.source = source; self.threadID = threadID; self.startsAutomatically = startsAutomatically
+    }
     func run(_ executable: URL, _ arguments: [String], _ home: URL) throws -> Data {
         if arguments == ["queue", "--help"] { return Data("--thread --message".utf8) }
         guard arguments == ["queue", "--thread", threadID, "--message", "继续"] else { throw CodexDesktopQueueError.process }
         lock.lock(); count += 1; lock.unlock()
+        if startsAutomatically { try start() }
+        return Data("Queued message \(UUID().uuidString) for thread \(threadID).\n".utf8)
+    }
+    func start() throws {
         let turn = UUID().uuidString
         let timestamp = ISO8601DateFormatter()
         timestamp.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -385,6 +506,5 @@ private final class FakeQueueProcess: @unchecked Sendable {
         defer { try? file.close() }
         try file.seekToEnd()
         for row in rows { try file.write(contentsOf: JSONSerialization.data(withJSONObject: row)); try file.write(contentsOf: Data([10])) }
-        return Data("Queued message \(UUID().uuidString) for thread \(threadID).\n".utf8)
     }
 }

@@ -11,12 +11,21 @@ final class CodexDesktopQueueController: ObservableObject {
     private enum PreReservationFailure: Error { case sourceChanged }
     private let resolveExecutable: @MainActor () throws -> URL
     private let runProcess: @Sendable (URL, [String], URL) throws -> Data
+    private let wakeSession: @MainActor (URL, String) async throws -> Void
+    private let wakeAfter: TimeInterval
+    private let observationDuration: TimeInterval
 
     init(resolveExecutable: @escaping @MainActor () throws -> URL = { try CodexRuntimeReadProbe.runningHostExecutable() },
          runProcess: @escaping @Sendable (URL, [String], URL) throws -> Data = {
              try CodexDesktopQueueSender.run(executable: $0, arguments: $1, home: $2)
-         }) {
+         },
+         wakeSession: @escaping @MainActor (URL, String) async throws -> Void = {
+             try await CodexDesktopSessionWake.wake(executable: $0, threadID: $1)
+         }, wakeAfter: TimeInterval = 2, observationDuration: TimeInterval = 60) {
         self.resolveExecutable = resolveExecutable; self.runProcess = runProcess
+        self.wakeSession = wakeSession
+        self.wakeAfter = max(0, wakeAfter)
+        self.observationDuration = max(0.05, observationDuration)
     }
 
     func send(source: URL, threadID: String, home: URL = CodexLocalPaths.home, store: CodexQueueAttemptStore = .standard,
@@ -72,17 +81,37 @@ final class CodexDesktopQueueController: ObservableObject {
             }.value
             onQueued(messageID)
             message = L10n.format("已入队，消息 ID：%@。正在观察原会话。", messageID)
-            let deadline = Date().addingTimeInterval(60)
-            while Date() < deadline {
+            // A cold Desktop session can retain the message indefinitely until loaded.
+            // Give ordinary queue dispatch a short grace period, then load that same
+            // session once. URL delivery is not execution evidence and never resends input.
+            let started = ProcessInfo.processInfo.systemUptime
+            let deadline = started + observationDuration
+            var wakeAttempted = false, wakeFailed = false
+            while ProcessInfo.processInfo.systemUptime < deadline {
                 try verification.poll()
                 if verification.status == .running {
                     message = L10n.format("已入队（%@），并观察到原会话新增“继续”、轮次与助手活动；尚不能通过消息 ID 严格关联。", messageID)
                     return .observed
                 }
                 if verification.status == .uncertain { break }
+                if !wakeAttempted, verification.status == .waiting, !verification.hasStartedTurn,
+                   ProcessInfo.processInfo.systemUptime >= started + wakeAfter {
+                    try Task.checkCancellation()
+                    wakeAttempted = true
+                    message = L10n.string("已入队，正在载入原会话以启动已有队列…")
+                    do {
+                        guard try resolveExecutable() == executable else { throw CodexRuntimeProbeError.unsupportedHost }
+                        try await wakeSession(executable, threadID)
+                    } catch { wakeFailed = true }
+                    // Poll immediately: the host may have started or completed while
+                    // delivering the URL. A successful open alone never marks resumed.
+                    continue
+                }
                 try await Task.sleep(nanoseconds: 500_000_000)
             }
-            message = L10n.format("已入队（%@），执行结果待确认。请查看 Codex，不要重复发送。", messageID)
+            message = wakeFailed
+                ? L10n.format("已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。", messageID)
+                : L10n.format("已入队（%@），执行结果待确认。请查看 Codex，不要重复发送。", messageID)
             return .uncertain
         } catch PreReservationFailure.sourceChanged {
             message = L10n.string("发送前条件已变化，已保留等待会话，未发送消息。")

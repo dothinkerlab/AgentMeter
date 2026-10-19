@@ -321,3 +321,7 @@
 "仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Solo se muestra la cuota de texto compartida general / M3. No se combinan los grupos independientes de imágenes, vídeo u otros modelos.";
 "重置时间：%@" = "Restablecimiento: %@";
 "已暂停" = "En pausa";
+
+"已入队，正在载入原会话以启动已有队列…" = "En cola. Cargando la conversación original para iniciar su cola existente…";
+
+"已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。" = "En cola (%@), pero no se pudo cargar la conversación original. Ábrela en Codex; no vuelvas a enviar el mensaje.";

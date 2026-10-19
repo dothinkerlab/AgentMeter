@@ -12,6 +12,8 @@ struct CodexManualResumeVerification {
     private var anchor: Data
     private var startedTurn: String?
     private let beganAt: Date
+    /// A started turn needs observation, never another wake or another submission.
+    var hasStartedTurn: Bool { startedTurn != nil }
 
     init(url: URL, expectedThreadID: String, now: Date = Date()) throws {
         guard UUID(uuidString: expectedThreadID) != nil,

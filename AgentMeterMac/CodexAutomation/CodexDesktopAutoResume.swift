@@ -114,14 +114,12 @@ struct CodexResumeThreadIndex: Equatable {
 
     static func read(home: URL, target: CodexQueueTarget) throws -> Self {
         let url = home.appendingPathComponent("state_5.sqlite")
-        var database: OpaquePointer?
-        guard sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK,
-              let database else {
-            if let database { sqlite3_close(database) }
-            throw CodexDesktopAutoResume.Blocked(reason: .sessionIndexUnavailable)
+        return try CodexResumeIndexDatabase.read(at: url) { database in
+            try read(database: database, target: target)
         }
-        defer { sqlite3_close(database) }
-        sqlite3_busy_timeout(database, 100)
+    }
+
+    private static func read(database: OpaquePointer, target: CodexQueueTarget) throws -> Self {
         var statement: OpaquePointer?
         let sql = "SELECT rollout_path, archived, model_provider, COALESCE(updated_at_ms, updated_at * 1000) FROM threads WHERE id = ? LIMIT 1"
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let statement else {

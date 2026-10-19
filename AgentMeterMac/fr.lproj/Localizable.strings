@@ -321,3 +321,7 @@
 "仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Seul le quota de texte partagé general / M3 est affiché. Les quotas d’images, de vidéos et des modèles indépendants ne sont pas combinés.";
 "重置时间：%@" = "Réinitialisation : %@";
 "已暂停" = "En pause";
+
+"已入队，正在载入原会话以启动已有队列…" = "Message en file. Chargement de la conversation d’origine pour démarrer sa file existante…";
+
+"已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。" = "Message en file (%@), mais la conversation d’origine n’a pas pu être chargée. Ouvrez-la dans Codex sans renvoyer le message.";

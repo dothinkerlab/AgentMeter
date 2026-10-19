@@ -549,3 +549,7 @@
 "实际查询区域：国际" = "Actual query region: International";
 "仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Shows general / M3 shared text quota only. Image, video and independent model pools are not combined.";
 "重置时间：%@" = "Reset time: %@";
+
+"已入队，正在载入原会话以启动已有队列…" = "Queued. Loading the original conversation to start its existing queue…";
+
+"已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。" = "Queued (%@), but the original conversation could not be loaded. Open it in Codex; do not send again.";
