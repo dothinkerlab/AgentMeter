@@ -57,18 +57,6 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 <img src="app-store-qr.png" alt="Download AgentMeter on the App Store" width="160">
 
-#### 🎁 Agent Meter Special Offer
-
-Get a special App Store offer for **AgentMeter**.
-
-**Offer Code:** `AGENTMETER202609`
-
-[👉 Redeem on the App Store](https://apps.apple.com/redeem?ctx=offercodes&id=6781480047&code=AGENTMETER202609)
-
-The offer is redeemed securely through the official Apple App Store.
-
-> Availability and eligibility are subject to Apple’s App Store rules and the terms of this offer.
-
 ### 2. Configure your providers
 
 Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, Cursor, Windsurf, JetBrains AI, and Zed**, sign in to or use the corresponding tool on your Mac; AgentMeter reads its existing local credentials or quota cache only after you enable that provider. GitHub Copilot uses a GitHub token that you paste into Settings. Other coding plans and API billing services are also configured in Settings. You only need to enable the services you use.
