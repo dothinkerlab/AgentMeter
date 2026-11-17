@@ -8,6 +8,7 @@ enum MacSettingsRoute: Hashable {
     case general
     case ark(ArkPlanAdapter.Product)
     case automatic(PlanProviderKind)
+    case antigravity
     case manual(ManualProviderKind)
     case about
 }
@@ -55,6 +56,13 @@ struct MacSettingsView: View {
                             .tag(MacSettingsRoute.automatic(provider))
                         }
                     }
+                    if searchText.isEmpty || ["Google Antigravity", "Gemini CLI", "agy"].contains(where: {
+                        $0.localizedCaseInsensitiveContains(searchText)
+                    }) {
+                        ProviderSidebarRow(name: MacDisplayItemID.antigravity.settingsDisplayName, mark: "G", tint: .blue,
+                                           state: model.antigravityController.state)
+                            .tag(MacSettingsRoute.antigravity)
+                    }
                 }
 
                 Section(L10n.string("API 余额与账单")) {
@@ -89,6 +97,8 @@ struct MacSettingsView: View {
             MacGeneralSettingsView(model: model)
         case let .automatic(provider):
             MacAutomaticProviderDetail(provider: provider, model: model)
+        case .antigravity:
+            MacAntigravitySettingsView(controller: model.antigravityController)
         case let .manual(provider):
             if provider == .typesafe {
                 MacTypeSafeSettingsView(controller: model.typeSafeController)
@@ -114,6 +124,43 @@ struct MacSettingsView: View {
         ManualProviderKind.allCases.filter { $0.category == .billing }.filter { provider in
             provider.settingsDisplayName.localizedCaseInsensitiveContains(searchText) || searchText.isEmpty
         }
+    }
+}
+
+private struct MacAntigravitySettingsView: View {
+    @ObservedObject var controller: MacAntigravityController
+
+    var body: some View {
+        Form {
+            Section {
+                ProviderDetailHeader(name: MacDisplayItemID.antigravity.settingsDisplayName, mark: "G", tint: .blue,
+                                     state: controller.state)
+                Toggle(L10n.string("监控 Antigravity 额度"), isOn: Binding(get: { controller.enabled }, set: { enabled in
+                    controller.setEnabled(enabled)
+                    if enabled { Task { await controller.collect(force: true) } }
+                }))
+            }
+            Section(L10n.string("数据来源")) {
+                Text(L10n.string("安装独立 Antigravity CLI（agy），在终端登录个人 Google 账号后启用采集。额度仅显示在此 Mac。"))
+                Link(L10n.string("安装 Antigravity CLI"), destination: URL(string: "https://antigravity.google/docs/cli/tutorial/")!)
+                Link(L10n.string("从 Gemini CLI 迁移"), destination: URL(string: "https://github.com/google-gemini/gemini-cli/discussions/27274")!)
+            }
+            if let failure = controller.failure {
+                Section(L10n.string("下一步")) {
+                    Text(failure.message)
+                }
+            }
+            Section {
+                Button {
+                    Task { await controller.collect(force: true) }
+                } label: {
+                    Label(L10n.string("重新检测"), systemImage: "arrow.clockwise")
+                }
+                .disabled(!controller.enabled || controller.checking)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle(MacDisplayItemID.antigravity.settingsDisplayName)
     }
 }
 
@@ -1164,6 +1211,7 @@ private extension MacDisplayItemID {
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
         case .zed: "Zed"
+        case .antigravity: healthDisplayName
         case .arkCoding: "Ark Coding Plan"
         case .arkAgent: "Ark Agent Plan"
         }
@@ -1177,6 +1225,7 @@ private extension MacDisplayItemID {
         case .windsurf: "W"
         case .jetBrainsAI: "JB"
         case .zed: "Z"
+        case .antigravity: "G"
         case .arkCoding, .arkAgent: "Ark"
         default: manualProvider!.settingsMonogram
         }
@@ -1190,6 +1239,7 @@ private extension MacDisplayItemID {
         case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
         case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
         case .zed: Color(red: 0.28, green: 0.46, blue: 0.31)
+        case .antigravity: .blue
         case .arkCoding, .arkAgent: .blue
         default: manualProvider!.settingsTint
         }

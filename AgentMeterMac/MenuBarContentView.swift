@@ -74,7 +74,7 @@ struct MenuBarContentView: View {
                 }
             }
 
-            Button { Task { await model.collectNow() } } label: {
+            Button { Task { await model.collectNow(manualRefresh: true) } } label: {
                 ZStack {
                     Circle().fill(Color.menuMutedFill).frame(width: 24, height: 24)
                     Image(systemName: "arrow.clockwise")
@@ -290,6 +290,10 @@ struct MenuBarContentView: View {
             if let usage = model.perplexityUsage {
                 MacPerplexityUsageRow(snapshot: .init(usage, paused: !model.perplexityController.enabled))
             }
+        case .antigravity:
+            let controller = model.antigravityController
+            MacAntigravityQuotaRow(quota: controller.quota, failure: controller.failure,
+                                  checking: controller.checking, ageText: controller.quota.map { relativeAge($0.updatedAt) })
         case .typesafe:
             if let usage = model.typesafeUsage { MacTypeSafeUsageRow(usage: usage) }
         case .kimiAPI:

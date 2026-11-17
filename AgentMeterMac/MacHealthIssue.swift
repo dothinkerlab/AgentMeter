@@ -134,6 +134,7 @@ extension MacDisplayItemID {
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
         case .zed: "Zed"
+        case .antigravity: "Google Antigravity"
         }
     }
 }

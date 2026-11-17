@@ -549,6 +549,21 @@
 "实际查询区域：国际" = "Actual query region: International";
 "仅显示 general / M3 文本共享额度，不合并图片、视频或不同模型的独立额度池。" = "Shows general / M3 shared text quota only. Image, video and independent model pools are not combined.";
 "重置时间：%@" = "Reset time: %@";
+"重置时间未知" = "Reset time unknown";
+"检测中" = "Checking";
+"等待首次额度刷新" = "Waiting for the first quota refresh";
+"监控 Antigravity 额度" = "Monitor Antigravity quota";
+"安装独立 Antigravity CLI（agy），在终端登录个人 Google 账号后启用采集。额度仅显示在此 Mac。" = "Install the standalone Antigravity CLI (agy), sign in with a personal Google account in Terminal, then enable monitoring. Quota is shown only on this Mac.";
+"安装 Antigravity CLI" = "Install Antigravity CLI";
+"从 Gemini CLI 迁移" = "Migrate from Gemini CLI";
+"未找到独立 Antigravity CLI。请先安装 agy。" = "Standalone Antigravity CLI was not found. Install agy first.";
+"请安装或更新独立 Antigravity CLI（v1.1.11 或更新版本）。" = "Install or update the standalone Antigravity CLI to v1.1.11 or later.";
+"请在终端运行 agy 并登录个人 Google 账号，然后重新检测。" = "Run agy in Terminal, sign in with a personal Google account, then check again.";
+"Antigravity CLI 已禁用斜杠命令。请将 disableSlashCommands 设为 false 后重试。" = "Slash commands are disabled in Antigravity CLI. Set disableSlashCommands to false, then try again.";
+"无法确认 Antigravity CLI 的设置。请检查 ~/.gemini/antigravity-cli/settings.json 后重试。" = "Could not verify Antigravity CLI settings. Check ~/.gemini/antigravity-cli/settings.json and try again.";
+"Antigravity 额度查询超时。请检查网络后重试。" = "The Antigravity quota check timed out. Check your connection and try again.";
+"Antigravity 额度查询失败。请在 agy 中确认 /usage 可用后重试。" = "The Antigravity quota check failed. Verify that /usage works in agy and try again.";
+"Antigravity CLI 未返回可用额度。请检查登录账号及 CLI 版本。" = "Antigravity CLI returned no usable quota. Check your account and CLI version.";
 
 "已入队，正在载入原会话以启动已有队列…" = "Queued. Loading the original conversation to start its existing queue…";
 

@@ -77,7 +77,7 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 
 ## Supported services
 
-AgentMeter supports the following 19 services. Each service is listed separately with its data and setup requirements.
+AgentMeter supports the following 20 services. Each service is listed separately with its data and setup requirements.
 
 | Data | Provider | Setup |
 | --- | --- | --- |
@@ -88,6 +88,7 @@ AgentMeter supports the following 19 services. Each service is listed separately
 | Coding-plan quota | Windsurf | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | JetBrains AI | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | Zed | Opt-in detection of an existing Mac sign-in or local quota cache |
+| Mac-only coding-plan quota | Google Antigravity | Standalone Antigravity CLI (`agy`) with an existing personal Google sign-in |
 | Coding-plan quota | Kimi Code | Provider settings on Mac or iPhone |
 | Coding-plan quota | GLM Coding Plan | Provider settings on Mac or iPhone |
 | Coding-plan quota | MiniMax Token Plan | Provider settings on Mac or iPhone |
@@ -102,6 +103,8 @@ AgentMeter supports the following 19 services. Each service is listed separately
 | Perplexity account credits with opt-in Mac → iPhone sync | Perplexity | Chrome session (Auto) or Cookie/session token (Manual); collection and sync default off |
 
 Available metrics depend on the provider. OpenAI API and Anthropic API costs refer to developer API usage, not ChatGPT or Claude web/app subscriptions. Coding-plan quota can sync through private iCloud; **API billing remains local except for explicitly enabled Jev display sync**, and Cursor Team member identities and amounts stay on Mac.
+
+- **Google Antigravity:** [Install the standalone CLI](https://antigravity.google/docs/cli/tutorial/) (v1.1.11 or newer), open `agy` in Terminal, and sign in with a personal Google account. Then enable **Google Antigravity** under **Settings → Plan**. AgentMeter uses the CLI's read-only `/usage` command to show remaining quota and reset times on Mac. If you're coming from Gemini CLI, see [Google's migration announcement](https://github.com/google-gemini/gemini-cli/discussions/27274). Enterprise plans, API billing, and purchased AI credits are outside this integration.
 
 ### TypeSafe API (Jev) on Mac
 

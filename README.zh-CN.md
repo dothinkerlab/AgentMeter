@@ -77,7 +77,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ## 支持的服务
 
-AgentMeter 支持以下 19 个服务，每个服务的数据类型和配置方式分别列出。
+AgentMeter 支持以下 20 个服务，每个服务的数据类型和配置方式分别列出。
 
 | 数据类型 | 服务商 | 配置方式 |
 | --- | --- | --- |
@@ -88,6 +88,7 @@ AgentMeter 支持以下 19 个服务，每个服务的数据类型和配置方�
 | 编程套餐额度 | Windsurf | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | JetBrains AI | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | Zed | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
+| 仅限 Mac 的编程套餐额度 | Google Antigravity | 独立 Antigravity CLI（`agy`）及已登录的个人 Google 账号 |
 | 编程套餐额度 | Kimi Code | 在 Mac 或 iPhone 的服务商设置中配置 |
 | 编程套餐额度 | GLM Coding Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
 | 编程套餐额度 | MiniMax Token Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
@@ -102,6 +103,8 @@ AgentMeter 支持以下 19 个服务，每个服务的数据类型和配置方�
 | Perplexity 账户积分（可选 Mac → iPhone 同步） | Perplexity | Chrome 会话（Auto）或 Cookie／session token（Manual），采集与同步默认关闭 |
 
 可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单默认不进入 CloudKit；Jev 可显式开启显示数据同步**，Cursor Team 成员身份与金额仅保留在 Mac 上。
+
+- **Google Antigravity**：[安装独立 CLI](https://antigravity.google/docs/cli/tutorial/)（v1.1.11 或更新版本），在终端运行 `agy` 并登录个人 Google 账号，再到 **设置 → Plan** 启用 **Google Antigravity**。AgentMeter 通过 CLI 的只读 `/usage` 命令在 Mac 显示剩余额度和重置时间。使用旧 Gemini CLI 的个人用户可参考 [Google 的迁移公告](https://github.com/google-gemini/gemini-cli/discussions/27274)。企业套餐、API 账单和购买的 AI Credits 不在此集成范围。
 
 ### TypeSafe API（Jev）Mac 接入
 

@@ -96,6 +96,8 @@ final class AppModel: ObservableObject {
     let typeSafeController: MacTypeSafeController
     var typesafeUsage: TypeSafeUsage? { typeSafeController.usage }
     private var typeSafeObservation: AnyCancellable?
+    let antigravityController: MacAntigravityController
+    private var antigravityObservation: AnyCancellable?
 
     @Published private(set) var results: [QuotaCollector.Result] = []
     @Published private(set) var lastCollectedAt: Date?
@@ -187,6 +189,7 @@ final class AppModel: ObservableObject {
         self.defaults = defaults
         self.perplexityController = MacPerplexityController(defaults: defaults)
         self.typeSafeController = MacTypeSafeController(defaults: defaults)
+        self.antigravityController = MacAntigravityController(defaults: defaults)
         self.arkPlanController = MacArkPlanController(defaults: defaults)
         self.codexResumeCoordinator = CodexResumeCoordinator(defaults: defaults)
         self.resetNotificationScheduler = resetNotificationScheduler
@@ -222,6 +225,9 @@ final class AppModel: ObservableObject {
         typeSafeObservation = typeSafeController.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        antigravityObservation = antigravityController.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
     }
 
     /// 由 AppDelegate 在启动完成时调一次:订阅唤醒 + 开启定时采集循环。
@@ -251,7 +257,8 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func collectNow() async {
+    func collectNow(manualRefresh: Bool = false) async {
+        async let antigravity: Void = antigravityController.collect(force: manualRefresh)
         // Claude/Codex 正在采集时仍刷新 DeepSeek。设置页保存/删除 key 会触发这里,
         // 不能因全局采集锁而丢掉这次旁路刷新。
         if isCollecting {
@@ -267,7 +274,7 @@ final class AppModel: ObservableObject {
             async let typesafe: Void = typeSafeController.collect()
             async let cursorTeam: Void = collectCursorTeam()
             async let extended: Void = collectCurrentExtendedProviders()
-            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended)
+            _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended, antigravity)
             return
         }
         isCollecting = true
@@ -288,7 +295,7 @@ final class AppModel: ObservableObject {
         async let extended: Void = collectCurrentExtendedProviders()
         results = await legacyResults
         await codexMonitoring
-        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended)
+        _ = await (coding, deepSeek, openRouter, grok, kimiAPI, openAIAPI, anthropicAPI, ark, perplexity, typesafe, cursorTeam, extended, antigravity)
         lastCollectedAt = Date()
         isCollecting = false
         if fiveHourResetNotificationsEnabled {
@@ -1192,6 +1199,9 @@ final class AppModel: ObservableObject {
     func orderedVisibleDisplayItems() -> [MacDisplayItemID] {
         displayOrder.filter { item in
             guard isDisplayItemVisible(item), hasData(for: item) else { return false }
+            if item == .antigravity, hidesInactiveTools, let quota = antigravityController.quota {
+                return Date().timeIntervalSince(quota.updatedAt) <= QuotaSnapshot.inactiveHideThreshold
+            }
             guard hidesInactiveTools, let snapshot = snapshot(for: item) else { return true }
             return !snapshot.isInactive()
         }
@@ -1214,6 +1224,7 @@ final class AppModel: ObservableObject {
         case .cursorTeam: cursorTeamUsage != nil
         case .typesafe: typesafeUsage != nil
         case .perplexity: perplexityUsage != nil
+        case .antigravity: antigravityController.enabled
         default: false
         }
     }

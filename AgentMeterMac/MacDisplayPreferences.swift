@@ -25,6 +25,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case windsurf
     case jetBrainsAI
     case zed
+    case antigravity
 
     var id: String { rawValue }
 
@@ -45,7 +46,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .windsurf: .windsurf
         case .jetBrainsAI: .jetBrainsAI
         case .zed: .zed
-        case .openAIAPI, .anthropicAPI, .kimiAPI, .cursorTeam, .typesafe, .perplexity: nil
+        case .openAIAPI, .anthropicAPI, .kimiAPI, .cursorTeam, .typesafe, .perplexity, .antigravity: nil
         }
     }
 
@@ -65,7 +66,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .typesafe: .typesafe
         case .perplexity: .perplexity
         case .copilot: .copilot
-        case .codex, .claudeCode, .cursor, .windsurf, .jetBrainsAI, .zed: nil
+        case .codex, .claudeCode, .cursor, .windsurf, .jetBrainsAI, .zed, .antigravity: nil
         }
     }
 
