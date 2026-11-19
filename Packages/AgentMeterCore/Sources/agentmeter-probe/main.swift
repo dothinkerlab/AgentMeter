@@ -81,7 +81,7 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             fallbackPlan: credentials.subscriptionType
         )
     case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent, .openCode, .deepSeek, .openRouter, .grok,
-         .copilot, .windsurf, .jetBrainsAI, .zed:
+         .copilot, .windsurf, .jetBrainsAI, .zed, .antigravity:
         throw ProbeError.unsupportedTool(tool.rawValue)
     }
 }

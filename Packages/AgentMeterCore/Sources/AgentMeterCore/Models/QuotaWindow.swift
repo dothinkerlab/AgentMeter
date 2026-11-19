@@ -12,10 +12,27 @@ public struct QuotaWindow: Codable, Sendable, Equatable {
     public let resetsAt: Date?
     public let kind: WindowKind
 
-    public init(usedPercent: Double, resetsAt: Date?, kind: WindowKind) {
+    /// Antigravity returns several distinct quota buckets for the same period.
+    public struct AntigravityBucket: Codable, Sendable, Equatable {
+        public let id: String
+        public let group: String
+        public let label: String
+
+        public init(id: String, group: String, label: String) {
+            self.id = id
+            self.group = group
+            self.label = label
+        }
+    }
+
+    public let antigravityBucket: AntigravityBucket?
+
+    public init(usedPercent: Double, resetsAt: Date?, kind: WindowKind,
+                antigravityBucket: AntigravityBucket? = nil) {
         self.usedPercent = max(0, min(100, usedPercent))
         self.resetsAt = resetsAt
         self.kind = kind
+        self.antigravityBucket = antigravityBucket
     }
 
     /// 剩余百分比,0–100。UI 展示用。

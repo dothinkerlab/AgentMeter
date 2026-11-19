@@ -1,3 +1,4 @@
+import AgentMeterCore
 import XCTest
 @testable import AgentMeter
 
@@ -11,6 +12,155 @@ final class MacAntigravityQuotaTests: XCTestCase {
         XCTAssertNotNil(snapshot.groups[0].buckets[0].resetsAt)
         XCTAssertNil(snapshot.groups[0].buckets[1].resetsAt)
         XCTAssertNotNil(snapshot.groups[1].buckets[0].resetsAt)
+    }
+
+    func testCloudMappingUsesTheSameQuotaFactsAsTheMacReport() throws {
+        let report = try MacAntigravityQuota.parse(Self.report, now: Date(timeIntervalSince1970: 42))
+        let record = try RecordMapping.makeRecord(from: report.snapshot)
+        let decoded = try RecordMapping.snapshot(from: record)
+        XCTAssertEqual(record.recordID.recordName, "snapshot-antigravity")
+        XCTAssertEqual(decoded.windows.compactMap { $0.antigravityBucket?.id },
+                       ["gemini-weekly", "gemini-five-hour", "3p-weekly"])
+        XCTAssertEqual(decoded.windows[0].remainingPercent, 87.92, accuracy: 0.0001)
+        XCTAssertEqual(decoded.tightestWindow?.remainingPercent, 0)
+        XCTAssertNil(decoded.tightestWindow?.resetsAt)
+        XCTAssertEqual(decoded.updatedAt, report.updatedAt)
+    }
+
+    @MainActor
+    func testFailedWriteRetriesAndPendingFactsDoNotCrossAccounts() async throws {
+        let defaults = testDefaults()
+        defaults.set(true, forKey: MacAntigravityController.enabledKey)
+        let snapshot = try MacAntigravityQuota.parse(Self.report, now: Date()).snapshot
+        var account = "account-a"
+        var offline = true
+        var saved: [QuotaSnapshot] = []
+        let store = MacAntigravityCloudSync.Store(
+            account: { account }, fetch: { saved.last },
+            save: { snapshot in
+                if offline { throw URLError(.notConnectedToInternet) }
+                saved.append(snapshot)
+            }, delete: { saved.removeAll() }
+        )
+        let sync = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        sync.publish(snapshot)
+        await sync.flush()
+        XCTAssertTrue(sync.failed)
+        XCTAssertTrue(saved.isEmpty)
+
+        offline = false
+        let restarted = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        await restarted.flush()
+        XCTAssertEqual(saved, [snapshot])
+
+        restarted.publish(snapshot.markedStale(reason: .networkFailure))
+        account = "account-b"
+        await restarted.flush()
+        XCTAssertEqual(saved, [snapshot])
+    }
+
+    @MainActor
+    func testDisableDeletesAfterAnInFlightSave() async throws {
+        let defaults = testDefaults()
+        let snapshot = try MacAntigravityQuota.parse(Self.report, now: Date()).snapshot
+        let started = AsyncStream<Void>.makeStream()
+        let released = AsyncStream<Void>.makeStream()
+        var operations: [String] = []
+        let store = MacAntigravityCloudSync.Store(
+            account: { "account" }, fetch: { nil },
+            save: { _ in
+                started.continuation.yield(())
+                for await _ in released.stream { break }
+                operations.append("save")
+            }, delete: { operations.append("delete") }
+        )
+        let sync = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        sync.publish(snapshot)
+        let upload = Task { await sync.flush() }
+        for await _ in started.stream { break }
+        sync.remove()
+        released.continuation.yield(())
+        await upload.value
+        XCTAssertEqual(operations, ["save", "delete"])
+    }
+
+    @MainActor
+    func testRestartKeepsUnuploadedSuccessWhenTheNextCollectionFails() async throws {
+        let defaults = testDefaults()
+        defaults.set(true, forKey: MacAntigravityController.enabledKey)
+        let snapshot = try MacAntigravityQuota.parse(Self.report, now: Date(timeIntervalSince1970: 42)).snapshot
+        var offline = true
+        var saved: QuotaSnapshot?
+        let store = MacAntigravityCloudSync.Store(
+            account: { "account" }, fetch: { saved },
+            save: {
+                if offline { throw URLError(.notConnectedToInternet) }
+                saved = $0
+            }, delete: { saved = nil }
+        )
+        let initial = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        initial.publish(snapshot)
+        await initial.flush()
+
+        let restarted = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        restarted.publish(.unknown(tool: .antigravity, source: snapshot.source, reason: .authExpired))
+        offline = false
+        await restarted.flush()
+        XCTAssertEqual(saved?.windows, snapshot.windows)
+        XCTAssertEqual(saved?.updatedAt, snapshot.updatedAt)
+        XCTAssertEqual(saved?.confidence, .stale)
+        XCTAssertEqual(saved?.staleReason, .authExpired)
+    }
+
+    @MainActor
+    func testDisabledRecordDeletionSurvivesOfflineRestart() async throws {
+        let defaults = testDefaults()
+        defaults.set(true, forKey: MacAntigravityController.enabledKey)
+        let snapshot = try MacAntigravityQuota.parse(Self.report, now: Date()).snapshot
+        var saved: QuotaSnapshot?
+        var offline = false
+        var deletions = 0
+        let store = MacAntigravityCloudSync.Store(
+            account: { "account" }, fetch: { saved }, save: { saved = $0 },
+            delete: {
+                if offline { throw URLError(.notConnectedToInternet) }
+                saved = nil
+                deletions += 1
+            }
+        )
+        let sync = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        sync.publish(snapshot)
+        await sync.flush()
+        defaults.set(false, forKey: MacAntigravityController.enabledKey)
+        offline = true
+        sync.remove()
+        await sync.flush()
+        XCTAssertTrue(sync.failed)
+        XCTAssertNotNil(saved)
+
+        offline = false
+        let restarted = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        await restarted.flush()
+        XCTAssertNil(saved)
+        XCTAssertEqual(deletions, 1)
+    }
+
+    @MainActor
+    func testAccountSwitchDuringCachedReadDiscardsTheOldAccountFacts() async throws {
+        let defaults = testDefaults()
+        let snapshot = try MacAntigravityQuota.parse(Self.report, now: Date()).snapshot
+        var account = "account-a"
+        var saves = 0
+        let store = MacAntigravityCloudSync.Store(
+            account: { account },
+            fetch: { account = "account-b"; return snapshot },
+            save: { _ in saves += 1 }, delete: {}
+        )
+        let sync = MacAntigravityCloudSync(defaults: defaults, store: store, automatic: false)
+        sync.publish(.unknown(tool: .antigravity, source: snapshot.source, reason: .networkFailure))
+        await sync.flush()
+        await sync.flush()
+        XCTAssertEqual(saves, 0)
     }
 
     func testRejectsMissingQuotaOrResultsFromAnAgentTurn() {

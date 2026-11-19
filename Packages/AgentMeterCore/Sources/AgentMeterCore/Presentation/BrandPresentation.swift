@@ -110,6 +110,7 @@ public enum BrandPresentation {
         case .windsurf: standard = "Windsurf"
         case .jetBrainsAI: standard = "JetBrains AI"
         case .zed: standard = "Zed"
+        case .antigravity: standard = short ? "Antigravity" : "Google Antigravity"
         }
         return text(standard, mode: mode)
     }

@@ -25,6 +25,10 @@ public enum QuotaWindowLabelStyle {
 }
 
 public enum QuotaWindowLabel {
+    public static func string(for window: QuotaWindow, style: QuotaWindowLabelStyle) -> String {
+        window.antigravityBucket?.label ?? string(for: window.kind, style: style)
+    }
+
     public static func string(for kind: WindowKind, style: QuotaWindowLabelStyle) -> String {
         switch style {
         case .full:
@@ -50,6 +54,7 @@ public enum QuotaWindowLabel {
         case .editPredictions: return L10n.string("编辑预测")
         case .messages: return L10n.string("消息")
         case .flowActions: return L10n.string("Flow 操作")
+        case .antigravityBucket: return L10n.string("额度")
         }
     }
 
@@ -67,6 +72,7 @@ public enum QuotaWindowLabel {
         case .editPredictions: return L10n.string("编辑预测")
         case .messages: return L10n.string("消息")
         case .flowActions: return L10n.string("Flow 操作")
+        case .antigravityBucket: return L10n.string("额度")
         }
     }
 
@@ -84,6 +90,7 @@ public enum QuotaWindowLabel {
         case .editPredictions: return "Edit"
         case .messages: return "Msg"
         case .flowActions: return "Flow"
+        case .antigravityBucket: return "Quota"
         }
     }
 }

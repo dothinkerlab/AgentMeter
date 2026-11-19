@@ -100,6 +100,7 @@ struct FiveHourResetNotificationScheduler: FiveHourResetNotificationScheduling {
         case .windsurf: return "Windsurf"
         case .jetBrainsAI: return "JetBrains AI"
         case .zed: return "Zed"
+        case .antigravity: return "Antigravity"
         }
     }
 }

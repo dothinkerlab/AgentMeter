@@ -141,9 +141,12 @@ private struct MacAntigravitySettingsView: View {
                 }))
             }
             Section(L10n.string("数据来源")) {
-                Text(L10n.string("安装独立 Antigravity CLI（agy），在终端登录个人 Google 账号后启用采集。额度仅显示在此 Mac。"))
+                Text(L10n.string("安装独立 Antigravity CLI（agy）并登录个人 Google 账号。开启监控会通过私有 iCloud 同步额度到同一 Apple ID 的 iPhone 和 Watch，关闭会清除云端额度。请只在一台 Mac 上开启。"))
                 Link(L10n.string("安装 Antigravity CLI"), destination: URL(string: "https://antigravity.google/docs/cli/tutorial/")!)
                 Link(L10n.string("从 Gemini CLI 迁移"), destination: URL(string: "https://github.com/google-gemini/gemini-cli/discussions/27274")!)
+            }
+            if let sync = controller.cloudSync {
+                AntigravityCloudStatus(sync: sync)
             }
             if let failure = controller.failure {
                 Section(L10n.string("下一步")) {
@@ -161,6 +164,19 @@ private struct MacAntigravitySettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(MacDisplayItemID.antigravity.settingsDisplayName)
+    }
+}
+
+private struct AntigravityCloudStatus: View {
+    @ObservedObject var sync: MacAntigravityCloudSync
+
+    var body: some View {
+        if sync.failed {
+            Section {
+                Label(L10n.string("暂时无法同步 Antigravity，将自动重试。请检查 iCloud 登录和网络。"),
+                      systemImage: "exclamationmark.icloud")
+            }
+        }
     }
 }
 

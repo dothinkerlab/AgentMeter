@@ -1,4 +1,5 @@
 import AgentMeterCore
+import CloudKit
 import Combine
 import Foundation
 
@@ -12,6 +13,9 @@ final class MacAntigravityController: ObservableObject {
     @Published private(set) var failure: MacAntigravityFailure?
     @Published private(set) var checking = false
 
+    let cloudSync: MacAntigravityCloudSync?
+    private var accountObserver: NSObjectProtocol?
+
     private let defaults: UserDefaults
     private let fetch: @Sendable () async throws -> MacAntigravityQuota
     private let uptime: () -> TimeInterval
@@ -20,11 +24,31 @@ final class MacAntigravityController: ObservableObject {
 
     init(defaults: UserDefaults = .standard,
          uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+         cloudSync: MacAntigravityCloudSync? = nil,
          fetch: @escaping @Sendable () async throws -> MacAntigravityQuota = { try await MacAntigravityCLI().fetch() }) {
         self.defaults = defaults
         self.uptime = uptime
         self.fetch = fetch
         self.enabled = defaults.bool(forKey: Self.enabledKey)
+        self.cloudSync = cloudSync
+        if cloudSync != nil {
+            accountObserver = NotificationCenter.default.addObserver(forName: .CKAccountChanged, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor [weak self] in self?.handleAccountChange() }
+            }
+        }
+    }
+
+    deinit {
+        if let accountObserver { NotificationCenter.default.removeObserver(accountObserver) }
+    }
+
+    private func handleAccountChange() {
+        cloudSync?.accountChanged()
+        inFlight?.cancel()
+        quota = nil
+        failure = nil
+        lastAttempt = nil
+        Task { await collect(force: true) }
     }
 
     var state: ProviderConnectionState {
@@ -45,6 +69,7 @@ final class MacAntigravityController: ObservableObject {
         enabled = value
         defaults.set(value, forKey: Self.enabledKey)
         if !value {
+            cloudSync?.remove()
             inFlight?.cancel()
             quota = nil
             failure = nil
@@ -77,12 +102,31 @@ final class MacAntigravityController: ObservableObject {
                 guard !Task.isCancelled else { return }
                 self?.quota = quota
                 self?.failure = nil
+                self?.cloudSync?.publish(quota.snapshot)
             } catch {
                 guard !Task.isCancelled else { return }
-                self?.failure = error as? MacAntigravityFailure ?? .commandFailed
+                let failure = error as? MacAntigravityFailure ?? .commandFailed
+                self?.failure = failure
+                let reason = failure.staleReason
+                let degraded = self?.quota?.snapshot.markedStale(reason: reason)
+                    ?? .unknown(tool: .antigravity, source: MacAntigravityQuota.source,
+                                reason: reason, collectedBy: .mac)
+                self?.cloudSync?.publish(degraded)
             }
         }
         inFlight = task
         await task.value
+    }
+}
+
+private extension MacAntigravityFailure {
+    var staleReason: QuotaStaleReason {
+        switch self {
+        case .signInRequired: .authExpired
+        case .missingCLI, .unsupportedCLI, .slashCommandsDisabled, .unverifiedSettings: .credentialReadFailed
+        case .timedOut: .networkFailure
+        case .commandFailed: .endpointFailure
+        case .invalidReport: .responseChanged
+        }
     }
 }

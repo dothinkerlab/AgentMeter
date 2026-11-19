@@ -189,7 +189,9 @@ final class AppModel: ObservableObject {
         self.defaults = defaults
         self.perplexityController = MacPerplexityController(defaults: defaults)
         self.typeSafeController = MacTypeSafeController(defaults: defaults)
-        self.antigravityController = MacAntigravityController(defaults: defaults)
+        self.antigravityController = MacAntigravityController(
+            defaults: defaults, cloudSync: MacAntigravityCloudSync(defaults: defaults)
+        )
         self.arkPlanController = MacArkPlanController(defaults: defaults)
         self.codexResumeCoordinator = CodexResumeCoordinator(defaults: defaults)
         self.resetNotificationScheduler = resetNotificationScheduler
@@ -1285,6 +1287,7 @@ final class AppModel: ObservableObject {
         case .windsurf: return "Windsurf"
         case .jetBrainsAI: return "JetBrains AI"
         case .zed: return "Zed"
+        case .antigravity: return "Antigravity"
         }
     }
 }

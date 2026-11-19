@@ -568,3 +568,6 @@
 "已入队，正在载入原会话以启动已有队列…" = "Queued. Loading the original conversation to start its existing queue…";
 
 "已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。" = "Queued (%@), but the original conversation could not be loaded. Open it in Codex; do not send again.";
+
+"安装独立 Antigravity CLI（agy）并登录个人 Google 账号。开启监控会通过私有 iCloud 同步额度到同一 Apple ID 的 iPhone 和 Watch，关闭会清除云端额度。请只在一台 Mac 上开启。" = "Install the standalone Antigravity CLI (agy) and sign in to your personal Google account. Monitoring syncs quota through private iCloud to iPhone and Apple Watch on the same Apple Account. Turning it off clears the iCloud quota. Enable it on one Mac only.";
+"暂时无法同步 Antigravity，将自动重试。请检查 iCloud 登录和网络。" = "Antigravity sync is temporarily unavailable. AgentMeter will retry. Check your iCloud sign-in and network.";

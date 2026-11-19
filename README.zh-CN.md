@@ -104,7 +104,7 @@ AgentMeter 支持以下 20 个服务，每个服务的数据类型和配置方�
 
 可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单默认不进入 CloudKit；Jev 可显式开启显示数据同步**，Cursor Team 成员身份与金额仅保留在 Mac 上。
 
-- **Google Antigravity**：[安装独立 CLI](https://antigravity.google/docs/cli/tutorial/)（v1.1.11 或更新版本），在终端运行 `agy` 并登录个人 Google 账号，再到 **设置 → Plan** 启用 **Google Antigravity**。AgentMeter 通过 CLI 的只读 `/usage` 命令在 Mac 显示剩余额度和重置时间。使用旧 Gemini CLI 的个人用户可参考 [Google 的迁移公告](https://github.com/google-gemini/gemini-cli/discussions/27274)。企业套餐、API 账单和购买的 AI Credits 不在此集成范围。
+- **Google Antigravity**：[安装独立 CLI](https://antigravity.google/docs/cli/tutorial/)（v1.1.11 或更新版本），在终端运行 `agy` 并登录个人 Google 账号，再到 **设置 → Plan** 启用 **Google Antigravity**。AgentMeter 通过 CLI 的只读 `/usage` 命令在 Mac、iPhone 和 Apple Watch 显示剩余额度和重置时间。开启监控后，清洗后的额度会通过私有 iCloud 同步到同一 Apple ID；每个 Apple ID 只在一台 Mac 开启，关闭后清除云端记录。使用旧 Gemini CLI 的个人用户可参考 [Google 的迁移公告](https://github.com/google-gemini/gemini-cli/discussions/27274)。企业套餐、API 账单和购买的 AI Credits 不在此集成范围。
 
 ### TypeSafe API（Jev）Mac 接入
 

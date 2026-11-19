@@ -637,6 +637,7 @@ struct MenuBarContentView: View {
         case .editPredictions: return 0
         case .messages: return 0
         case .flowActions: return 1
+        case .antigravityBucket: return 0
         }
     }
 
@@ -670,6 +671,7 @@ struct MenuBarContentView: View {
         case .windsurf: return "Windsurf"
         case .jetBrainsAI: return "JetBrains AI"
         case .zed: return "Zed"
+        case .antigravity: return "Antigravity"
         }
     }
 
@@ -1100,6 +1102,8 @@ private struct BrandMark: View {
             Text("W").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
         case .jetBrainsAI:
             Text("JB").font(.system(size: 9, weight: .bold)).foregroundColor(Color.menuOnBrand)
+        case .antigravity:
+            Text("G").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .zed:
             Text("Z").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
         }
@@ -1147,6 +1151,8 @@ func brand(for tool: ToolKind) -> Brand {
         return Brand(accent: Color(red: 0.10, green: 0.55, blue: 0.72))
     case .jetBrainsAI:
         return Brand(accent: Color(red: 0.64, green: 0.20, blue: 0.78))
+    case .antigravity:
+        return Brand(accent: Color(red: 0.26, green: 0.52, blue: 0.96))
     case .zed:
         return Brand(accent: Color(red: 0.28, green: 0.46, blue: 0.31))
     case .openCode:

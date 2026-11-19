@@ -270,6 +270,7 @@ public struct QuotaCollector: Sendable {
         case .windsurf: return WindsurfLocalAdapter.source
         case .jetBrainsAI: return JetBrainsAILocalAdapter.source
         case .zed: return ZedUsageAdapter.source
+        case .antigravity: return "antigravity_cli_usage"
         }
     }
 
@@ -286,7 +287,7 @@ public struct QuotaCollector: Sendable {
             return try await CursorPlanAdapter().fetch(
                 accessToken: creds.accessToken, fallbackPlan: creds.subscriptionType)
         case .arkCoding, .arkAgent, .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
-             .copilot, .windsurf, .jetBrainsAI, .zed:
+             .copilot, .windsurf, .jetBrainsAI, .zed, .antigravity:
             throw UnsupportedTool(tool: tool)
         }
     }

@@ -18,6 +18,7 @@ public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case windsurf
     case jetBrainsAI
     case zed
+    case antigravity
 }
 
 public extension ToolKind {
@@ -52,6 +53,7 @@ public enum WindowKind: String, Codable, Sendable {
     case editPredictions
     case messages
     case flowActions
+    case antigravityBucket
 }
 
 /// 数据新鲜度。不用 high/medium/low 这种主观档位 —— UI 靠 `source` + `updatedAt`

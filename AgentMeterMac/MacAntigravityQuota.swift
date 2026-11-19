@@ -1,3 +1,4 @@
+import AgentMeterCore
 import Darwin
 import CoreFoundation
 import Foundation
@@ -15,8 +16,25 @@ struct MacAntigravityQuota: Equatable, Sendable {
         let resetsAt: Date?
     }
 
+    static let source = "antigravity_cli_usage"
+
     let groups: [Group]
     let updatedAt: Date
+
+    var snapshot: QuotaSnapshot {
+        let windows: [QuotaWindow] = groups.flatMap { group -> [QuotaWindow] in
+            group.buckets.map { bucket in
+                QuotaWindow(
+                    usedPercent: (1 - bucket.remainingFraction) * 100,
+                    resetsAt: bucket.resetsAt,
+                    kind: .antigravityBucket,
+                    antigravityBucket: .init(id: bucket.id, group: group.name, label: bucket.name)
+                )
+            }
+        }
+        return QuotaSnapshot(tool: .antigravity, plan: nil, windows: windows, confidence: .fresh,
+                             collectedBy: .mac, source: Self.source, updatedAt: updatedAt)
+    }
 
     static func parse(_ data: Data, now: Date) throws -> Self {
         guard let report = try? JSONDecoder().decode(Report.self, from: data),

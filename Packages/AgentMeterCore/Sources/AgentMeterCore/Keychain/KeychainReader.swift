@@ -127,6 +127,8 @@ public enum KeychainReader {
             return JetBrainsAILocalAdapter.source
         case .zed:
             return ZedUsageAdapter.source
+        case .antigravity:
+            return "antigravity_cli_usage"
         }
     }
 
@@ -185,7 +187,7 @@ public enum KeychainReader {
                 return nil
             case .openRouter:
                 return nil
-            case .grok, .copilot, .windsurf, .jetBrainsAI, .zed:
+            case .grok, .copilot, .windsurf, .jetBrainsAI, .zed, .antigravity:
                 return nil
             }
         }
