@@ -34,13 +34,13 @@ struct MacSettingsView: View {
                 Section("Plan") {
                     ForEach(filteredPlanProviders, id: \.self) { provider in
                         if provider == .arkCoding || provider == .arkAgent {
-                            ProviderSidebarRow(name: provider.settingsDisplayName, mark: "Ark", tint: .blue,
+                            ProviderSidebarRow(name: provider.settingsDisplayName, mark: .text("Ark"), tint: .blue,
                                 state: model.arkPlanController.state(provider == .arkCoding ? .coding : .agent))
                                 .tag(MacSettingsRoute.ark(provider == .arkCoding ? .coding : .agent))
                         } else if let manualProvider = provider.manualProvider {
                             ProviderSidebarRow(
                                 name: provider.settingsDisplayName,
-                                mark: provider.settingsMonogram,
+                                mark: provider.settingsMark,
                                 tint: provider.settingsTint,
                                 state: model.manualProviderState(manualProvider)
                             )
@@ -48,7 +48,7 @@ struct MacSettingsView: View {
                         } else {
                             ProviderSidebarRow(
                                 name: provider.settingsDisplayName,
-                                mark: provider.settingsMonogram,
+                                mark: provider.settingsMark,
                                 tint: provider.settingsTint,
                                 state: model.automaticPlanProviderState(provider)
                             )
@@ -61,7 +61,7 @@ struct MacSettingsView: View {
                     ForEach(filteredBillingProviders, id: \.self) { provider in
                         ProviderSidebarRow(
                             name: provider.settingsDisplayName,
-                            mark: provider.settingsMonogram,
+                            mark: provider.settingsMark,
                             tint: provider.settingsTint,
                             state: model.manualProviderState(provider)
                         )
@@ -141,7 +141,7 @@ private struct MacGeneralSettingsView: View {
             Section {
                 ForEach(Array(model.displayOrder.enumerated()), id: \.element) { index, item in
                     HStack(spacing: 10) {
-                        ProviderMark(mark: item.settingsMonogram, tint: item.settingsTint)
+                        ProviderMark(mark: item.settingsMark, tint: item.settingsTint)
                         Text(item.settingsDisplayName)
                         Spacer()
                         Toggle(
@@ -202,7 +202,7 @@ private struct MacAutomaticProviderDetail: View {
             Section {
                 ProviderDetailHeader(
                     name: provider.settingsDisplayName,
-                    mark: provider.settingsMonogram,
+                    mark: provider.settingsMark,
                     tint: provider.settingsTint,
                     state: state
                 )
@@ -222,9 +222,7 @@ private struct MacAutomaticProviderDetail: View {
 
             Section(L10n.string("数据来源")) {
                 Text(sourceDescription)
-                Text(provider == .cursor
-                     ? L10n.string("AgentMeter 以只读方式访问 Cursor 本机登录数据库，不刷新 token，也不修改 Cursor 数据。")
-                     : L10n.string("AgentMeter 不保存或接管登录流程；请先在对应 CLI 中完成登录。"))
+                Text(secondarySourceNote)
                     .foregroundStyle(.secondary)
             }
 
@@ -257,6 +255,8 @@ private struct MacAutomaticProviderDetail: View {
         case .chatGPT: L10n.string("用量由此 Mac 的 Codex CLI 登录自动采集。")
         case .claude: L10n.string("用量由此 Mac 的 Claude Code 登录自动采集。")
         case .cursor: L10n.string("用量由此 Mac 的 Cursor 登录自动采集。")
+        case .geminiCLI: L10n.string("用量由此 Mac 的 Gemini CLI OAuth 登录自动采集。")
+        case .antigravity: L10n.string("优先读取运行中的 Antigravity 本地语言服务，未运行时回退到 agy CLI。")
         case .windsurf: L10n.string("只读 Windsurf 本机额度缓存，不读取浏览器 Cookie。")
         case .jetBrainsAI: L10n.string("只读最近使用的 JetBrains IDE AI Assistant 额度文件。")
         case .zed: L10n.string("读取 Zed 本机 Keychain 登录并查询 Zed Cloud 额度。")
@@ -265,11 +265,26 @@ private struct MacAutomaticProviderDetail: View {
         }
     }
 
+    private var secondarySourceNote: String {
+        switch provider {
+        case .cursor:
+            L10n.string("AgentMeter 以只读方式访问 Cursor 本机登录数据库，不刷新 token，也不修改 Cursor 数据。")
+        case .geminiCLI:
+            L10n.string("AgentMeter 以只读方式读取本机 ~/.gemini/oauth_creds.json，不修改或覆盖你的 CLI 凭据文件。")
+        case .antigravity:
+            L10n.string("AgentMeter 只在本地连接 Antigravity 服务或运行只读用量查询，不会修改账号登录态或触发自动更新。")
+        default:
+            L10n.string("AgentMeter 不保存或接管登录流程；请先在对应 CLI 中完成登录。")
+        }
+    }
+
     private var nextStepDescription: String {
         switch provider {
         case .chatGPT: L10n.string("在终端打开 Codex 并完成登录，然后回到这里重新检测。")
         case .claude: L10n.string("在终端运行 Claude Code 并使用 /login 完成登录，然后回到这里重新检测。")
         case .cursor: L10n.string("打开 Cursor 并完成登录，然后回到这里重新检测。")
+        case .geminiCLI: L10n.string("在终端运行 gemini 并使用 Google 账号完成 OAuth 登录，然后回到这里重新检测。")
+        case .antigravity: L10n.string("打开 Antigravity 并完成登录，或在终端运行 agy 登录后回到这里重新检测。")
         case .windsurf: L10n.string("打开 Windsurf 使用一次 AI 功能，然后回到这里重新检测。")
         case .jetBrainsAI: L10n.string("在 JetBrains IDE 中启用并使用 AI Assistant，然后回到这里重新检测。")
         case .zed: L10n.string("在 Zed 中完成登录，并允许 AgentMeter 只读访问对应 Keychain 项目。")
@@ -301,7 +316,7 @@ private struct MacManualProviderDetail: View {
             Section {
                 ProviderDetailHeader(
                     name: provider.settingsDisplayName,
-                    mark: provider.settingsMonogram,
+                    mark: provider.settingsMark,
                     tint: provider.settingsTint,
                     state: state
                 )
@@ -764,9 +779,14 @@ private struct MacManualProviderDetail: View {
     private enum CredentialError: Error { case missing }
 }
 
+private enum ProviderMarkGlyph {
+    case text(String)
+    case antigravity
+}
+
 private struct ProviderSidebarRow: View {
     let name: String
-    let mark: String
+    let mark: ProviderMarkGlyph
     let tint: Color
     let state: ProviderConnectionState
 
@@ -785,7 +805,7 @@ private struct ProviderSidebarRow: View {
 
 private struct ProviderDetailHeader: View {
     let name: String
-    let mark: String
+    let mark: ProviderMarkGlyph
     let tint: Color
     let state: ProviderConnectionState
 
@@ -805,17 +825,27 @@ private struct ProviderDetailHeader: View {
 }
 
 private struct ProviderMark: View {
-    let mark: String
+    let mark: ProviderMarkGlyph
     let tint: Color
     var size: CGFloat = 24
 
     var body: some View {
-        Text(mark)
-            .font(.system(size: size * 0.36, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(tint, in: RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
-            .accessibilityHidden(true)
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                .fill(tint)
+            switch mark {
+            case .text(let text):
+                Text(text)
+                    .font(.system(size: size * 0.36, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+            case .antigravity:
+                AntigravityLogoShape()
+                    .fill(.white)
+                    .frame(width: size * 0.60, height: size * 0.60)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 
@@ -1023,6 +1053,8 @@ private extension PlanProviderKind {
         case .chatGPT: "ChatGPT"
         case .claude: "Claude"
         case .cursor: "Cursor"
+        case .geminiCLI: "Gemini CLI"
+        case .antigravity: "Antigravity"
         case .copilot: "GitHub Copilot"
         case .windsurf: "Windsurf"
         case .jetBrainsAI: "JetBrains AI"
@@ -1032,17 +1064,19 @@ private extension PlanProviderKind {
         default: manualProvider!.settingsDisplayName
         }
     }
-    var settingsMonogram: String {
+    var settingsMark: ProviderMarkGlyph {
         switch self {
-        case .chatGPT: ">_"
-        case .claude: "✱"
-        case .cursor: "C"
-        case .copilot: "GH"
-        case .windsurf: "W"
-        case .jetBrainsAI: "JB"
-        case .zed: "Z"
-        case .arkCoding, .arkAgent: "Ark"
-        default: manualProvider!.settingsMonogram
+        case .chatGPT: .text(">_")
+        case .claude: .text("✱")
+        case .cursor: .text("C")
+        case .geminiCLI: .text("✦")
+        case .antigravity: .antigravity
+        case .copilot: .text("GH")
+        case .windsurf: .text("W")
+        case .jetBrainsAI: .text("JB")
+        case .zed: .text("Z")
+        case .arkCoding, .arkAgent: .text("Ark")
+        default: manualProvider!.settingsMark
         }
     }
     var settingsTint: Color {
@@ -1050,6 +1084,8 @@ private extension PlanProviderKind {
         case .chatGPT: Color(red: 0.06, green: 0.62, blue: 0.45)
         case .claude: Color(red: 0.82, green: 0.38, blue: 0.23)
         case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .geminiCLI: Color("BrandGemini")
+        case .antigravity: Color("BrandAntigravity")
         case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
         case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
         case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)
@@ -1089,6 +1125,7 @@ private extension ManualProviderKind {
         default: "sk-…"
         }
     }
+    var settingsMark: ProviderMarkGlyph { .text(settingsMonogram) }
     var settingsMonogram: String {
         switch self {
         case .kimiCode, .kimiAPI: "K"
@@ -1148,6 +1185,8 @@ private extension MacDisplayItemID {
         case .codex: "ChatGPT"
         case .claudeCode: "Claude"
         case .cursor: "Cursor"
+        case .geminiCLI: "Gemini CLI"
+        case .antigravity: "Antigravity"
         case .kimiCode: ManualProviderKind.kimiCode.settingsDisplayName
         case .glmCoding: ManualProviderKind.glmCoding.settingsDisplayName
         case .miniMax: ManualProviderKind.miniMax.settingsDisplayName
@@ -1168,17 +1207,19 @@ private extension MacDisplayItemID {
         case .arkAgent: "Ark Agent Plan"
         }
     }
-    var settingsMonogram: String {
+    var settingsMark: ProviderMarkGlyph {
         switch self {
-        case .codex: ">_"
-        case .claudeCode: "✱"
-        case .cursor: "C"
-        case .copilot: "GH"
-        case .windsurf: "W"
-        case .jetBrainsAI: "JB"
-        case .zed: "Z"
-        case .arkCoding, .arkAgent: "Ark"
-        default: manualProvider!.settingsMonogram
+        case .codex: .text(">_")
+        case .claudeCode: .text("✱")
+        case .cursor: .text("C")
+        case .geminiCLI: .text("✦")
+        case .antigravity: .antigravity
+        case .copilot: .text("GH")
+        case .windsurf: .text("W")
+        case .jetBrainsAI: .text("JB")
+        case .zed: .text("Z")
+        case .arkCoding, .arkAgent: .text("Ark")
+        default: manualProvider!.settingsMark
         }
     }
     var settingsTint: Color {
@@ -1186,6 +1227,8 @@ private extension MacDisplayItemID {
         case .codex: Color(red: 0.06, green: 0.62, blue: 0.45)
         case .claudeCode: Color(red: 0.82, green: 0.38, blue: 0.23)
         case .cursor: Color(red: 0.12, green: 0.12, blue: 0.14)
+        case .geminiCLI: Color("BrandGemini")
+        case .antigravity: Color("BrandAntigravity")
         case .copilot: Color(red: 0.24, green: 0.24, blue: 0.28)
         case .windsurf: Color(red: 0.10, green: 0.55, blue: 0.72)
         case .jetBrainsAI: Color(red: 0.64, green: 0.20, blue: 0.78)

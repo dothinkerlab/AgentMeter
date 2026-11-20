@@ -250,7 +250,7 @@ struct MenuBarContentView: View {
     @ViewBuilder
     private func displayRow(for item: MacDisplayItemID) -> some View {
         switch item {
-        case .codex, .claudeCode, .cursor, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
+        case .codex, .claudeCode, .cursor, .geminiCLI, .antigravity, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
              .copilot, .windsurf, .jetBrainsAI, .zed:
             if let snapshot = model.snapshot(for: item) {
                 ToolRow(
@@ -616,7 +616,16 @@ struct MenuBarContentView: View {
     // MARK: - 窗口排序 / 文案
 
     private func orderedWindows(_ windows: [QuotaWindow]) -> [QuotaWindow] {
-        windows.sorted { rank($0.kind) < rank($1.kind) }
+        windows
+            .filter {
+                switch $0.kind {
+                case .claudeGPTFiveHour, .claudeGPTWeekly, .antigravityClaudeGPT:
+                    return false
+                default:
+                    return true
+                }
+            }
+            .sorted { rank($0.kind) < rank($1.kind) }
     }
 
     private func rank(_ kind: WindowKind) -> Int {
@@ -633,6 +642,15 @@ struct MenuBarContentView: View {
         case .editPredictions: return 0
         case .messages: return 0
         case .flowActions: return 1
+        case .geminiPro: return 0
+        case .geminiFlash: return 1
+        case .geminiFlashLite: return 2
+        case .geminiFiveHour: return 0
+        case .geminiWeekly: return 1
+        case .claudeGPTFiveHour: return 2
+        case .claudeGPTWeekly: return 3
+        case .antigravityGemini: return 0
+        case .antigravityClaudeGPT: return 1
         }
     }
 
@@ -653,6 +671,8 @@ struct MenuBarContentView: View {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
         case .cursor: return "Cursor"
+        case .geminiCLI: return "Gemini CLI"
+        case .antigravity: return "Antigravity"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
         case .arkCoding: return "Ark Coding Plan"
@@ -943,8 +963,9 @@ private struct WindowLine: View {
 
             Text("\(Int(remaining.rounded()))%")
                 .font(.system(size: 12.5, weight: .semibold).monospacedDigit())
+                .lineLimit(1)
                 .foregroundColor(pctColor)
-                .frame(width: 32, alignment: .trailing)
+                .frame(width: 38, alignment: .trailing)
         }
     }
 
@@ -1063,6 +1084,14 @@ private struct BrandMark: View {
                 .frame(width: 12, height: 12)
         case .cursor:
             Text("C").font(.system(size: 11, weight: .black)).foregroundColor(Color.menuOnBrand)
+        case .geminiCLI:
+            GeminiSparkle()
+                .fill(Color.menuOnBrand)
+                .frame(width: 12, height: 12)
+        case .antigravity:
+            AntigravityLogoShape()
+                .fill(Color.menuOnBrand)
+                .frame(width: 13.5, height: 13.5)
         case .kimiCode:
             Text("K").font(.system(size: 11, weight: .bold)).foregroundColor(Color.menuOnBrand)
         case .glmCoding:
@@ -1118,6 +1147,54 @@ private struct Sunburst: Shape {
     }
 }
 
+/// Gemini 标记:四角星芒。
+private struct GeminiSparkle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let r = min(rect.width, rect.height) / 2
+        let top = CGPoint(x: c.x, y: c.y - r)
+        let right = CGPoint(x: c.x + r, y: c.y)
+        let bottom = CGPoint(x: c.x, y: c.y + r)
+        let left = CGPoint(x: c.x - r, y: c.y)
+        path.move(to: top)
+        path.addQuadCurve(to: right, control: c)
+        path.addQuadCurve(to: bottom, control: c)
+        path.addQuadCurve(to: left, control: c)
+        path.addQuadCurve(to: top, control: c)
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Antigravity 标记:官方拱形标志轮廓。
+struct AntigravityLogoShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let minX: CGFloat = 13.9451
+        let minY: CGFloat = 18.4450
+        let sourceWidth: CGFloat = 83.5859
+        let sourceHeight: CGFloat = 77.0000
+        let scale = min(rect.width / sourceWidth, rect.height / sourceHeight)
+        let offsetX = rect.midX - (minX + sourceWidth / 2) * scale
+        let offsetY = rect.midY - (minY + sourceHeight / 2) * scale
+
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: x * scale + offsetX, y: y * scale + offsetY)
+        }
+
+        var path = Path()
+        path.move(to: pt(89.6992, 93.695))
+        path.addCurve(to: pt(94.9492, 88.445), control1: pt(94.3659, 97.195), control2: pt(101.366, 94.8617))
+        path.addCurve(to: pt(55.8659, 18.445), control1: pt(75.6992, 69.7783), control2: pt(79.7825, 18.445))
+        path.addCurve(to: pt(16.7825, 88.445), control1: pt(31.9492, 18.445), control2: pt(36.0325, 69.7783))
+        path.addCurve(to: pt(22.0325, 93.695), control1: pt(9.78251, 95.445), control2: pt(17.3658, 97.195))
+        path.addCurve(to: pt(55.8659, 59.8617), control1: pt(40.1159, 81.445), control2: pt(38.9492, 59.8617))
+        path.addCurve(to: pt(89.6992, 93.695), control1: pt(72.7825, 59.8617), control2: pt(71.6159, 81.445))
+        path.closeSubpath()
+        return path
+    }
+}
+
 /// 每个服务一个品牌色。Codex 墨绿、Claude 陶土橙。
 struct Brand {
     let accent: Color
@@ -1131,6 +1208,10 @@ func brand(for tool: ToolKind) -> Brand {
         return Brand(accent: .menuBrandClaude)
     case .cursor:
         return Brand(accent: .menuBrandCursor)
+    case .geminiCLI:
+        return Brand(accent: .menuBrandGemini)
+    case .antigravity:
+        return Brand(accent: .menuBrandAntigravity)
     case .kimiCode:
         return Brand(accent: .menuBrandKimi)
     case .glmCoding, .arkCoding, .arkAgent:
@@ -1160,6 +1241,8 @@ private extension Color {
     static let menuBrandCodex = Color("BrandCodex")
     static let menuBrandClaude = Color("BrandClaude")
     static let menuBrandCursor = Color("BrandCursor")
+    static let menuBrandGemini = Color("BrandGemini")
+    static let menuBrandAntigravity = Color("BrandAntigravity")
     static let menuBrandKimi = Color("BrandKimi")
     static let menuBrandGLM = Color("BrandGLM")
     static let menuBrandMiniMax = Color("BrandMiniMax")

@@ -23,6 +23,45 @@ final class MacPlanPresentationTests: XCTestCase {
             isStale: true, staleLabel: "Paused", ageText: "10 min ago", warning: nil, windows: windows,
             resetSummary: "", resetCredits: nil, labelFor: { QuotaWindowLabel.string(for: $0, style: .short) })
         try await render(row, size: NSSize(width: 390, height: 310), name: "agentmeter-ark-quota-card")
+
+        let geminiRow = ToolRow(
+            name: "Gemini CLI",
+            plan: "Workspace",
+            brand: brand(for: .geminiCLI),
+            tool: .geminiCLI,
+            isStale: false,
+            staleLabel: "",
+            ageText: "1m ago",
+            warning: nil,
+            windows: [
+                .init(usedPercent: 35, resetsAt: Date().addingTimeInterval(3600), kind: .geminiPro),
+                .init(usedPercent: 55, resetsAt: Date().addingTimeInterval(3600), kind: .geminiFlash),
+                .init(usedPercent: 5, resetsAt: Date().addingTimeInterval(3600), kind: .geminiFlashLite),
+            ],
+            resetSummary: "",
+            resetCredits: nil,
+            labelFor: { QuotaWindowLabel.string(for: $0, style: .compactAbbrev) }
+        )
+        try await render(geminiRow, size: NSSize(width: 320, height: 220), name: "agentmeter-gemini-quota-card")
+
+        let antigravityRow = ToolRow(
+            name: "Antigravity",
+            plan: "Google AI Pro",
+            brand: brand(for: .antigravity),
+            tool: .antigravity,
+            isStale: false,
+            staleLabel: "",
+            ageText: "1m ago",
+            warning: nil,
+            windows: [
+                .init(usedPercent: 0, resetsAt: Date().addingTimeInterval(3600), kind: .fiveHour),
+                .init(usedPercent: 46, resetsAt: Date().addingTimeInterval(86400), kind: .sevenDay),
+            ],
+            resetSummary: "",
+            resetCredits: nil,
+            labelFor: { QuotaWindowLabel.string(for: $0, style: .compactAbbrev) }
+        )
+        try await render(antigravityRow, size: NSSize(width: 320, height: 260), name: "agentmeter-antigravity-quota-card")
     }
     private func render<V: View>(_ root: V, size: NSSize, name: String) async throws {
         let host = NSHostingView(rootView: root.padding().frame(width: size.width, height: size.height).background(Color.white).environment(\.colorScheme, .light))

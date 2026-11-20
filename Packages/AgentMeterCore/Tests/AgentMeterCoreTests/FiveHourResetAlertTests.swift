@@ -154,6 +154,24 @@ struct FiveHourResetAlertTests {
         #expect(recovered.identifiersToCancel == [candidate.identifier])
     }
 
+    @Test func antigravityFiveHourWindowsScheduleAlertForTightestBelowTenPercent() throws {
+        let geminiReset = now.addingTimeInterval(3600)
+        let claudeReset = now.addingTimeInterval(1800)
+        let snapshot = snapshot(
+            confidence: .fresh,
+            windows: [
+                QuotaWindow(usedPercent: 50, resetsAt: geminiReset, kind: .geminiFiveHour),
+                QuotaWindow(usedPercent: 95, resetsAt: claudeReset, kind: .claudeGPTFiveHour),
+            ],
+            tool: .antigravity
+        )
+
+        let candidate = try #require(FiveHourResetAlertPlanner.candidate(from: snapshot, now: now))
+        #expect(candidate.tool == .antigravity)
+        #expect(candidate.resetsAt == claudeReset)
+        #expect(abs(candidate.remainingPercent - 5.0) < 0.001)
+    }
+
     private func snapshot(
         confidence: DataConfidence,
         windows: [QuotaWindow],

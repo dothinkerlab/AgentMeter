@@ -5,7 +5,7 @@ import Testing
 struct AgentToolSelectionTests {
 
     @Test func defaultsToAutomaticPlanProviders() {
-        #expect(AgentToolSelection.parseTools(env: [:], args: []) == [.claudeCode, .codex, .cursor])
+        #expect(AgentToolSelection.parseTools(env: [:], args: []) == [.claudeCode, .codex, .cursor, .geminiCLI, .antigravity])
         #expect(!AgentToolSelection.defaultTools.contains(.grok))
     }
 
@@ -26,7 +26,7 @@ struct AgentToolSelectionTests {
 
     @Test func invalidPluralFallsBackToDefault() {
         let env = ["AGENTMETER_TOOLS": "nope,bad"]
-        #expect(AgentToolSelection.parseTools(env: env, args: []) == [.claudeCode, .codex, .cursor])
+        #expect(AgentToolSelection.parseTools(env: env, args: []) == [.claudeCode, .codex, .cursor, .geminiCLI, .antigravity])
     }
 
     @Test func dedupePreservesOrder() {

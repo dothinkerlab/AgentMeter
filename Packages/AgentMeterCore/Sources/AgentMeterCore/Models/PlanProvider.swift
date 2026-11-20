@@ -6,6 +6,8 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
     case chatGPT
     case claude
     case cursor
+    case geminiCLI
+    case antigravity
     case kimiCode
     case glmCoding
     case miniMax
@@ -29,6 +31,8 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
         case .chatGPT: .codex
         case .claude: .claudeCode
         case .cursor: .cursor
+        case .geminiCLI: .geminiCLI
+        case .antigravity: .antigravity
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
@@ -43,7 +47,7 @@ public enum PlanProviderKind: String, CaseIterable, Sendable, Hashable {
 
     public var manualProvider: ManualProviderKind? {
         switch self {
-        case .chatGPT, .claude, .cursor, .windsurf, .jetBrainsAI, .zed, .arkCoding, .arkAgent: nil
+        case .chatGPT, .claude, .cursor, .geminiCLI, .antigravity, .windsurf, .jetBrainsAI, .zed, .arkCoding, .arkAgent: nil
         case .copilot: .copilot
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding

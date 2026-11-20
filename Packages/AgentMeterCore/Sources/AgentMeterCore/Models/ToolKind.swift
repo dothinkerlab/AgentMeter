@@ -5,6 +5,8 @@ public enum ToolKind: String, Codable, Sendable, CaseIterable, Hashable {
     case claudeCode
     case codex
     case cursor
+    case geminiCLI
+    case antigravity
     case kimiCode
     case glmCoding
     case miniMax
@@ -52,6 +54,15 @@ public enum WindowKind: String, Codable, Sendable {
     case editPredictions
     case messages
     case flowActions
+    case geminiPro
+    case geminiFlash
+    case geminiFlashLite
+    case geminiFiveHour
+    case geminiWeekly
+    case claudeGPTFiveHour
+    case claudeGPTWeekly
+    case antigravityGemini
+    case antigravityClaudeGPT
 }
 
 /// 数据新鲜度。不用 high/medium/low 这种主观档位 —— UI 靠 `source` + `updatedAt`

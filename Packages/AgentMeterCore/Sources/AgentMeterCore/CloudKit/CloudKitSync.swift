@@ -1,5 +1,8 @@
 import Foundation
 import CloudKit
+#if os(macOS)
+import Security
+#endif
 
 /// CloudKit Private Database 的读写封装(项目核心文件之一),Mac / iPhone / Watch 共用。
 ///
@@ -30,6 +33,28 @@ public struct CloudKitSync: Sendable {
         case mapping(Error)
     }
 
+    public static func isEntitled(for containerIdentifier: String) -> Bool {
+        #if os(macOS)
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        let services = SecTaskCopyValueForEntitlement(
+            task,
+            "com.apple.developer.icloud-services" as CFString,
+            nil
+        ) as? [String] ?? []
+        guard services.contains(where: { $0.caseInsensitiveCompare("CloudKit") == .orderedSame }) else {
+            return false
+        }
+        let containers = SecTaskCopyValueForEntitlement(
+            task,
+            "com.apple.developer.icloud-container-identifiers" as CFString,
+            nil
+        ) as? [String] ?? []
+        return containers.contains(containerIdentifier)
+        #else
+        return true
+        #endif
+    }
+
     private var privateDatabase: CKDatabase {
         CKContainer(identifier: containerIdentifier).privateCloudDatabase
     }
@@ -52,6 +77,9 @@ public struct CloudKitSync: Sendable {
     }
 
     private func save(_ snapshot: QuotaSnapshot, recordID id: CKRecord.ID) async throws {
+        guard Self.isEntitled(for: containerIdentifier) else {
+            throw SyncError.accountUnavailable
+        }
         let db = privateDatabase
 
         let record = CKRecord(recordType: RecordMapping.recordType, recordID: id)
@@ -118,6 +146,9 @@ public struct CloudKitSync: Sendable {
     /// Explicit disable/delete is scoped to one device. Missing records are a
     /// successful no-op.
     public func delete(tool: ToolKind, collector: QuotaCollectorDevice) async throws {
+        guard Self.isEntitled(for: containerIdentifier) else {
+            throw SyncError.accountUnavailable
+        }
         let id = RecordMapping.recordID(for: tool, collector: collector)
         do {
             _ = try await privateDatabase.deleteRecord(withID: id)
@@ -130,6 +161,9 @@ public struct CloudKitSync: Sendable {
 
     /// Deletes the unscoped record used by Mac-owned automatic providers.
     public func delete(tool: ToolKind) async throws {
+        guard Self.isEntitled(for: containerIdentifier) else {
+            throw SyncError.accountUnavailable
+        }
         let id = RecordMapping.recordID(for: tool)
         do {
             _ = try await privateDatabase.deleteRecord(withID: id)
@@ -141,6 +175,9 @@ public struct CloudKitSync: Sendable {
     }
 
     private func fetch(recordID id: CKRecord.ID) async throws -> QuotaSnapshot? {
+        guard Self.isEntitled(for: containerIdentifier) else {
+            throw SyncError.accountUnavailable
+        }
         let db = privateDatabase
 
         let record: CKRecord

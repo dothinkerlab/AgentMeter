@@ -50,6 +50,15 @@ public enum QuotaWindowLabel {
         case .editPredictions: return L10n.string("编辑预测")
         case .messages: return L10n.string("消息")
         case .flowActions: return L10n.string("Flow 操作")
+        case .geminiPro: return L10n.string("Pro 每日")
+        case .geminiFlash: return L10n.string("Flash 每日")
+        case .geminiFlashLite: return L10n.string("Flash Lite 每日")
+        case .geminiFiveHour: return L10n.string("5 小时窗口")
+        case .geminiWeekly: return L10n.string("每周窗口")
+        case .claudeGPTFiveHour: return L10n.string("Claude/GPT 5 小时")
+        case .claudeGPTWeekly: return L10n.string("Claude/GPT 每周")
+        case .antigravityGemini: return L10n.string("Gemini 模型")
+        case .antigravityClaudeGPT: return L10n.string("Claude / GPT")
         }
     }
 
@@ -67,6 +76,15 @@ public enum QuotaWindowLabel {
         case .editPredictions: return L10n.string("编辑预测")
         case .messages: return L10n.string("消息")
         case .flowActions: return L10n.string("Flow 操作")
+        case .geminiPro: return "Pro"
+        case .geminiFlash: return "Flash"
+        case .geminiFlashLite: return "Flash Lite"
+        case .geminiFiveHour: return L10n.string("5 小时")
+        case .geminiWeekly: return L10n.string("每周")
+        case .claudeGPTFiveHour: return "C/G 5h"
+        case .claudeGPTWeekly: return L10n.string("C/G 每周")
+        case .antigravityGemini: return "Gemini"
+        case .antigravityClaudeGPT: return "Claude/GPT"
         }
     }
 
@@ -84,6 +102,15 @@ public enum QuotaWindowLabel {
         case .editPredictions: return "Edit"
         case .messages: return "Msg"
         case .flowActions: return "Flow"
+        case .geminiPro: return "Pro"
+        case .geminiFlash: return "Flash"
+        case .geminiFlashLite: return "Lite"
+        case .geminiFiveHour: return "5h"
+        case .geminiWeekly: return "7d"
+        case .claudeGPTFiveHour: return "C/G 5h"
+        case .claudeGPTWeekly: return "C/G 7d"
+        case .antigravityGemini: return "Gem"
+        case .antigravityClaudeGPT: return "C/G"
         }
     }
 }

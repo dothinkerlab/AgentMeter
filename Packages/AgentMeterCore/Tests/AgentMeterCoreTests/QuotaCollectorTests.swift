@@ -150,7 +150,57 @@ struct QuotaCollectorTests {
         #expect(QuotaCollector.staleReason(for: ClaudeCodeAdapter.FetchError.decode("bad")) == .responseChanged)
         #expect(QuotaCollector.staleReason(for: CodexPlanAdapter.FetchError.decode("bad")) == .responseChanged)
         #expect(QuotaCollector.staleReason(for: GrokAPIUsageAdapter.FetchError.unauthorized) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: GeminiCLIAdapter.FetchError.unauthorized) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: GeminiCLIAdapter.FetchError.consumerTierDeprecated) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: GeminiCLIAdapter.FetchError.transport("lost")) == .networkFailure)
+        #expect(QuotaCollector.staleReason(for: GeminiCLIAdapter.FetchError.httpStatus(500)) == .endpointFailure)
+        #expect(QuotaCollector.staleReason(for: GeminiCLIAdapter.FetchError.decode("bad")) == .responseChanged)
+        #expect(QuotaCollector.staleReason(for: AntigravityQuotaAdapter.FetchError.unauthorized) == .authExpired)
+        #expect(QuotaCollector.staleReason(for: AntigravityQuotaAdapter.FetchError.notRunning) == .credentialReadFailed)
+        #expect(QuotaCollector.staleReason(for: AntigravityQuotaAdapter.FetchError.transport("lost")) == .networkFailure)
+        #expect(QuotaCollector.staleReason(for: AntigravityQuotaAdapter.FetchError.httpStatus(502)) == .endpointFailure)
+        #expect(QuotaCollector.staleReason(for: AntigravityQuotaAdapter.FetchError.decode("bad")) == .responseChanged)
         #expect(QuotaCollector.staleReason(for: FetchBoom()) == .unknownFailure)
+    }
+
+    @Test func expiredGeminiCLIWithRefreshTokenProceedsToFetcherWhileWithoutRefreshTokenDegrades() async {
+        let store = FakeStore()
+        let withRefresh = QuotaCollector(
+            store: store,
+            credentials: { _ in
+                KeychainReader.Credentials(
+                    accessToken: "expired",
+                    refreshToken: "rtk",
+                    expiresAt: Date(timeIntervalSince1970: 0)
+                )
+            },
+            fetcher: { tool, _ in sampleSnap(tool) }
+        )
+        let okResult = await withRefresh.collect(tool: .geminiCLI)
+        #expect(okResult.outcome == .ok)
+        #expect(okResult.snapshot?.confidence == .fresh)
+
+        let withoutRefresh = QuotaCollector(
+            store: FakeStore(),
+            credentials: { _ in sampleCreds(expired: true) },
+            fetcher: { _, _ in Issue.record("Should not invoke fetcher without refresh token"); return sampleSnap(.geminiCLI) }
+        )
+        let degradedResult = await withoutRefresh.collect(tool: .geminiCLI)
+        #expect(degradedResult.outcome == .degraded)
+        #expect(degradedResult.snapshot?.staleReason == .authExpired)
+    }
+
+    @Test func antigravityNotRunningIsSkippedWithoutWritingPlaceholder() async {
+        let store = FakeStore()
+        let collector = QuotaCollector(
+            store: store,
+            credentials: { _ in sampleCreds() },
+            fetcher: { _, _ in throw AntigravityQuotaAdapter.FetchError.notRunning }
+        )
+        let result = await collector.collect(tool: .antigravity)
+        #expect(result.outcome == .skipped)
+        #expect(result.snapshot == nil)
+        #expect(await store.savedCount == 0)
     }
 
     @Test func writeFailureReportsWriteFailed() async {

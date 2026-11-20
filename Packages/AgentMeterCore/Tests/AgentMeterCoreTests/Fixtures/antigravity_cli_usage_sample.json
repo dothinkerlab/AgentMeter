@@ -1,0 +1,42 @@
+{
+  "status": "SUCCESS",
+  "command": {
+    "name": "usage",
+    "data": {
+      "account_plan": "Google AI Pro",
+      "groups": [
+        {
+          "display_name": "Gemini Models",
+          "buckets": [
+            {
+              "bucket_id": "gemini-session",
+              "display_name": "5-hour limit",
+              "remaining_fraction": 0.60,
+              "reset_time": "2026-11-20T07:00:00Z"
+            },
+            {
+              "bucket_id": "gemini-weekly",
+              "display_name": "Weekly limit",
+              "remaining_fraction": 0.80,
+              "reset_time": "2026-11-26T12:00:00Z"
+            }
+          ]
+        },
+        {
+          "display_name": "Claude and GPT models",
+          "buckets": [
+            {
+              "bucket_id": "claude-5h",
+              "display_name": "5-hour limit",
+              "remaining": {
+                "case": "remainingFraction",
+                "value": 0.25
+              },
+              "reset_time": "2026-11-20T04:00:00Z"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

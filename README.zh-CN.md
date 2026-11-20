@@ -59,7 +59,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ### 2. 配置服务商
 
-从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex、Cursor、Windsurf、JetBrains AI 或 Zed** 时，先在 Mac 上登录或使用对应工具；只有在你显式启用服务商后，AgentMeter 才会读取已有的本机凭据或额度缓存。GitHub Copilot 需要在设置中粘贴 GitHub Token。其他编程套餐和 API 账单服务也可在设置中配置，只需启用你使用的服务。
+从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex、Cursor、Gemini CLI 或 Antigravity** 时，先在 Mac 上登录或运行对应工具即可自动采集。使用 **Windsurf、JetBrains AI 或 Zed** 时，先在 Mac 上登录或使用对应工具；只有在你显式启用服务商后，AgentMeter 才会读取已有的本机凭据或额度缓存。GitHub Copilot 需要在设置中粘贴 GitHub Token。其他编程套餐和 API 账单服务也可在设置中配置，只需启用你使用的服务。
 
 手动输入的凭据仅保存在当前设备。如果在 Mac 和 iPhone 上都配置了某个服务，需要在各设备分别输入凭据。特殊凭据要求见[支持的服务](#支持的服务)。
 
@@ -77,13 +77,15 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ## 支持的服务
 
-AgentMeter 支持以下 19 个服务，每个服务的数据类型和配置方式分别列出。
+AgentMeter 支持以下 21 个服务，每个服务的数据类型和配置方式分别列出。
 
 | 数据类型 | 服务商 | 配置方式 |
 | --- | --- | --- |
 | 编程套餐额度 | Claude Code | 使用 Mac 上已有的登录 |
 | 编程套餐额度 | Codex | 使用 Mac 上已有的登录 |
 | 编程套餐额度 | Cursor | 使用 Mac 上已有的登录 |
+| 编程套餐额度 | Gemini CLI | 使用 Mac 上已有的 OAuth 登录 |
+| 编程套餐额度 | Antigravity | 运行中的 Antigravity 应用/IDE 或已登录的 `agy` CLI |
 | 编程套餐额度 | GitHub Copilot | GitHub Token，保存在本机 Keychain |
 | 编程套餐额度 | Windsurf | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | JetBrains AI | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
@@ -121,7 +123,7 @@ Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings
 
 每台采集设备使用自己的本机凭据查询服务商。AgentMeter 不会将这些凭据发送给我们，也不会写入 iCloud。
 
-- **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Cursor 与 Windsurf 数据库和 JetBrains AI 额度文件均以只读方式打开；Zed 凭据只从同源的本机 Keychain 项目读取，AgentMeter 不刷新或修改这些凭据。
+- **已有的 Mac 登录**：Claude Code 凭据从 Keychain 读取；Codex 优先读取 Keychain，找不到条目时读取 `~/.codex/auth.json`；Gemini CLI 仅以只读方式读取 `~/.gemini/oauth_creds.json` 与 `~/.gemini/settings.json`，刷新后的令牌只保存在内存中；Antigravity 仅连接本机回环语言服务或在禁用浏览器拉起与自动更新的临时目录中执行只读 `agy -p /usage --output-format json`；Cursor 与 Windsurf 数据库和 JetBrains AI 额度文件均以只读方式打开；Zed 凭据只从同源的本机 Keychain 项目读取，AgentMeter 不刷新或修改这些凭据。
 - **Perplexity 网页会话**：Auto Cookie 仅留内存，Manual 存设备本地 Keychain。仅请求固定积分端点并拒绝重定向；可选同步使用独立私有显示记录，只包含积分、时间和状态，不含 Cookie 或 profile 身份。
 - **手动输入的凭据**：存入本机 Keychain，关闭 iCloud Keychain 同步及通过备份迁移至其他设备的能力。
 - **私有额度同步**：仅将经过清理的编程套餐状态写入你的私有 CloudKit 数据库，例如额度窗口、重置时间、订阅档位、重置额度可用数量与数据更新状态；不包含服务商凭据或上游重置额度 ID。
