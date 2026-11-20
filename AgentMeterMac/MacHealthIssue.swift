@@ -116,6 +116,8 @@ extension MacDisplayItemID {
         case .codex: "Codex"
         case .claudeCode: "Claude Code"
         case .cursor: "Cursor"
+        case .geminiCLI: "Gemini CLI"
+        case .antigravity: "Antigravity"
         case .kimiCode: "Kimi Code"
         case .glmCoding: "GLM Coding Plan"
         case .arkCoding: "Ark Coding Plan"

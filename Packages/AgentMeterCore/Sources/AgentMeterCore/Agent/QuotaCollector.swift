@@ -73,7 +73,7 @@ public struct QuotaCollector: Sendable {
             return await degrade(tool: tool, reason: .credentialReadFailed, logReason: "无法读取凭据")
         }
 
-        if creds.isExpired {
+        if creds.isExpired && !(tool == .geminiCLI && creds.refreshToken?.isEmpty == false) {
             log("\(tag) ⚠️ token 已过期,需重新登录")
             return await degrade(tool: tool, reason: .authExpired, logReason: "token 过期")
         }
@@ -85,6 +85,9 @@ public struct QuotaCollector: Sendable {
         let snapshot: QuotaSnapshot
         do {
             snapshot = try await fetcher(tool, creds)
+        } catch AntigravityQuotaAdapter.FetchError.notRunning {
+            log("\(tag) Antigravity 未运行且无可用 agy CLI,跳过")
+            return Result(tool: tool, outcome: .skipped, snapshot: nil)
         } catch {
             log("\(tag) ✗ 取数失败: \(error)")
             return await degrade(tool: tool, reason: Self.staleReason(for: error), logReason: "取数失败")
@@ -202,6 +205,9 @@ public struct QuotaCollector: Sendable {
         case ClaudeCodeAdapter.FetchError.unauthorized,
              CodexPlanAdapter.FetchError.unauthorized,
              CursorPlanAdapter.FetchError.unauthorized,
+             GeminiCLIAdapter.FetchError.unauthorized,
+             GeminiCLIAdapter.FetchError.consumerTierDeprecated,
+             AntigravityQuotaAdapter.FetchError.unauthorized,
              CodexResetCreditsAdapter.FetchError.unauthorized,
              DeepSeekBalanceAdapter.FetchError.unauthorized,
              OpenRouterUsageAdapter.FetchError.unauthorized,
@@ -211,9 +217,13 @@ public struct QuotaCollector: Sendable {
              GLMCodingPlanAdapter.FetchError.unauthorized,
              MiniMaxTokenPlanAdapter.FetchError.unauthorized:
             return .authExpired
+        case AntigravityQuotaAdapter.FetchError.notRunning:
+            return .credentialReadFailed
         case ClaudeCodeAdapter.FetchError.transport,
              CodexPlanAdapter.FetchError.transport,
              CursorPlanAdapter.FetchError.transport,
+             GeminiCLIAdapter.FetchError.transport,
+             AntigravityQuotaAdapter.FetchError.transport,
              CodexResetCreditsAdapter.FetchError.transport,
              DeepSeekBalanceAdapter.FetchError.transport,
              OpenRouterUsageAdapter.FetchError.transport,
@@ -226,6 +236,8 @@ public struct QuotaCollector: Sendable {
         case ClaudeCodeAdapter.FetchError.httpStatus,
              CodexPlanAdapter.FetchError.httpStatus,
              CursorPlanAdapter.FetchError.httpStatus,
+             GeminiCLIAdapter.FetchError.httpStatus,
+             AntigravityQuotaAdapter.FetchError.httpStatus,
              CodexResetCreditsAdapter.FetchError.httpStatus,
              DeepSeekBalanceAdapter.FetchError.httpStatus,
              OpenRouterUsageAdapter.FetchError.httpStatus,
@@ -238,6 +250,8 @@ public struct QuotaCollector: Sendable {
         case ClaudeCodeAdapter.FetchError.decode,
              CodexPlanAdapter.FetchError.decode,
              CursorPlanAdapter.FetchError.decode,
+             GeminiCLIAdapter.FetchError.decode,
+             AntigravityQuotaAdapter.FetchError.decode,
              CodexResetCreditsAdapter.FetchError.decode,
              DeepSeekBalanceAdapter.FetchError.decode,
              OpenRouterUsageAdapter.FetchError.decode,
@@ -257,6 +271,8 @@ public struct QuotaCollector: Sendable {
         case .claudeCode: return ClaudeCodeAdapter.source
         case .codex: return CodexPlanAdapter.source
         case .cursor: return CursorPlanAdapter.source
+        case .geminiCLI: return GeminiCLIAdapter.source
+        case .antigravity: return AntigravityQuotaAdapter.source
         case .kimiCode: return KimiCodeAdapter.source
         case .glmCoding: return GLMCodingPlanAdapter.source
         case .arkCoding: return ArkPlanAdapter.Product.coding.source
@@ -285,6 +301,10 @@ public struct QuotaCollector: Sendable {
         case .cursor:
             return try await CursorPlanAdapter().fetch(
                 accessToken: creds.accessToken, fallbackPlan: creds.subscriptionType)
+        case .geminiCLI:
+            return try await GeminiCLIAdapter().fetch(credentials: creds)
+        case .antigravity:
+            return try await AntigravityQuotaAdapter().fetch()
         case .arkCoding, .arkAgent, .kimiCode, .glmCoding, .miniMax, .openCode, .deepSeek, .openRouter, .grok,
              .copilot, .windsurf, .jetBrainsAI, .zed:
             throw UnsupportedTool(tool: tool)

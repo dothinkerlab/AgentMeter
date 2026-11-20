@@ -43,15 +43,18 @@ public struct CloudKitTypeSafeSyncStore: TypeSafeSyncStore {
     }
     private var container: CKContainer { CKContainer(identifier: containerIdentifier) }
     public func accountIdentifier() async throws -> String {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw TypeSafeSyncError.accountUnavailable }
         guard try await container.accountStatus() == .available else { throw TypeSafeSyncError.accountUnavailable }
         return try await container.userRecordID().recordName
     }
     public func fetch() async throws -> TypeSafeSyncEnvelope? {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw TypeSafeSyncError.accountUnavailable }
         do {
             return try TypeSafeRecordMapping.decode(await container.privateCloudDatabase.record(for: TypeSafeRecordMapping.recordID))
         } catch let error as CKError where error.code == .unknownItem { return nil }
     }
     public func save(_ envelope: TypeSafeSyncEnvelope) async throws {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw TypeSafeSyncError.accountUnavailable }
         let database = container.privateCloudDatabase
         var record = CKRecord(recordType: TypeSafeRecordMapping.recordType, recordID: TypeSafeRecordMapping.recordID)
         // Compare revisions on each conflict. A delayed upload can never resurrect a newer tombstone.

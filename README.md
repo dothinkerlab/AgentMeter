@@ -59,7 +59,7 @@ brew upgrade --cask dothinkerlab/tap/agentmeter
 
 ### 2. Configure your providers
 
-Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, Cursor, Windsurf, JetBrains AI, and Zed**, sign in to or use the corresponding tool on your Mac; AgentMeter reads its existing local credentials or quota cache only after you enable that provider. GitHub Copilot uses a GitHub token that you paste into Settings. Other coding plans and API billing services are also configured in Settings. You only need to enable the services you use.
+Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, Cursor, Gemini CLI, and Antigravity**, sign in to or use the corresponding tool on your Mac. For **Windsurf, JetBrains AI, and Zed**, sign in to or use the corresponding tool on your Mac; AgentMeter reads their existing local credentials or quota cache only after you enable that provider. GitHub Copilot uses a GitHub token that you paste into Settings. Other coding plans and API billing services are also configured in Settings. You only need to enable the services you use.
 
 Manually entered credentials are device-local. If you configure a provider on both Mac and iPhone, enter its credentials separately on each device. See [Supported services](#supported-services) for special credential requirements.
 
@@ -77,13 +77,15 @@ View remaining quota and reset times in the Mac menu bar. To see coding-plan quo
 
 ## Supported services
 
-AgentMeter supports the following 19 services. Each service is listed separately with its data and setup requirements.
+AgentMeter supports the following 21 services. Each service is listed separately with its data and setup requirements.
 
 | Data | Provider | Setup |
 | --- | --- | --- |
 | Coding-plan quota | Claude Code | Existing sign-in on your Mac |
 | Coding-plan quota | Codex | Existing sign-in on your Mac |
 | Coding-plan quota | Cursor | Existing sign-in on your Mac |
+| Coding-plan quota | Gemini CLI | Existing OAuth sign-in on your Mac |
+| Coding-plan quota | Antigravity | Running Antigravity app/IDE or signed-in `agy` CLI on your Mac |
 | Coding-plan quota | GitHub Copilot | GitHub token stored in the local Keychain |
 | Coding-plan quota | Windsurf | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | JetBrains AI | Opt-in detection of an existing Mac sign-in or local quota cache |
@@ -121,7 +123,7 @@ Enable **Sync Perplexity to iCloud** on one collecting Mac to share display fact
 
 Each collecting device queries providers using its own local credentials. AgentMeter does not send those credentials to us or write them to iCloud.
 
-- **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Cursor and Windsurf databases and JetBrains AI quota files are opened read-only. Zed credentials are read from the matching local Keychain item and are never refreshed or modified by AgentMeter.
+- **Existing Mac sign-ins:** Claude Code credentials are read from Keychain. For Codex, AgentMeter checks Keychain and falls back to `~/.codex/auth.json` when no entry exists. Gemini CLI credentials (`~/.gemini/oauth_creds.json` and `~/.gemini/settings.json`) are opened read-only, and any refreshed access tokens remain strictly in memory. Antigravity connects only to the local loopback language server or invokes read-only `agy -p /usage --output-format json` in an isolated temporary directory with browser launch and CLI auto-update disabled. Cursor and Windsurf databases and JetBrains AI quota files are opened read-only. Zed credentials are read from the matching local Keychain item and are never refreshed or modified by AgentMeter.
 - **TypeSafe console sessions:** automatic cookies stay in memory; manual Cookie headers use the device-local Keychain. Only the fixed TypeSafe console origin receives them, and redirects are refused. TypeSafe credentials never enter CloudKit. Opt-in Jev sync stores only display facts in a separate private record.
 - **Perplexity web sessions:** Auto cookies stay in memory; Manual credentials stay in the local Keychain. Requests go only to the fixed Perplexity credits endpoint and refuse redirects. Optional sync uses a separate private display record containing credits, timestamps and state, never cookies or profile identities.
 - **Manually entered credentials:** stored in the local Keychain, with iCloud Keychain synchronization and backup migration to another device disabled.

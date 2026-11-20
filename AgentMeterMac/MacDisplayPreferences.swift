@@ -7,6 +7,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
     case codex
     case claudeCode
     case cursor
+    case geminiCLI
+    case antigravity
     case kimiCode
     case glmCoding
     case miniMax
@@ -33,6 +35,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .codex: .codex
         case .claudeCode: .claudeCode
         case .cursor: .cursor
+        case .geminiCLI: .geminiCLI
+        case .antigravity: .antigravity
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax
@@ -65,7 +69,7 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .typesafe: .typesafe
         case .perplexity: .perplexity
         case .copilot: .copilot
-        case .codex, .claudeCode, .cursor, .windsurf, .jetBrainsAI, .zed: nil
+        case .codex, .claudeCode, .cursor, .geminiCLI, .antigravity, .windsurf, .jetBrainsAI, .zed: nil
         }
     }
 
@@ -74,6 +78,8 @@ enum MacDisplayItemID: String, CaseIterable, Codable, Hashable, Identifiable {
         case .codex: .codex
         case .claudeCode: .claudeCode
         case .cursor: .cursor
+        case .geminiCLI: .geminiCLI
+        case .antigravity: .antigravity
         case .kimiCode: .kimiCode
         case .glmCoding: .glmCoding
         case .miniMax: .miniMax

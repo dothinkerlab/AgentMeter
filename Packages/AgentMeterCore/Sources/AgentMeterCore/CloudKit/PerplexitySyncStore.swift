@@ -45,15 +45,18 @@ public struct CloudKitPerplexitySyncStore: PerplexitySyncStore {
     }
     private var container: CKContainer { CKContainer(identifier: containerIdentifier) }
     public func accountIdentifier() async throws -> String {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw PerplexitySyncError.accountUnavailable }
         guard try await container.accountStatus() == .available else { throw PerplexitySyncError.accountUnavailable }
         return try await container.userRecordID().recordName
     }
     public func fetch() async throws -> PerplexitySyncEnvelope? {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw PerplexitySyncError.accountUnavailable }
         do {
             return try PerplexityRecordMapping.decode(await container.privateCloudDatabase.record(for: PerplexityRecordMapping.recordID))
         } catch let error as CKError where error.code == .unknownItem { return nil }
     }
     public func save(_ envelope: PerplexitySyncEnvelope) async throws {
+        guard CloudKitSync.isEntitled(for: containerIdentifier) else { throw PerplexitySyncError.accountUnavailable }
         let database = container.privateCloudDatabase
         var record: CKRecord
         do { record = try await database.record(for: PerplexityRecordMapping.recordID) }

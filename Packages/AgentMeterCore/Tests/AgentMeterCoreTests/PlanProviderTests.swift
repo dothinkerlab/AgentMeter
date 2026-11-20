@@ -5,13 +5,19 @@ import Testing
 struct PlanProviderTests {
     @Test func catalogOrderAndMappingsAreStable() {
         #expect(PlanProviderKind.allCases == [
-            .chatGPT, .claude, .cursor, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
+            .chatGPT, .claude, .cursor, .geminiCLI, .antigravity, .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent,
             .copilot, .windsurf, .jetBrainsAI, .zed,
         ])
         #expect(PlanProviderKind.chatGPT.toolKind == .codex)
         #expect(PlanProviderKind.claude.toolKind == .claudeCode)
         #expect(PlanProviderKind.cursor.toolKind == .cursor)
+        #expect(PlanProviderKind.geminiCLI.toolKind == .geminiCLI)
+        #expect(PlanProviderKind.antigravity.toolKind == .antigravity)
         #expect(PlanProviderKind.cursor.collectionMode == .macAutomatic)
+        #expect(PlanProviderKind.geminiCLI.collectionMode == .macAutomatic)
+        #expect(PlanProviderKind.antigravity.collectionMode == .macAutomatic)
+        #expect(PlanProviderKind.geminiCLI.manualProvider == nil)
+        #expect(PlanProviderKind.antigravity.manualProvider == nil)
         #expect(PlanProviderKind.chatGPT.collectionMode == .macAutomatic)
         #expect(PlanProviderKind.claude.manualProvider == nil)
         #expect(PlanProviderKind.kimiCode.manualProvider == .kimiCode)

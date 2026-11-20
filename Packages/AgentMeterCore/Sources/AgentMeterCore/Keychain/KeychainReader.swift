@@ -15,6 +15,8 @@ public enum KeychainReader {
 
     public static let claudeService = "Claude Code-credentials"
     public static let codexService = "Codex-credentials"
+    public static let geminiCLIService = "Gemini-CLI-oauth"
+    public static let antigravityService = "Antigravity-local"
     public static let service = claudeService
 
     public struct Credentials: Decodable, Sendable, Equatable {
@@ -24,6 +26,7 @@ public enum KeychainReader {
         public let scopes: [String]?
         public let subscriptionType: String?
         public let accountID: String?
+        public let idToken: String?
 
         public init(
             accessToken: String,
@@ -31,7 +34,8 @@ public enum KeychainReader {
             expiresAt: Date? = nil,
             scopes: [String]? = nil,
             subscriptionType: String? = nil,
-            accountID: String? = nil
+            accountID: String? = nil,
+            idToken: String? = nil
         ) {
             self.accessToken = accessToken
             self.refreshToken = refreshToken
@@ -39,6 +43,7 @@ public enum KeychainReader {
             self.scopes = scopes
             self.subscriptionType = subscriptionType
             self.accountID = accountID
+            self.idToken = idToken
         }
 
         enum CodingKeys: String, CodingKey {
@@ -46,6 +51,8 @@ public enum KeychainReader {
             case accountID
             case accountId
             case accountIdSnake = "account_id"
+            case idToken
+            case idTokenSnake = "id_token"
         }
 
         public init(from decoder: Decoder) throws {
@@ -57,6 +64,8 @@ public enum KeychainReader {
             accountID = try c.decodeIfPresent(String.self, forKey: .accountID)
                 ?? c.decodeIfPresent(String.self, forKey: .accountId)
                 ?? c.decodeIfPresent(String.self, forKey: .accountIdSnake)
+            idToken = try c.decodeIfPresent(String.self, forKey: .idToken)
+                ?? c.decodeIfPresent(String.self, forKey: .idTokenSnake)
             // expiresAt 实测是 epoch 毫秒。
             if let ms = try c.decodeIfPresent(Double.self, forKey: .expiresAt) {
                 expiresAt = Date(timeIntervalSince1970: ms / 1000)
@@ -103,6 +112,10 @@ public enum KeychainReader {
             return codexService
         case .cursor:
             return "Cursor-local-state"
+        case .geminiCLI:
+            return geminiCLIService
+        case .antigravity:
+            return antigravityService
         case .kimiCode:
             return ProviderCredentialStore.Kind.kimiCode.rawValue
         case .glmCoding:
@@ -132,6 +145,13 @@ public enum KeychainReader {
 
     public static func readCredentials(tool: ToolKind = .claudeCode) throws -> Credentials {
         if tool == .cursor { return try readCursorState().credentials }
+        if tool == .geminiCLI { return try readGeminiCLICredentials() }
+        if tool == .antigravity {
+            if AntigravityQuotaAdapter.hasLocalEnvironment() {
+                return Credentials(accessToken: "local")
+            }
+            throw ReadError.notFound(serviceName(for: .antigravity))
+        }
         switch tool {
         case .kimiCode, .glmCoding, .miniMax, .deepSeek, .openRouter, .grok,
              .copilot, .windsurf, .jetBrainsAI, .zed:
@@ -175,7 +195,7 @@ public enum KeychainReader {
                 return claudeAiOauth
             case .codex:
                 return codexOauth ?? codex
-            case .cursor:
+            case .cursor, .geminiCLI, .antigravity:
                 return nil
             case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent:
                 return nil
@@ -324,6 +344,89 @@ public enum KeychainReader {
             return decoded
         }
         return value
+    }
+
+    /// Reads Gemini CLI OAuth credentials from `~/.gemini/oauth_creds.json` strictly read-only.
+    /// Non-OAuth auth modes (`gemini-api-key`, `api-key`, `vertex-ai`) in `~/.gemini/settings.json`
+    /// report `ReadError.notFound` so those setups are skipped cleanly.
+    public static func readGeminiCLICredentials(
+        home: URL = FileManager.default.homeDirectoryForCurrentUser
+    ) throws -> Credentials {
+        let geminiDir = home.appendingPathComponent(".gemini", isDirectory: true)
+        let settingsURL = geminiDir.appendingPathComponent("settings.json")
+        if let settingsData = try? Data(contentsOf: settingsURL),
+           let settings = try? JSONSerialization.jsonObject(with: settingsData) as? [String: Any] {
+            let securityAuth = (settings["security"] as? [String: Any])?["auth"] as? [String: Any]
+            let authSection = settings["auth"] as? [String: Any]
+            let selectedType = (securityAuth?["selectedType"] as? String)
+                ?? (settings["selectedAuthType"] as? String)
+                ?? (authSection?["selectedType"] as? String)
+            if let selectedType {
+                let normalized = selectedType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if normalized == "gemini-api-key" || normalized == "api-key" || normalized == "vertex-ai" {
+                    throw ReadError.notFound(geminiCLIService)
+                }
+            }
+        }
+
+        let credsURL = geminiDir.appendingPathComponent("oauth_creds.json")
+        let data: Data
+        do {
+            data = try Data(contentsOf: credsURL)
+        } catch {
+            throw ReadError.notFound(credsURL.path)
+        }
+        return try decodeGeminiCLICredentials(data)
+    }
+
+    public static func decodeGeminiCLICredentials(_ data: Data) throws -> Credentials {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ReadError.decode("Gemini CLI oauth_creds.json is not a JSON object")
+        }
+
+        let accessToken = ((root["access_token"] as? String) ?? (root["accessToken"] as? String))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let refreshToken = ((root["refresh_token"] as? String) ?? (root["refreshToken"] as? String))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveRefresh = refreshToken?.isEmpty == true ? nil : refreshToken
+        let idToken = ((root["id_token"] as? String) ?? (root["idToken"] as? String))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveIDToken = idToken?.isEmpty == true ? nil : idToken
+
+        if accessToken.isEmpty && effectiveRefresh == nil {
+            throw ReadError.decode("missing access_token and refresh_token")
+        }
+
+        let expiresAt: Date? = {
+            let raw = root["expiry_date"] ?? root["expiryDate"]
+            if let num = raw as? NSNumber {
+                let value = num.doubleValue
+                if value.isFinite, value > 0 {
+                    let unix = value > 10_000_000_000 ? value / 1_000 : value
+                    return Date(timeIntervalSince1970: unix)
+                }
+            } else if let text = raw as? String {
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let value = Double(trimmed), value.isFinite, value > 0 {
+                    let unix = value > 10_000_000_000 ? value / 1_000 : value
+                    return Date(timeIntervalSince1970: unix)
+                }
+                let fractional = ISO8601DateFormatter()
+                fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let date = fractional.date(from: trimmed) { return date }
+                let plain = ISO8601DateFormatter()
+                plain.formatOptions = [.withInternetDateTime]
+                if let date = plain.date(from: trimmed) { return date }
+            }
+            return nil
+        }()
+
+        return Credentials(
+            accessToken: accessToken,
+            refreshToken: effectiveRefresh,
+            expiresAt: expiresAt,
+            idToken: effectiveIDToken
+        )
     }
 }
 #endif

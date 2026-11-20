@@ -1,0 +1,51 @@
+{
+  "code": "ok",
+  "userStatus": {
+    "email": "user@example.com",
+    "userTier": {
+      "id": "g1-ultra-tier",
+      "name": "Google AI Ultra"
+    },
+    "planStatus": {
+      "planInfo": {
+        "planDisplayName": "Pro"
+      }
+    },
+    "cascadeModelConfigData": {
+      "clientModelConfigs": [
+        {
+          "label": "Gemini 3.1 Pro (High)",
+          "modelOrAlias": { "model": "gemini-3.1-pro-high" },
+          "quotaInfo": {
+            "remainingFraction": 0.70,
+            "resetTime": "2026-11-20T06:00:00Z"
+          }
+        },
+        {
+          "label": "Gemini 3.7 Flash Lite",
+          "modelOrAlias": { "model": "gemini-3.7-flash-lite" },
+          "quotaInfo": {
+            "remainingFraction": 0.10,
+            "resetTime": "2026-11-20T06:00:00Z"
+          }
+        },
+        {
+          "label": "Claude Sonnet 4.5",
+          "modelOrAlias": { "model": "claude-sonnet-4-5" },
+          "quotaInfo": {
+            "remainingFraction": 0.40,
+            "resetTime": "2026-11-20T05:00:00Z"
+          }
+        },
+        {
+          "label": "Tab Autocomplete",
+          "modelOrAlias": { "model": "tab_autocomplete_v2" },
+          "quotaInfo": {
+            "remainingFraction": 0.05,
+            "resetTime": "2026-11-20T05:00:00Z"
+          }
+        }
+      ]
+    }
+  }
+}

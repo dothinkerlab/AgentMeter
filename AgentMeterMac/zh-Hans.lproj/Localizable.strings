@@ -545,3 +545,21 @@
 "已入队，正在载入原会话以启动已有队列…" = "已入队，正在载入原会话以启动已有队列…";
 
 "已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。" = "已入队（%@），无法载入原会话。请在 Codex 打开该会话，不要重复发送。";
+
+/* Gemini CLI & Antigravity */
+"Pro 每日" = "Pro 每日";
+"Flash 每日" = "Flash 每日";
+"Flash Lite 每日" = "Flash Lite 每日";
+"Gemini 5 小时" = "Gemini 5 小时";
+"Gemini 每周" = "Gemini 每周";
+"Claude/GPT 5 小时" = "Claude/GPT 5 小时";
+"Claude/GPT 每周" = "Claude/GPT 每周";
+"C/G 每周" = "C/G 每周";
+"Gemini 模型" = "Gemini 模型";
+"Claude / GPT" = "Claude / GPT";
+"用量由此 Mac 的 Gemini CLI OAuth 登录自动采集。" = "用量由此 Mac 的 Gemini CLI OAuth 登录自动采集。";
+"优先读取运行中的 Antigravity 本地语言服务，未运行时回退到 agy CLI。" = "优先读取运行中的 Antigravity 本地语言服务，未运行时回退到 agy CLI。";
+"AgentMeter 以只读方式读取本机 ~/.gemini/oauth_creds.json，不修改或覆盖你的 CLI 凭据文件。" = "AgentMeter 以只读方式读取本机 ~/.gemini/oauth_creds.json，不修改或覆盖你的 CLI 凭据文件。";
+"AgentMeter 只在本地连接 Antigravity 服务或运行只读用量查询，不会修改账号登录态或触发自动更新。" = "AgentMeter 只在本地连接 Antigravity 服务或运行只读用量查询，不会修改账号登录态或触发自动更新。";
+"在终端运行 gemini 并使用 Google 账号完成 OAuth 登录，然后回到这里重新检测。" = "在终端运行 gemini 并使用 Google 账号完成 OAuth 登录，然后回到这里重新检测。";
+"打开 Antigravity 并完成登录，或在终端运行 agy 登录后回到这里重新检测。" = "打开 Antigravity 并完成登录，或在终端运行 agy 登录后回到这里重新检测。";

@@ -58,7 +58,7 @@ func selectedTool(from arguments: [String] = CommandLine.arguments) -> ToolKind?
 }
 
 func usageAndExit() -> Never {
-    FileHandle.standardError.write(Data("Usage: agentmeter-probe [--tool claudeCode|codex|cursor]\n".utf8))
+    FileHandle.standardError.write(Data("Usage: agentmeter-probe [--tool claudeCode|codex|cursor|geminiCLI|antigravity]\n".utf8))
     exit(64)
 }
 
@@ -80,6 +80,10 @@ func fetchSnapshot(tool: ToolKind, credentials: KeychainReader.Credentials) asyn
             accessToken: credentials.accessToken,
             fallbackPlan: credentials.subscriptionType
         )
+    case .geminiCLI:
+        return try await GeminiCLIAdapter().fetch(credentials: credentials)
+    case .antigravity:
+        return try await AntigravityQuotaAdapter().fetch(forceRefresh: true)
     case .kimiCode, .glmCoding, .miniMax, .arkCoding, .arkAgent, .openCode, .deepSeek, .openRouter, .grok,
          .copilot, .windsurf, .jetBrainsAI, .zed:
         throw ProbeError.unsupportedTool(tool.rawValue)
@@ -118,6 +122,22 @@ func describeFetchError(_ error: Error) -> String {
         case .unauthorized: return "端点返回 401/403 —— Cursor 登录可能已过期"
         case .httpStatus(let code): return "端点返回 HTTP \(code) —— 未公开端点可能已变"
         case .transport(let msg): return "网络失败: \(msg)"
+        case .decode(let msg): return "响应解析失败(字段可能变了): \(msg)"
+        }
+    case let e as GeminiCLIAdapter.FetchError:
+        switch e {
+        case .unauthorized: return "端点返回 401/403 —— Gemini CLI OAuth 可能已过期或未登录"
+        case .consumerTierDeprecated: return "Google 已停用个人版 Gemini CLI OAuth 额度接口，请改用 Antigravity"
+        case .httpStatus(let code): return "端点返回 HTTP \(code) —— 非官方端点可能已变"
+        case .transport(let msg): return "网络失败: \(msg)"
+        case .decode(let msg): return "响应解析失败(字段可能变了): \(msg)"
+        }
+    case let e as AntigravityQuotaAdapter.FetchError:
+        switch e {
+        case .notRunning: return "未检测到运行中的 Antigravity 语言服务或可用 agy CLI"
+        case .unauthorized: return "Antigravity 会话未登录或已失效，请重新登录"
+        case .httpStatus(let code): return "端点返回 HTTP \(code) —— 本地或 CLI 接口返回异常"
+        case .transport(let msg): return "连接失败: \(msg)"
         case .decode(let msg): return "响应解析失败(字段可能变了): \(msg)"
         }
     default:

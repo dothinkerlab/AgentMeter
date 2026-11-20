@@ -487,6 +487,9 @@ final class AppModel: ObservableObject {
 
     func refreshAutomaticProvider(_ provider: PlanProviderKind) async {
         guard MacExtendedProviderPreferences.tools.contains(provider.toolKind) else {
+            if provider == .antigravity {
+                await AntigravityQuotaAdapter.invalidateCLICache()
+            }
             await collectNow()
             return
         }
@@ -1261,6 +1264,8 @@ final class AppModel: ObservableObject {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
         case .cursor: return "Cursor"
+        case .geminiCLI: return "Gemini CLI"
+        case .antigravity: return "Antigravity"
         case .kimiCode: return "Kimi Code"
         case .glmCoding: return "GLM Coding Plan"
         case .arkCoding: return "Ark Coding Plan"

@@ -154,4 +154,54 @@ struct RecordMappingTests {
         let restored = try RecordMapping.snapshot(from: try RecordMapping.makeRecord(from: snap))
         #expect(restored == snap)
     }
+
+    @Test func geminiCLIAndAntigravitySnapshotsRoundTripThroughCKRecord() throws {
+        let reset = Date(timeIntervalSince1970: 1_750_000_000)
+        let updated = Date(timeIntervalSince1970: 1_749_900_000)
+
+        let gemini = QuotaSnapshot(
+            tool: .geminiCLI,
+            plan: "Workspace",
+            windows: [
+                QuotaWindow(usedPercent: 35, resetsAt: reset, kind: .geminiPro),
+                QuotaWindow(usedPercent: 55, resetsAt: reset, kind: .geminiFlash),
+                QuotaWindow(usedPercent: 5, resetsAt: reset, kind: .geminiFlashLite),
+            ],
+            confidence: .fresh,
+            source: GeminiCLIAdapter.source,
+            updatedAt: updated
+        )
+        let geminiRecord = try RecordMapping.makeRecord(from: gemini)
+        #expect(geminiRecord.recordID.recordName == "snapshot-geminiCLI")
+        #expect(try RecordMapping.snapshot(from: geminiRecord) == gemini)
+
+        let antigravity = QuotaSnapshot(
+            tool: .antigravity,
+            plan: "Google AI Pro",
+            windows: [
+                QuotaWindow(usedPercent: 28, resetsAt: reset, kind: .geminiFiveHour),
+                QuotaWindow(usedPercent: 46, resetsAt: reset, kind: .geminiWeekly),
+                QuotaWindow(usedPercent: 70, resetsAt: reset, kind: .claudeGPTFiveHour),
+                QuotaWindow(usedPercent: 15, resetsAt: reset, kind: .claudeGPTWeekly),
+            ],
+            confidence: .fresh,
+            source: AntigravityQuotaAdapter.source,
+            updatedAt: updated
+        )
+        let antigravityRecord = try RecordMapping.makeRecord(from: antigravity)
+        #expect(antigravityRecord.recordID.recordName == "snapshot-antigravity")
+        #expect(try RecordMapping.snapshot(from: antigravityRecord) == antigravity)
+    }
+
+    #if os(macOS)
+    @Test func unentitledCloudKitSyncFailsWithAccountUnavailableWithoutCrashing() async throws {
+        #expect(!CloudKitSync.isEntitled(for: CloudKitSync.defaultContainerIdentifier))
+        do {
+            _ = try await CloudKitSync().fetch(tool: .claudeCode)
+            Issue.record("Expected CloudKitSync.SyncError.accountUnavailable")
+        } catch CloudKitSync.SyncError.accountUnavailable {
+            // Expected when CloudKit entitlement is absent.
+        }
+    }
+    #endif
 }
