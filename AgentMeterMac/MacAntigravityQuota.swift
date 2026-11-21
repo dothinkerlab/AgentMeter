@@ -128,7 +128,10 @@ struct MacAntigravityCLI: Sendable {
     var systemPaths = ["/opt/homebrew/bin/agy", "/usr/local/bin/agy"]
     var isExecutable: @Sendable (URL) -> Bool = { FileManager.default.isExecutableFile(atPath: $0.path) }
     var run: Run = { executable, arguments, directory, environment in
-        try await MacAntigravityProcess().run(executable, arguments, directory, environment)
+        // Usage queries include authentication and a backend round trip.
+        // Keep local capability probes short while allowing a slower network.
+        let timeout: TimeInterval = arguments == MacAntigravityCLI.usageArguments ? 30 : 10
+        return try await MacAntigravityProcess(timeout: timeout).run(executable, arguments, directory, environment)
     }
 
     func fetch(now: @Sendable () -> Date = { Date() }) async throws -> MacAntigravityQuota {
