@@ -1,94 +1,75 @@
 <div align="center">
 
-# AgentMeter
+<img src="logo.png" alt="AgentMeter" width="80">
 
-### 把 AI 编程额度放到手腕上。
+# AgentMeter — iPhone 上的 AI 编程额度监控工具
 
-[English](README.md) · **中文**
-
-<img src="logo.png" alt="AgentMeter" width="120">
-
-[![Latest Release](https://img.shields.io/github/v/release/dothinkerlab/AgentMeter?label=download&sort=semver)](https://github.com/dothinkerlab/AgentMeter/releases/latest)
+[English](README.md) · **简体中文**
 
 </div>
 
+开始下一项编程任务前，在 iPhone 上看一眼 **Claude Code、OpenAI Codex、Cursor 和 GitHub Copilot** 各剩多少额度、何时重置。Mac 伴侣可把这些工具的用量同步到 iPhone 和 Apple Watch。想知道 Codex 近期有没有可能重置额度，还可以看 iPhone 上的 **Reset Radar（重置预测）**。
 
-**AgentMeter** 让你在 Mac 菜单栏、iPhone 和 Apple Watch 上随时查看 AI 编程额度、重置时间与 API 账单，离开键盘也能掌握用量。Watch App 与表盘组件免费；手机 Widget 沿用现有 Pro 权益。
+**[在 App Store 下载 iPhone 和 Apple Watch 版 AgentMeter](https://apps.apple.com/app/id6781480047)**
 
-## 截图
+<a href="https://apps.apple.com/app/id6781480047"><img src="app-store-qr.png" alt="用 iPhone 扫码，在 App Store 打开 AgentMeter" width="120"></a>
+
+## 在 iPhone 上查看 Codex 重置预测
+
+打开 **Reset Radar**，可以看到预测时段、该时段内 Codex 发生额度重置的估计概率，以及支持或反对这一判断的公开信号。把 Radar 小组件放到主屏幕或锁屏，就能随时查看概率。想知道**自己的账户**何时恢复额度，可以查看套餐卡片上服务商给出的重置倒计时。
+
+## 在 iPhone、Apple Watch 和 Mac 菜单栏查看额度
 
 <table>
   <tr>
-    <td align="center" valign="center"><img src="screenshots/iphone.png" alt="iPhone" height="300"></td>
-    <td align="center" valign="center"><img src="screenshots/mac.png" alt="Mac 菜单栏" height="300"></td>
-    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
+    <td align="center"><img src="screenshots/iphone.png" alt="iPhone 上的 AI 编程额度与用量概览" width="220"></td>
+    <td align="center"><img src="screenshots/watch.png" alt="Apple Watch 上的编程额度状态" width="180"></td>
+    <td align="center"><img src="screenshots/mac.png" alt="Mac 菜单栏中的服务商额度与重置时间" width="260"></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>iPhone</b></sub></td>
-    <td align="center"><sub><b>Mac 菜单栏</b></sub></td>
-    <td align="center"><sub><b>Apple Watch</b></sub></td>
+    <td align="center"><sub><b>iPhone</b> · 集中查看用量</sub></td>
+    <td align="center"><sub><b>Apple Watch</b> · 抬腕查看状态</sub></td>
+    <td align="center"><sub><b>Mac</b> · 工作时随时查看</sub></td>
   </tr>
 </table>
 
-## 安装与快速开始
+- **决定下一项任务用哪个工具。** 在 iPhone 上比较各套餐的剩余额度和重置时间。按服务商提供的数据，可查看滚动 5 小时额度、周限额或月度用量。
+- **额度恢复时再回来。** 开启重置提醒后，如果最新读数显示 5 小时额度剩余不足 10%，应用可在该窗口重置时通知你。Codex 未使用的重置次数（reset credits）也有到期提醒。
+- **离开电脑也能看用量。** 把额度放到 iPhone 小组件或 Apple Watch 表盘上，抬腕就能查看。更新时间能帮你判断看到的是哪一次读数。
+- **接着跑被限额打断的任务。** 在 Mac 上开启自动续跑后，额度恢复时，符合条件的 Codex Desktop 会话可重新加入队列。
+- **查清 API 花了多少。** 可查看 DeepSeek、OpenRouter 等服务的余额，也可按日、周、月查看 OpenAI API 和 Anthropic API 的费用。
 
-### 1. 安装 AgentMeter
+## 从 iPhone 开始使用
 
-Mac 版需要 **macOS 13 或更高版本**，已使用 Developer ID 签名并通过 Apple 公证。
+1. **[在 App Store 安装 AgentMeter](https://apps.apple.com/app/id6781480047)。** 打开 iPhone App 即可查看 Reset Radar。要在手机上采集 Kimi Code、GLM Coding Plan 或 MiniMax Token Plan 的用量，在设置中添加对应服务即可。
+2. **连接 Mac 上的编程工具。** 安装下方的 Mac 伴侣，在设置中启用常用工具。Claude Code、Codex 和 Cursor 可读取 Mac 上已有的登录。GitHub Copilot 需要在 Mac 上输入 GitHub Token。
+3. **跨设备查看额度。** 在 Mac、iPhone 和 Apple Watch 上使用同一 Apple 账户并开启 iCloud，手表即可读取同步的额度。手动输入的凭据保存在输入它的设备上。
 
-| 平台 | 下载 |
-| --- | --- |
-| Mac | [下载已公证的 DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)，将 **AgentMeter.app** 拖入「应用程序」 |
-| iPhone 和 Apple Watch | [在 App Store 下载](https://apps.apple.com/app/id6781480047) |
+### 安装 Mac 菜单栏伴侣
 
-也可以通过 Homebrew 安装 Mac 版：
+[下载 Mac 版 DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg)，将 **AgentMeter.app** 拖入「应用程序」，也可以使用 Homebrew 安装。应用支持 macOS 13 及以上版本，已签名并通过 Apple 公证。
 
 ```sh
 brew install --cask dothinkerlab/tap/agentmeter
 ```
 
-升级已通过 Homebrew 安装的版本：
-
-```sh
-brew upgrade --cask dothinkerlab/tap/agentmeter
-```
-
-历史版本见 [Mac Releases 页面](https://github.com/dothinkerlab/AgentMeter/releases)。Mac 伴侣应用需要访问编程工具已有的本机凭据，因此在 App Store 之外分发。
-
-<img src="app-store-qr.png" alt="在 App Store 下载 AgentMeter" width="160">
-
-### 2. 配置服务商
-
-从 Mac 菜单栏打开 AgentMeter。使用 **Claude Code、Codex、Cursor、Windsurf、JetBrains AI 或 Zed** 时，先在 Mac 上登录或使用对应工具；只有在你显式启用服务商后，AgentMeter 才会读取已有的本机凭据或额度缓存。GitHub Copilot 需要在设置中粘贴 GitHub Token。其他编程套餐和 API 账单服务也可在设置中配置，只需启用你使用的服务。
-
-手动输入的凭据仅保存在当前设备。如果在 Mac 和 iPhone 上都配置了某个服务，需要在各设备分别输入凭据。特殊凭据要求见[支持的服务](#支持的服务)。
-
-### 3. 查看额度
-
-在 Mac 菜单栏查看剩余额度与重置时间。如果需要在 iPhone 和 Apple Watch 上查看编程套餐额度，请在这些设备上使用**同一个 Apple ID** 并开启 iCloud。iCloud 用于跨设备同步额度；API 账单默认保留在采集设备上；Jev 和 Perplexity 账户积分可分别开启显示数据同步。
-
-## 功能概览
-
-- **随时查看额度**：支持 Mac 菜单栏、iPhone 状态页和 Apple Watch 表盘组件。
-- **适配服务商周期**：展示滚动窗口、每周限额和月度周期，以及 Codex 重置额度（reset credits）可用数量与到期提醒。
-- **本地 API 账单**：根据服务商支持情况，展示余额、限额和日、周、月成本。
-- **Mac 管理功能**：搜索服务商，管理凭据与地区，暂停采集，自定义服务显示与排序。
-- **明确的数据状态**：刷新失败时标记数据已过期；最新数据表明 5 小时窗口耗尽时，可选择接收重置提醒。
+升级时运行 `brew upgrade --cask dothinkerlab/tap/agentmeter`。[查看 Mac 历史版本](https://github.com/dothinkerlab/AgentMeter/releases)。
 
 ## 支持的服务
 
-AgentMeter 支持以下 20 个服务，每个服务的数据类型和配置方式分别列出。
+可在「配置方式」一栏查看哪些服务能在 iPhone 上直接连接，哪些需要 Mac 伴侣。
 
 | 数据类型 | 服务商 | 配置方式 |
 | --- | --- | --- |
 | 编程套餐额度 | Claude Code | 使用 Mac 上已有的登录 |
 | 编程套餐额度 | Codex | 使用 Mac 上已有的登录 |
 | 编程套餐额度 | Cursor | 使用 Mac 上已有的登录 |
-| 编程套餐额度 | GitHub Copilot | GitHub Token，保存在本机 Keychain |
+| 编程套餐额度 | GitHub Copilot | 在 Mac 输入 GitHub Token，保存在该设备的 Keychain |
 | 编程套餐额度 | Windsurf | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | JetBrains AI | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
 | 编程套餐额度 | Zed | 显式启用后检测 Mac 上已有的登录或本地额度缓存 |
-| 仅限 Mac 的编程套餐额度 | Google Antigravity | 独立 Antigravity CLI（`agy`）及已登录的个人 Google 账号 |
+| 按模型组查看额度，支持从 Mac 同步到兼容的 iPhone 和手表 App | Google Antigravity | 独立 Antigravity CLI（`agy`）及已登录的个人 Google 账号 |
+| 个人编程与智能体套餐额度 | 火山方舟 Ark Coding Plan、Ark Agent Plan | 在 Mac 上配置有权查询对应套餐的火山引擎 Access Key ID 和 Secret Access Key |
 | 编程套餐额度 | Kimi Code | 在 Mac 或 iPhone 的服务商设置中配置 |
 | 编程套餐额度 | GLM Coding Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
 | 编程套餐额度 | MiniMax Token Plan | 在 Mac 或 iPhone 的服务商设置中配置 |
@@ -104,21 +85,13 @@ AgentMeter 支持以下 20 个服务，每个服务的数据类型和配置方�
 
 可用指标取决于服务商。OpenAI API 和 Anthropic API 成本指开发者 API 用量，不是 ChatGPT 或 Claude 网页端、应用端的订阅用量。编程套餐额度可通过私有 iCloud 同步；**API 账单默认不进入 CloudKit；Jev 可显式开启显示数据同步**，Cursor Team 成员身份与金额仅保留在 Mac 上。
 
-- **Google Antigravity**：[安装独立 CLI](https://antigravity.google/docs/cli/tutorial/)（v1.1.11 或更新版本），在终端运行 `agy` 并登录个人 Google 账号，再到 **设置 → Plan** 启用 **Google Antigravity**。AgentMeter 通过 CLI 的只读 `/usage` 命令在 Mac、iPhone 和 Apple Watch 显示剩余额度和重置时间。开启监控后，清洗后的额度会通过私有 iCloud 同步到同一 Apple ID；每个 Apple ID 只在一台 Mac 开启，关闭后清除云端记录。使用旧 Gemini CLI 的个人用户可参考 [Google 的迁移公告](https://github.com/google-gemini/gemini-cli/discussions/27274)。企业套餐、API 账单和购买的 AI Credits 不在此集成范围。
+### 特殊服务配置
 
-### TypeSafe API（Jev）Mac 接入
+- **Google Antigravity**：[安装独立 CLI](https://antigravity.google/docs/cli/tutorial/)（v1.1.11 或更新版本），在终端运行 `agy` 并登录个人 Google 账号，再到 **设置 → Plan** 启用 **Google Antigravity**。Mac 通过 CLI 的只读 `/usage` 命令，按模型组读取剩余额度和重置时间。兼容的 iPhone 和 Apple Watch 客户端可通过同一 Apple 账户的私有 iCloud 读取这些数据。每个账户只在一台 Mac 启用采集，关闭后会清除云端记录。使用旧 Gemini CLI 的个人用户可参考 [Google 的迁移公告](https://github.com/google-gemini/gemini-cli/discussions/27274)。企业套餐、API 账单和购买的 AI Credits 不在此集成范围。
+- **TypeSafe API（Jev）**：在 Mac 显式启用，通过所选 Chrome profile 的控制台会话或手动 Cookie header 连接；推理 API key 不能替代控制台会话。首次连接可能请求 Keychain 授权。默认仅在 Mac 展示，开启同步后可向 iPhone、Widget 和 Watch 提供显示数据，凭据不进入 iCloud。详见[连接、数据口径与同步说明（英文）](docs/TYPESAFE.md)。
+- **Perplexity 账户积分**：在 Mac 显式启用，使用固定 Chrome profile 或手动 Cookie／session token；展示周期、购买与奖励积分，可单独开启显示数据同步，不包含开发者 API 成本历史。详见[配置、计算与同步说明](docs/PERPLEXITY.zh-CN.md)。
 
-TypeSafe 默认关闭，登录来源默认 Auto。启用后只读所选 Chrome 配置中的 TypeSafe 会话；首次连接可能请求 Chrome Safe Storage 钥匙串授权，后台刷新不会弹窗。多个 Chrome 配置可在设置中选择，会话过期后不会自动切换账号。
-
-Manual 可粘贴 [TypeSafe 官方账单页](https://console.typesafe.ai/settings/billing) 已登录请求的完整 Cookie header，保存在本机 Keychain；普通推理 API key 无法替代登录会话。两种来源不互相回退，可暂停、重新连接或删除手动 Cookie。
-
-余额、账单页周期消费、有效 Credit 的余额与到期日期，以及今日、最近 7 天、本月 Token 和本月请求数默认仅在 Mac 展示；在一台 Mac 开启“同步 Jev 到 iCloud”后，可通过相同 Apple ID 提供给 iPhone、Widget 和 Watch。账单页消费与 Token 用量口径不同，历史覆盖范围未知，数据可能延迟；到期时间不是额度重置时间。Auto Cookie 仅保留在内存，凭据不进入 iCloud；仅显式开启的 Jev 显示数据可进入私有 CloudKit。凭据和账单数值不进入日志或诊断。控制台接口未公开，可能变化或要求浏览器验证；采集不调用推理接口。
-
-### Perplexity 账户积分
-
-在 Mac 设置启用 **Perplexity 账户积分**。Auto 固定读取一个 Chrome profile，优先 Default；Manual 支持 Cookie header 或裸 session token，保存在本机 Keychain。后台读取不会弹出授权窗口，两种来源不互相回退。周期、购买、奖励三池展示剩余量、总量及百分比；分池消耗按总消耗推算，仅显示实际返回的续期或到期时间，不换算美元，也不包含开发者 API 成本历史。
-
-在一台采集 Mac 开启“同步 Perplexity 到 iCloud”，可向同 Apple ID 的 iPhone、Widget 与 Watch 提供显示事实。Cookie 仅在 Mac 使用。刷新失败保留上次成功数据，超过 15 分钟标陈旧。详见[配置、计算与同步说明](docs/PERPLEXITY.zh-CN.md)。网页接口未公开，可能要求浏览器验证。
+Jev 和 Perplexity 的网页接口未公开，可能变化或要求浏览器验证。刷新失败时保留上次成功数据；请留意更新时间。
 
 ## 隐私与同步
 

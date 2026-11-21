@@ -1,94 +1,75 @@
 <div align="center">
 
-# AgentMeter
+<img src="logo.png" alt="AgentMeter" width="80">
 
-### Keep your AI coding quota on your wrist.
+# AgentMeter — AI coding quota tracker for iPhone
 
-**English** · [中文](README.zh-CN.md)
-
-<img src="logo.png" alt="AgentMeter" width="120">
-
-[![Latest Release](https://img.shields.io/github/v/release/dothinkerlab/AgentMeter?label=download&sort=semver)](https://github.com/dothinkerlab/AgentMeter/releases/latest)
+**English** · [简体中文](README.zh-CN.md)
 
 </div>
 
+Check how much **Claude Code, OpenAI Codex, Cursor and GitHub Copilot** quota you have left before starting a coding session. The Mac companion syncs your usage to iPhone and Apple Watch. On iPhone, **Reset Radar** also shows the likelihood of an upcoming Codex quota reset.
 
-**AgentMeter** keeps AI coding quota, reset times, and API billing visible on your Mac menu bar, iPhone, and Apple Watch—even when you are away from the keyboard. Watch app and complications are free; iPhone widgets follow the existing Pro entitlement.
+**[Download AgentMeter for iPhone and Apple Watch on the App Store](https://apps.apple.com/app/id6781480047)**
 
-## Screenshots
+<a href="https://apps.apple.com/app/id6781480047"><img src="app-store-qr.png" alt="Scan with iPhone to open AgentMeter in the App Store" width="120"></a>
+
+## Codex reset predictions on iPhone
+
+Open **Reset Radar** to see the estimated probability of a Codex quota reset within the forecast window. Read the public signals for and against it, or add the Radar widget to your Home Screen or Lock Screen to follow the probability. To see when **your own account** is due to reset, check the countdown on its quota card.
+
+## Quota on iPhone, Apple Watch and the Mac menu bar
 
 <table>
   <tr>
-    <td align="center" valign="center"><img src="screenshots/iphone.png" alt="iPhone" height="300"></td>
-    <td align="center" valign="center"><img src="screenshots/mac.png" alt="Mac menu bar" height="300"></td>
-    <td align="center" valign="center"><img src="screenshots/watch.png" alt="Apple Watch" height="300"></td>
+    <td align="center"><img src="screenshots/iphone.png" alt="AI coding quota and usage overview on iPhone" width="220"></td>
+    <td align="center"><img src="screenshots/watch.png" alt="Coding quota status on Apple Watch" width="180"></td>
+    <td align="center"><img src="screenshots/mac.png" alt="Provider quotas and reset times in the Mac menu bar" width="260"></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>iPhone</b></sub></td>
-    <td align="center"><sub><b>Mac menu bar</b></sub></td>
-    <td align="center"><sub><b>Apple Watch</b></sub></td>
+    <td align="center"><sub><b>iPhone</b> · Your usage in one place</sub></td>
+    <td align="center"><sub><b>Apple Watch</b> · Status on your wrist</sub></td>
+    <td align="center"><sub><b>Mac</b> · Check while you work</sub></td>
   </tr>
 </table>
 
-## Install and get started
+- **Choose a tool for your next task.** Compare remaining quota and reset times on iPhone. Each plan shows the windows its provider reports, from rolling five-hour limits to weekly allowances and monthly cycles.
+- **Know when to return.** If a fresh reading shows less than 10% left in a five-hour window, an optional reminder can notify you at reset time. Codex also offers expiry reminders for unused reset credits.
+- **Check away from your desk.** Put quota on an iPhone widget or an Apple Watch complication. The last update time tells you how recent the reading is.
+- **Pick up interrupted Codex work.** On Mac, optional auto-resume can queue eligible Codex Desktop sessions after a quota limit clears.
+- **Track API spending.** Check balances for services such as DeepSeek and OpenRouter, or review OpenAI API and Anthropic API costs by day, week or month.
 
-### 1. Install AgentMeter
+## Get started on iPhone
 
-The Mac app requires **macOS 13 or later**. It is Developer ID-signed and notarized by Apple.
+1. **[Install AgentMeter from the App Store](https://apps.apple.com/app/id6781480047).** You can open Reset Radar immediately. To collect Kimi Code, GLM Coding Plan or MiniMax Token Plan usage on iPhone, add the provider in Settings.
+2. **Connect your Mac for desktop coding tools.** Install the companion below. Enable the tools you use in its settings. Claude Code, Codex and Cursor use your existing Mac sign-ins. For GitHub Copilot, enter a GitHub token on the Mac.
+3. **See your quota across devices.** Enable iCloud with the same Apple Account on Mac, iPhone and Apple Watch. The watch reads synced quota. Manually entered credentials stay on the device where you added them.
 
-| Platform | Download |
-| --- | --- |
-| Mac | [Download the notarized DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg), then drag **AgentMeter.app** into Applications |
-| iPhone and Apple Watch | [Download on the App Store](https://apps.apple.com/app/id6781480047) |
+### Install the Mac menu bar companion
 
-Or install the Mac app with Homebrew:
+[Download the Mac DMG](https://github.com/dothinkerlab/AgentMeter/releases/latest/download/AgentMeter.dmg) and drag **AgentMeter.app** into Applications, or install with Homebrew. The app requires macOS 13 or later and is signed and notarized.
 
 ```sh
 brew install --cask dothinkerlab/tap/agentmeter
 ```
 
-To upgrade an existing Homebrew installation:
-
-```sh
-brew upgrade --cask dothinkerlab/tap/agentmeter
-```
-
-[Previous Mac releases](https://github.com/dothinkerlab/AgentMeter/releases) are also available. The Mac companion is distributed outside the App Store so it can access existing local coding-tool credentials.
-
-<img src="app-store-qr.png" alt="Download AgentMeter on the App Store" width="160">
-
-### 2. Configure your providers
-
-Open AgentMeter from the Mac menu bar. For **Claude Code, Codex, Cursor, Windsurf, JetBrains AI, and Zed**, sign in to or use the corresponding tool on your Mac; AgentMeter reads its existing local credentials or quota cache only after you enable that provider. GitHub Copilot uses a GitHub token that you paste into Settings. Other coding plans and API billing services are also configured in Settings. You only need to enable the services you use.
-
-Manually entered credentials are device-local. If you configure a provider on both Mac and iPhone, enter its credentials separately on each device. See [Supported services](#supported-services) for special credential requirements.
-
-### 3. Check your quota
-
-View remaining quota and reset times in the Mac menu bar. To see coding-plan quota on iPhone and Apple Watch, enable iCloud with the **same Apple ID** across those devices. iCloud is used for cross-device quota sync; API billing stays on the device that collects it, with opt-in exceptions for Jev display sync and Perplexity account credits.
-
-## Features
-
-- **Quota at a glance:** Mac menu-bar views, iPhone status views, and Apple Watch complications.
-- **Provider-specific periods:** rolling windows, weekly limits, and monthly cycles, plus Codex reset-credit availability and expiry reminders.
-- **Local API billing:** balances, limits, and daily, weekly, or monthly costs where supported by the provider.
-- **Mac controls:** search providers, manage credentials and regions, pause collection, and customize service visibility and ordering.
-- **Clear freshness:** stale-data indicators when refresh fails, with optional reset reminders when fresh data shows an exhausted 5-hour window.
+To update, run `brew upgrade --cask dothinkerlab/tap/agentmeter`. [Browse Mac releases](https://github.com/dothinkerlab/AgentMeter/releases).
 
 ## Supported services
 
-AgentMeter supports the following 20 services. Each service is listed separately with its data and setup requirements.
+Use the setup column to see which services you can connect on iPhone and which use the Mac companion.
 
 | Data | Provider | Setup |
 | --- | --- | --- |
 | Coding-plan quota | Claude Code | Existing sign-in on your Mac |
 | Coding-plan quota | Codex | Existing sign-in on your Mac |
 | Coding-plan quota | Cursor | Existing sign-in on your Mac |
-| Coding-plan quota | GitHub Copilot | GitHub token stored in the local Keychain |
+| Coding-plan quota | GitHub Copilot | GitHub token entered on Mac and stored in its Keychain |
 | Coding-plan quota | Windsurf | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | JetBrains AI | Opt-in detection of an existing Mac sign-in or local quota cache |
 | Coding-plan quota | Zed | Opt-in detection of an existing Mac sign-in or local quota cache |
-| Mac-only coding-plan quota | Google Antigravity | Standalone Antigravity CLI (`agy`) with an existing personal Google sign-in |
+| Per-model-group quota, synced from Mac to compatible iPhone and Watch apps | Google Antigravity | Standalone Antigravity CLI (`agy`) with an existing personal Google sign-in |
+| Personal coding and agent plan quotas | Volcengine Ark Coding Plan and Ark Agent Plan | Volcengine access key pair on Mac with permission to query the selected plan |
 | Coding-plan quota | Kimi Code | Provider settings on Mac or iPhone |
 | Coding-plan quota | GLM Coding Plan | Provider settings on Mac or iPhone |
 | Coding-plan quota | MiniMax Token Plan | Provider settings on Mac or iPhone |
@@ -104,21 +85,13 @@ AgentMeter supports the following 20 services. Each service is listed separately
 
 Available metrics depend on the provider. OpenAI API and Anthropic API costs refer to developer API usage, not ChatGPT or Claude web/app subscriptions. Coding-plan quota can sync through private iCloud; **API billing remains local except for explicitly enabled Jev display sync**, and Cursor Team member identities and amounts stay on Mac.
 
-- **Google Antigravity:** [Install the standalone CLI](https://antigravity.google/docs/cli/tutorial/) (v1.1.11 or newer), open `agy` in Terminal, and sign in with a personal Google account. Then enable **Google Antigravity** under **Settings → Plan**. AgentMeter uses the CLI's read-only `/usage` command to show remaining quota and reset times on Mac, iPhone, and Apple Watch. Monitoring also syncs cleaned quota through private iCloud to the same Apple Account. Enable monitoring on one Mac only. Turning it off clears the cloud record. If you're coming from Gemini CLI, see [Google's migration announcement](https://github.com/google-gemini/gemini-cli/discussions/27274). Enterprise plans, API billing, and purchased AI credits are outside this integration.
+### Special service setup
 
-### TypeSafe API (Jev) on Mac
+- **Google Antigravity:** [Install the standalone CLI](https://antigravity.google/docs/cli/tutorial/) (v1.1.11 or newer), open `agy` in Terminal, and sign in with a personal Google account. Then enable **Google Antigravity** under **Settings → Plan**. AgentMeter reads remaining quota and reset times by model group through the CLI’s read-only `/usage` command. Private iCloud sync makes those readings available to compatible iPhone and Apple Watch apps on the same Apple Account. Enable monitoring on one Mac only. Turning it off clears the cloud record. If you're coming from Gemini CLI, see [Google's migration announcement](https://github.com/google-gemini/gemini-cli/discussions/27274). Enterprise plans, API billing, and purchased AI credits are outside this integration.
+- **TypeSafe API (Jev):** explicitly enable it on Mac and connect through the selected Chrome profile's console session or a manual Cookie header; an inference API key cannot replace a console session. The first connection may request Keychain access. Data stays on Mac by default; opt-in sync shares display data with iPhone, widgets and Watch without sending credentials to iCloud. See [connection, accounting and sync details](docs/TYPESAFE.md).
+- **Perplexity account credits:** explicitly enable it on Mac using a fixed Chrome profile or a manual Cookie/session token. View recurring, purchased and bonus credits, with separate opt-in display sync; developer API cost history is not included. See [setup, calculation and sync details](docs/PERPLEXITY.md).
 
-TypeSafe is disabled until you enable it in Settings. Auto reads the selected Chrome profile's TypeSafe console cookies; the first connection may ask for Chrome Safe Storage Keychain access. Background collection never opens permission prompts. With multiple profiles, choose the profile containing your TypeSafe login. The app does not switch profiles when a session expires.
-
-Manual accepts the full Cookie header from an authenticated request on [TypeSafe Billing](https://console.typesafe.ai/settings/billing). Store it using the secure field in Settings; an inference API key cannot replace a console session. You can pause collection, reconnect, or delete the manual Cookie. Auto and Manual are separate sources and do not fall back to each other.
-
-Balance, billing-page cycle spend, active credit grants, and token/request summaries stay on Mac by default. Enable **Sync Jev to iCloud** on one Mac to share cleaned display facts with iPhone, widgets, and Apple Watch using the same Apple ID. Phone refresh checks the cloud; it does not query Jev. Billing-page spend and token totals use different accounting scopes; summaries may be delayed and history coverage is not guaranteed. Credit expiry is not a quota reset. Console interfaces are undocumented and may change or be blocked by a browser challenge. Collection does not call Jev inference.
-
-### Perplexity account credits
-
-Enable **Perplexity account credits** in Mac Settings. Auto uses one fixed Chrome profile (Default first); Manual accepts a Cookie header or session token stored in the local Keychain. Background reads never prompt, and sources never fall back to each other. The three pools show recurring, purchased and bonus credits, with inferred consumption and actual renewal/expiry dates. No dollar conversion or developer API cost history is included.
-
-Enable **Sync Perplexity to iCloud** on one collecting Mac to share display facts with iPhone, widgets and Watch. Cookies stay on Mac. Refresh failures retain the last successful facts; data older than 15 minutes is stale. See [setup, calculation and sync details](docs/PERPLEXITY.md). The web interface is undocumented and may require browser verification.
+The Jev and Perplexity integrations use undocumented web interfaces that may change or require browser verification. Failed refreshes retain the last successful data; check its update time.
 
 ## Privacy and sync
 
